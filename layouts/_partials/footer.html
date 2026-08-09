@@ -1,7 +1,7 @@
 <footer class="site-footer">
   <div class="footer-inner">
     <div>
-      <a class="brand brand--footer" href="{{ site.Home.RelPermalink }}"><span class="brand__mark">H</span><span class="brand__text">Hansen<span>.</span></span></a>
+      <a class="brand brand--footer" href="{{ site.Home.RelPermalink }}"><span class="brand__mark">{{ site.Params.initial | default "L" }}</span><span class="brand__text">{{ site.Params.author | default site.Title }}<span>.</span></span></a>
       <p>{{ site.Params.tagline }}</p>
     </div>
     <div class="footer-links">

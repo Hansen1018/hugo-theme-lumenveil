@@ -1,7 +1,7 @@
 {{ define "main" }}
 <section class="hero">
   <div class="hero__inner">
-    <div class="hero__avatar fade-up"><div class="hero__avatar-ring"></div><div class="hero__avatar-core">H</div><span class="hero__status" title="{{ site.Params.status }}"><span></span></span></div>
+    <div class="hero__avatar fade-up"><div class="hero__avatar-ring"></div><div class="hero__avatar-core">{{ site.Params.initial | default "L" }}</div><span class="hero__status" title="{{ site.Params.status }}"><span></span></span></div>
     <div class="hero__chips fade-up">
       <span class="chip"><i class="chip__dot chip__dot--green"></i>{{ site.Params.status }}</span>
       <span class="chip"><i class="chip__dot chip__dot--cyan"></i>{{ site.Params.location }}</span>
