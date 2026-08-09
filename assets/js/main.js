@@ -20,14 +20,14 @@
   themeToggle?.addEventListener('click', () => {
     const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light'
     document.documentElement.dataset.theme = next
-    try { localStorage.setItem('hansen-theme', next) } catch {}
+    try { localStorage.setItem('lumenveil-theme', next) } catch {}
     updateThemeLabel()
   })
 
   const colorScheme = window.matchMedia('(prefers-color-scheme: light)')
   colorScheme.addEventListener?.('change', (event) => {
     try {
-      if (localStorage.getItem('hansen-theme')) return
+      if (localStorage.getItem('lumenveil-theme')) return
     } catch {}
     document.documentElement.dataset.theme = event.matches ? 'light' : 'dark'
     updateThemeLabel()
