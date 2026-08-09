@@ -1,0 +1,25 @@
+<article class="post-card">
+  <a class="post-card__visual" href="{{ .RelPermalink }}" aria-label="阅读《{{ .LinkTitle }}》">
+    {{ with .Params.cover }}
+      <img src="{{ . | relURL }}" alt="" loading="lazy">
+    {{ else }}
+      <span>{{ substr .LinkTitle 0 1 }}</span>
+      <div class="post-card__grid"></div>
+    {{ end }}
+  </a>
+  <div class="post-card__body">
+    <div class="post-meta">
+      <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006.01.02" }}</time>
+      <span>{{ .ReadingTime }} 分钟阅读</span>
+      {{ with index .Params.categories 0 }}<a href="{{ printf "/categories/%s/" (. | urlize) | relURL }}">{{ . }}</a>{{ end }}
+    </div>
+    <h2><a href="{{ .RelPermalink }}">{{ .LinkTitle }}</a></h2>
+    <p>{{ .Description | default (.Summary | plainify | truncate 140) }}</p>
+    <div class="post-card__foot">
+      <div class="tag-list">
+        {{ range first 3 .Params.tags }}<a href="{{ printf "/tags/%s/" (. | urlize) | relURL }}">#{{ . }}</a>{{ end }}
+      </div>
+      <a class="read-link" href="{{ .RelPermalink }}">阅读全文 <span>→</span></a>
+    </div>
+  </div>
+</article>

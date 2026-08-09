@@ -1,0 +1,12 @@
+name = 'Lumenveil'
+license = 'MIT'
+licenselink = 'https://github.com/Hansen1018/hugo-theme-lumenveil/blob/main/LICENSE'
+description = 'A luminous, responsive Hugo theme with glass surfaces, aurora ambience, light and dark modes, and a reading-first experience.'
+homepage = 'https://github.com/Hansen1018/hugo-theme-lumenveil'
+tags = ['blog', 'dark', 'responsive', 'glassmorphism', 'search']
+features = ['responsive', 'search', 'taxonomy', 'pagination', 'rss', 'toc']
+min_version = '0.146.0'
+
+[author]
+  name = 'Hansen'
+  homepage = 'https://github.com/Hansen1018'
