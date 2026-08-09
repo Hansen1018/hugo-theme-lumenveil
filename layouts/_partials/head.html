@@ -1,0 +1,36 @@
+{{ $title := cond .IsHome site.Title (printf "%s · %s" .Title site.Title) }}
+{{ $description := .Description | default site.Params.description }}
+{{ $css := resources.Get "css/main.css" | minify | fingerprint }}
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<script>
+try{const t=localStorage.getItem('hansen-theme');document.documentElement.dataset.theme=t||((matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark')}catch(e){}
+</script>
+<title>{{ $title }}</title>
+<meta name="description" content="{{ $description }}">
+<meta name="author" content="{{ site.Params.author }}">
+<link rel="canonical" href="{{ .Permalink }}">
+<link rel="icon" href="{{ "favicon.svg" | relURL }}" type="image/svg+xml">
+<link rel="stylesheet" href="{{ $css.RelPermalink }}" integrity="{{ $css.Data.Integrity }}">
+{{ with .OutputFormats.Get "RSS" }}<link rel="alternate" type="application/rss+xml" title="{{ site.Title }}" href="{{ .RelPermalink }}">{{ end }}
+<meta property="og:type" content="{{ if .IsPage }}article{{ else }}website{{ end }}">
+<meta property="og:title" content="{{ $title }}">
+<meta property="og:description" content="{{ $description }}">
+<meta property="og:url" content="{{ .Permalink }}">
+<meta property="og:site_name" content="{{ site.Title }}">
+<meta property="og:image" content="{{ "og.svg" | absURL }}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ $title }}">
+<meta name="twitter:description" content="{{ $description }}">
+{{ if .IsPage }}
+<meta property="article:published_time" content="{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}">
+{{ with .Lastmod }}<meta property="article:modified_time" content="{{ .Format "2006-01-02T15:04:05Z07:00" }}">{{ end }}
+{{ end }}
+<script type="application/ld+json">
+{{ if .IsPage }}
+{"@context":"https://schema.org","@type":"BlogPosting","headline":{{ .Title | jsonify | safeJS }},"description":{{ $description | jsonify | safeJS }},"datePublished":"{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}","dateModified":"{{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" }}","author":{"@type":"Person","name":{{ site.Params.author | jsonify | safeJS }}},"mainEntityOfPage":{{ .Permalink | jsonify | safeJS }}}
+{{ else }}
+{"@context":"https://schema.org","@type":"WebSite","name":{{ site.Title | jsonify | safeJS }},"url":{{ site.BaseURL | jsonify | safeJS }},"description":{{ site.Params.description | jsonify | safeJS }},"potentialAction":{"@type":"SearchAction","target":"{{ site.Home.Permalink }}?q={search_term_string}","query-input":"required name=search_term_string"}}
+{{ end }}
+</script>

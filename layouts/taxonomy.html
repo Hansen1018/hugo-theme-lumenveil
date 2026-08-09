@@ -1,0 +1,17 @@
+{{ define "main" }}
+<section class="page-hero">
+  <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><span>{{ .Title }}</span></div>
+  <span class="eyebrow">Browse Topics</span>
+  <h1>{{ .Title }}</h1>
+  <p>从主题出发，找到你感兴趣的内容。</p>
+</section>
+<section class="section section--compact" data-reveal>
+  <div class="term-grid">
+    {{ range .Data.Terms.ByCount }}
+      <a class="term-card glass" href="{{ .Page.RelPermalink }}"><span>{{ .Page.LinkTitle }}</span><strong>{{ .Count }}</strong><small>篇文章</small></a>
+    {{ else }}
+      <div class="empty-state"><strong>暂无主题</strong><p>为文章添加分类或标签后会显示在这里。</p></div>
+    {{ end }}
+  </div>
+</section>
+{{ end }}

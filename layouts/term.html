@@ -1,0 +1,12 @@
+{{ define "main" }}
+<section class="page-hero">
+  <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><a href="{{ .Parent.RelPermalink }}">{{ .Parent.Title }}</a><span>/</span><span>{{ .Title }}</span></div>
+  <span class="eyebrow">Topic Archive</span>
+  <h1>{{ .Title }}</h1>
+  <p>收录在此主题下的全部内容。</p>
+</section>
+<section class="section section--compact" data-reveal>
+  {{ $paginator := .Paginate .RegularPages.ByDate.Reverse }}
+  {{ if $paginator.Pages }}<div class="post-grid">{{ range $paginator.Pages }}{{ partial "post-card.html" . }}{{ end }}</div>{{ partial "pagination.html" $paginator }}{{ else }}<div class="empty-state"><strong>暂无内容</strong></div>{{ end }}
+</section>
+{{ end }}

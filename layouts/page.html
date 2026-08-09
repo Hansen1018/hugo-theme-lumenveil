@@ -1,0 +1,27 @@
+{{ define "main" }}
+<article class="article">
+  <header class="article-header">
+    <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><a href="{{ "posts/" | relURL }}">文章</a><span>/</span><span>{{ .Title }}</span></div>
+    <div class="post-meta">
+      <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006 年 01 月 02 日" }}</time>
+      <span>{{ .ReadingTime }} 分钟阅读</span><span>{{ .WordCount }} 字</span>
+    </div>
+    <h1>{{ .Title }}</h1>
+    {{ with .Description }}<p class="article-deck">{{ . }}</p>{{ end }}
+    {{ with .Params.tags }}<div class="tag-list tag-list--large">{{ range . }}<a href="{{ printf "/tags/%s/" (. | urlize) | relURL }}">#{{ . }}</a>{{ end }}</div>{{ end }}
+  </header>
+  <div class="article-layout">
+    <div class="article-main glass">
+      <div class="prose">{{ .Content }}</div>
+      <div class="article-share"><span>这篇文章有帮助？</span><button class="button button--ghost" type="button" data-copy-link>复制文章链接</button></div>
+    </div>
+    {{ if and (ne .Params.toc false) (.TableOfContents) }}
+    <aside class="toc"><div class="toc__inner"><span class="eyebrow">On this page</span><h2>文章目录</h2>{{ .TableOfContents }}</div></aside>
+    {{ end }}
+  </div>
+  <nav class="post-nav" aria-label="文章导航">
+    {{ with .PrevInSection }}<a href="{{ .RelPermalink }}"><span>上一篇</span><strong>{{ .LinkTitle }}</strong></a>{{ else }}<span></span>{{ end }}
+    {{ with .NextInSection }}<a href="{{ .RelPermalink }}" class="post-nav__next"><span>下一篇</span><strong>{{ .LinkTitle }}</strong></a>{{ end }}
+  </nav>
+</article>
+{{ end }}
