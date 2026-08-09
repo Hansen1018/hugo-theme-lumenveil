@@ -1,0 +1,18 @@
+{{ define "main" }}
+<section class="page-hero">
+  <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><span>{{ .Title }}</span></div>
+  <span class="eyebrow">Writing Archive</span>
+  <h1>{{ .Title }}</h1>
+  <p>{{ .Description | default "所有文章，按时间倒序排列。" }}</p>
+  <div class="page-hero__stats"><span>{{ len .RegularPagesRecursive }} 篇文章</span><span>{{ len site.Taxonomies.categories }} 个分类</span><span>{{ len site.Taxonomies.tags }} 个标签</span></div>
+</section>
+<section class="section section--compact" data-reveal>
+  {{ $paginator := .Paginate .RegularPagesRecursive.ByDate.Reverse }}
+  {{ if $paginator.Pages }}
+    <div class="post-grid">{{ range $paginator.Pages }}{{ partial "post-card.html" . }}{{ end }}</div>
+    {{ partial "pagination.html" $paginator }}
+  {{ else }}
+    <div class="empty-state"><strong>暂无文章</strong><p>内容发布后会显示在这里。</p></div>
+  {{ end }}
+</section>
+{{ end }}

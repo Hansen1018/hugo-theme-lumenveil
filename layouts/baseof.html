@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="{{ site.Language.Locale }}">
+<head>
+  {{ partial "head.html" . }}
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="aurora" aria-hidden="true">
+    <div class="aurora__grid"></div>
+    <div class="aurora__blob aurora__blob--violet"></div>
+    <div class="aurora__blob aurora__blob--cyan"></div>
+    <div class="aurora__blob aurora__blob--pink"></div>
+    <div class="aurora__noise"></div>
+  </div>
+  <div class="site-shell">
+    {{ partial "header.html" . }}
+    <main id="main-content">
+      {{ block "main" . }}{{ end }}
+    </main>
+    {{ partial "footer.html" . }}
+  </div>
+  <dialog class="search-dialog" id="search-dialog" data-index="{{ "index.json" | relURL }}" aria-labelledby="search-title">
+    <div class="search-dialog__head">
+      <div>
+        <span class="eyebrow">Search</span>
+        <h2 id="search-title">搜索文章</h2>
+      </div>
+      <button class="icon-button" type="button" data-search-close aria-label="关闭搜索">×</button>
+    </div>
+    <label class="search-field">
+      <span class="sr-only">搜索关键词</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
+      <input id="search-input" type="search" placeholder="输入标题、摘要或标签" autocomplete="off">
+      <kbd>ESC</kbd>
+    </label>
+    <div class="search-results" id="search-results" aria-live="polite">
+      <p class="search-empty">输入关键词开始搜索。</p>
+    </div>
+  </dialog>
+  {{ $js := resources.Get "js/main.js" | minify | fingerprint }}
+  <script src="{{ $js.RelPermalink }}" integrity="{{ $js.Data.Integrity }}" defer></script>
+</body>
+</html>

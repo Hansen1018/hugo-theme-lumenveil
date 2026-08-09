@@ -1,0 +1,18 @@
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <a class="brand brand--footer" href="{{ site.Home.RelPermalink }}"><span class="brand__mark">H</span><span class="brand__text">Hansen<span>.</span></span></a>
+      <p>{{ site.Params.tagline }}</p>
+    </div>
+    <div class="footer-links">
+      {{ with site.Params.github }}<a href="{{ . }}" target="_blank" rel="noopener noreferrer">GitHub</a>{{ end }}
+      {{ with site.Params.twitter }}<a href="{{ . }}" target="_blank" rel="noopener noreferrer">Twitter</a>{{ end }}
+      {{ with site.Params.email }}<a href="mailto:{{ . }}">Email</a>{{ end }}
+      {{ with site.Home.OutputFormats.Get "RSS" }}<a href="{{ .RelPermalink }}">RSS</a>{{ end }}
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© {{ now.Year }} {{ site.Params.author }}</span>
+    <span>由 Hugo 驱动 · Lumenveil 主题</span>
+  </div>
+</footer>
