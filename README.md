@@ -12,21 +12,21 @@ Live preview: <https://blog.hansendong.top>
 
 | Home | Articles |
 | --- | --- |
-| ![Home hero with aurora background and status chips](docs/screenshots/home.png) | ![Posts archive with localized section title and pagination](docs/screenshots/posts.png) |
+| ![Home hero with aurora background and status chips / 首页：极光背景与状态徽章](docs/screenshots/home.png) | ![Posts archive with localized section title and pagination / 文章归档页：本地化标题与分页](docs/screenshots/posts.png) |
 
 | Article | About |
 | --- | --- |
-| ![Single post with PhotoSwipe gallery and code copy buttons](docs/screenshots/post.png) | ![About page rendered with glass surfaces and contact table](docs/screenshots/about.png) |
+| ![Single post with PhotoSwipe gallery and code copy buttons / 文章页：PhotoSwipe 图集与代码复制](docs/screenshots/post.png) | ![About page rendered with glass surfaces and contact table / 关于页：玻璃表面与联系方式表格](docs/screenshots/about.png) |
 
 ### Dark mode
 
 | Home | Articles |
 | --- | --- |
-| ![Home hero in dark mode with aurora glow](docs/screenshots/home-dark.png) | ![Posts archive in dark mode](docs/screenshots/posts-dark.png) |
+| ![Home hero in dark mode with aurora glow / 深色首页：极光辉光](docs/screenshots/home-dark.png) | ![Posts archive in dark mode / 深色文章归档页](docs/screenshots/posts-dark.png) |
 
 | Article | About |
 | --- | --- |
-| ![Single post in dark mode with PhotoSwipe gallery](docs/screenshots/post-dark.png) | ![About page in dark mode with glass surfaces](docs/screenshots/about-dark.png) |
+| ![Single post in dark mode with PhotoSwipe gallery / 深色文章页：PhotoSwipe 图集](docs/screenshots/post-dark.png) | ![About page in dark mode with glass surfaces / 深色关于页：玻璃表面](docs/screenshots/about-dark.png) |
 
 ## English
 
@@ -41,6 +41,7 @@ Live preview: <https://blog.hansendong.top>
 - Dynamic copyright range (from `since` to the current year) and CC BY-NC-SA 4.0 license badge in the footer
 - Syntax highlighting and one-click code or article-link copy
 - PhotoSwipe-powered image gallery shortcode with a CSS grid layout
+- Optional `cover` front matter per post — page-bundle image or `static/` asset, used as the archive-page thumbnail
 - Open Graph, Twitter Card, canonical URL, and JSON-LD metadata
 - Reduced-motion support, keyboard focus states, and mobile navigation
 - Hugo Pipes minification and asset fingerprinting
@@ -172,11 +173,14 @@ draft: false
 description: "A short summary displayed in article cards and metadata."
 categories: ["Notes"]
 tags: ["Hugo", "Writing"]
+cover: "images/hello-world.jpg"   # optional; falls back to a static/ asset when no page-bundle image matches
 toc: true
 ---
 ```
 
-`lastmod` is optional. When present and later than `date`, a "更新于 …" line is rendered in the article header.
+`lastmod` is optional. When present and later than `date`, a "Last updated …" line is rendered in the article header (the template uses a localized label, so the rendered text matches the site's language).
+
+`cover` is optional. When set, it shows up as the post-card thumbnail on the archives page. The value is first looked up as a page-bundle resource, then falls back to a path under `static/` (e.g. `cover: images/foo.png` resolves to `/images/foo.png`).
 
 ### Image gallery shortcode
 
