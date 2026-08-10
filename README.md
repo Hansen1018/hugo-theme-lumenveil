@@ -2,7 +2,7 @@
 
 A luminous, responsive Hugo theme with glass surfaces, aurora ambience, automatic light and dark modes, search, galleries, and a reading-first experience for long-form content.
 
-[中文说明](#中文说明) · [English](#english) · [Screenshots](#screenshots)
+[中文说明](README.zh.md) · [English](#english) · [Screenshots](#screenshots)
 
 ## Screenshots
 
@@ -203,83 +203,7 @@ Open `http://localhost:1313/` in your browser.
 - Override any theme file by creating the same path in your site's `layouts`, `assets`, or `static` directory.
 - The theme follows the system color preference by default. A visitor's manual selection is stored locally in the browser.
 
-## 中文说明
-
-Lumenveil（光幕）是一款面向个人博客的 Hugo 主题，以通透玻璃表面、柔和极光背景和舒适长文阅读为核心，并提供完整的浅色与深色模式。
-
-在线预览：<https://blog.hansendong.top>
-
-### 截图
-
-#### 浅色模式
-
-| 首页 | 文章列表 |
-| --- | --- |
-| ![首页：极光背景与状态徽章](docs/screenshots/home.png) | ![文章归档页：本地化标题与分页](docs/screenshots/posts.png) |
-
-| 文章页 | 关于页 |
-| --- | --- |
-| ![文章页：PhotoSwipe 图集与代码复制](docs/screenshots/post.png) | ![关于页：玻璃表面与联系方式表格](docs/screenshots/about.png) |
-
-#### 深色模式
-
-| 首页 | 文章列表 |
-| --- | --- |
-| ![深色首页：极光辉光](docs/screenshots/home-dark.png) | ![深色文章归档页](docs/screenshots/posts-dark.png) |
-
-| 文章页 | 关于页 |
-| --- | --- |
-| ![深色文章页：PhotoSwipe 图集](docs/screenshots/post-dark.png) | ![深色关于页：玻璃表面](docs/screenshots/about-dark.png) |
-
-### 主要功能
-
-- 首页、文章归档、分类、标签、正文、相册与 404 页面
-- 极光背景、玻璃卡片、封面图全幅展示
-- 自动跟随系统的浅色/深色模式，并记忆手动选择
-- 基于 Hugo JSON 输出的前端全文搜索
-- 分类、标签、分页、RSS、站点地图与 robots.txt
-- 文章目录、阅读时间、字数统计与最后更新时间
-- 页脚动态版权（`since` 至今）和 CC BY-NC-SA 4.0 许可链接
-- 代码高亮、代码复制与文章链接复制
-- 由 PhotoSwipe 驱动的相册 shortcode，使用 CSS 网格布局
-- Open Graph、Twitter Card、Canonical 和 JSON-LD
-- 响应式导航、键盘焦点和减少动态效果支持
-- Hugo Pipes 自动压缩与资源指纹
-
-### 安装
-
-在 Hugo 站点根目录执行：
-
-```bash
-git submodule add https://github.com/Hansen1018/hugo-theme-lumenveil.git themes/lumenveil
-```
-
-然后在 `hugo.toml` 中启用：
-
-```toml
-theme = 'lumenveil'
-```
-
-搜索功能依赖首页 JSON 输出，请复制上方 [Required configuration](#required-configuration) 中的配置，并按需修改 `[params]` 和菜单内容。
-
-### 新建文章
-
-```bash
-hugo new content posts/my-first-post.md
-hugo server -D
-```
-
-主题自带文章原型。发布前将文章 Front Matter 中的 `draft` 改为 `false`。
-
-### 相册 shortcode
-
-将图片放入 `static/gallery/<name>/` 目录，然后在文章中：
-
-```md
-{{< gallery "gallery/2026-tokyo" >}}
-```
-
-短代码会渲染响应式 CSS 网格，并使用 PhotoSwipe 提供大图浏览。
+For the Chinese translation, see [README.zh.md](README.zh.md).
 
 ## License
 
