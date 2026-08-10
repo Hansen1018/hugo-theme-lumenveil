@@ -2,7 +2,7 @@
 <section class="page-hero">
   <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><span>{{ .Title }}</span></div>
   <span class="eyebrow">Writing Archive</span>
-  <h1>{{ .Title }}</h1>
+  <h1>{{ if eq .Section "posts" }}文章{{ else if eq .Section "categories" }}分类{{ else if eq .Section "tags" }}标签{{ else }}{{ .Title }}{{ end }}</h1>
   <p>{{ .Description | default "所有文章，按时间倒序排列。" }}</p>
   <div class="page-hero__stats"><span>{{ len .RegularPagesRecursive }} 篇文章</span><span>{{ len site.Taxonomies.categories }} 个分类</span><span>{{ len site.Taxonomies.tags }} 个标签</span></div>
 </section>
