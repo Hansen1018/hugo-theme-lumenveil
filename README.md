@@ -2,7 +2,19 @@
 
 A luminous, responsive Hugo theme with glass surfaces, aurora ambience, automatic light and dark modes, search, galleries, and a reading-first experience for long-form content.
 
-[中文说明](#中文说明) · [English](#english)
+[中文说明](#中文说明) · [English](#english) · [Screenshots](#screenshots)
+
+## Screenshots
+
+Live preview: <https://blog.hansendong.top>
+
+| Home | Articles |
+| --- | --- |
+| ![Home hero with aurora background and status chips](docs/screenshots/home.png) | ![Posts archive with localized section title and pagination](docs/screenshots/posts.png) |
+
+| Article | About |
+| --- | --- |
+| ![Single post with PhotoSwipe gallery and code copy buttons](docs/screenshots/post.png) | ![About page rendered with glass surfaces and contact table](docs/screenshots/about.png) |
 
 ## English
 
@@ -182,6 +194,18 @@ Open `http://localhost:1313/` in your browser.
 ## 中文说明
 
 Lumenveil（光幕）是一款面向个人博客的 Hugo 主题，以通透玻璃表面、柔和极光背景和舒适长文阅读为核心，并提供完整的浅色与深色模式。
+
+在线预览：<https://blog.hansendong.top>
+
+### 截图
+
+| 首页 | 文章列表 |
+| --- | --- |
+| ![首页：极光背景与状态徽章](docs/screenshots/home.png) | ![文章归档页：本地化标题与分页](docs/screenshots/posts.png) |
+
+| 文章页 | 关于页 |
+| --- | --- |
+| ![文章页：PhotoSwipe 图集与代码复制](docs/screenshots/post.png) | ![关于页：玻璃表面与联系方式表格](docs/screenshots/about.png) |
 
 ### 主要功能
 
