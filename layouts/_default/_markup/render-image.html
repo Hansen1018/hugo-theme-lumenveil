@@ -1,0 +1,19 @@
+{{- $dest := .Destination -}}
+{{- $img := "" -}}
+{{- with .Page.Resources -}}
+  {{- $img = .GetMatch (printf "%s" $dest) -}}
+{{- end -}}
+<figure class="pswp-figure">
+  <a href="{{ $dest | safeURL }}"
+     class="pswp-inline"
+     data-pswp-src="{{ $dest | safeURL }}"
+     data-pswp-width="{{ with $img }}{{ .Width }}{{ else }}1600{{ end }}"
+     data-pswp-height="{{ with $img }}{{ .Height }}{{ else }}1067{{ end }}">
+    <img src="{{ with $img }}{{ .RelPermalink }}{{ else }}{{ $dest | safeURL }}{{ end }}"
+         alt="{{ .Text }}"
+         {{- with .Title }} title="{{ . }}" {{- end }}
+         loading="lazy"
+         decoding="async">
+  </a>
+  {{ with .Title }}<figcaption>{{ . }}</figcaption>{{ end }}
+</figure>
