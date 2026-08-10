@@ -85,6 +85,7 @@ enableRobotsTXT = true
   description = 'Notes on technology, life, and long-term thinking.'
   author = 'Your Name'
   initial = 'Y'
+  avatar = '/images/avatar.png'
   role = 'Writer · Developer'
   tagline = 'A short sentence about you and your writing.'
   location = 'Your City'
