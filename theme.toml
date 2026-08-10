@@ -1,0 +1,30 @@
+# theme.toml — required by themes.gohugo.io for theme metadata
+# Spec: https://gohugo.io/getting-started/configuration/#theme-components
+
+name = "Lumenveil"
+license = "GPL-3.0"
+licenselink = "https://github.com/Hansen1018/hugo-theme-lumenveil/blob/main/LICENSE"
+description = "A luminous, responsive Hugo theme with glass surfaces, aurora ambience, automatic light and dark modes, search, galleries, and a reading-first experience."
+homepage = "https://github.com/Hansen1018/hugo-theme-lumenveil"
+demosite = "https://blog.hansendong.top"
+tags = ["blog", "gallery", "responsive", "minimal", "dark mode", "light mode", "photo gallery", "search", "aurora", "glassmorphism", "reading"]
+features = [
+  "responsive home / archive / category / tag / article / gallery / 404 layouts",
+  "aurora background, glassmorphism surfaces, full-bleed cover support",
+  "automatic light and dark mode with persistent manual switch",
+  "client-side search powered by Hugo JSON output",
+  "categories, tags, pagination, RSS, sitemap, robots.txt",
+  "article table of contents, reading time, word count, last modified indicator",
+  "dynamic copyright range and CC BY-NC-SA license badge",
+  "syntax highlighting, one-click code or article-link copy",
+  "PhotoSwipe-powered image gallery shortcode with CSS grid",
+  "Open Graph, Twitter Card, canonical URL, JSON-LD metadata",
+  "reduced-motion support, keyboard focus states, mobile navigation",
+  "Hugo Pipes minification and asset fingerprinting",
+  "optional `cover` front matter per post — page-bundle image or `static/` asset, used as archive-page thumbnail"
+]
+min_version = "0.146.0"
+
+[author]
+  name = "Hansen"
+  homepage = "https://github.com/Hansen1018"

@@ -1,0 +1,75 @@
+baseURL = 'https://example.com/'
+title = 'Lumenveil Example'
+theme = 'lumenveil'
+
+# Required output formats for search + taxonomy pages
+[outputs]
+  home = ['HTML', 'RSS', 'JSON']
+  section = ['HTML', 'RSS']
+  taxonomy = ['HTML', 'RSS']
+  term = ['HTML', 'RSS']
+
+[outputFormats.JSON]
+  mediaType = 'application/json'
+  baseName = 'index'
+  isPlainText = true
+  notAlternative = true
+
+[pagination]
+  pagerSize = 5
+
+[taxonomies]
+  category = 'categories'
+  tag = 'tags'
+
+[markup]
+  [markup.highlight]
+    noClasses = false
+    guessSyntax = true
+  [markup.tableOfContents]
+    startLevel = 2
+    endLevel = 4
+    ordered = false
+
+[params]
+  description = 'Demo site for the Lumenveil Hugo theme — glass surfaces, aurora ambience, light and dark modes.'
+  author = 'Hansen'
+  initial = 'H'
+  avatar = '/images/avatar.png'
+  role = 'Writer · Developer'
+  tagline = 'A luminous reading-first experience.'
+  location = 'Your City'
+  status = 'Currently writing'
+  email = 'you@example.com'
+  github = 'https://github.com/Hansen1018'
+  twitter = 'https://twitter.com/Hansen1018'
+  since = 2024
+  mainSections = ['posts']
+
+[menus]
+  [[menus.main]]
+    name = 'Home'
+    pageRef = '/'
+    weight = 10
+  [[menus.main]]
+    name = 'Posts'
+    pageRef = '/posts'
+    weight = 20
+  [[menus.main]]
+    name = 'About'
+    pageRef = '/about'
+    weight = 25
+  [[menus.main]]
+    name = 'Categories'
+    pageRef = '/categories'
+    weight = 30
+  [[menus.main]]
+    name = 'Tags'
+    pageRef = '/tags'
+    weight = 40
+
+[permalinks]
+  posts = '/posts/:slug/'
+
+[imaging]
+  quality = 85
