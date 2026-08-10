@@ -1,0 +1,11 @@
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe.min.css" media="print" onload="this.media='all'">
+<script type="module">
+import PhotoSwipeLightbox from 'https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe-lightbox.esm.min.js';
+document.querySelectorAll('.pswp-gallery').forEach(g=>{
+  new PhotoSwipeLightbox({
+    gallery:g,children:'a.pswp-item',
+    pswpModule:()=>import('https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe.esm.min.js'),
+    bgOpacity:.92,showHideAnimationType:'fade'
+  }).init();
+});
+</script>
