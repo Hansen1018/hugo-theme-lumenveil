@@ -41,6 +41,7 @@ Lumenveil（光幕）是一款面向个人博客的 Hugo 主题，以通透玻�
 - 页脚动态版权（`since` 至今）和 CC BY-NC-SA 4.0 许可链接
 - 代码高亮、代码复制与文章链接复制
 - 由 PhotoSwipe 驱动的相册 shortcode，使用 CSS 网格布局
+- 可选的 `cover` 封面图 — 支持 page-bundle 图片或 `static/` 静态资源，在文章列表中作为缩略图展示
 - Open Graph、Twitter Card、Canonical 和 JSON-LD
 - 响应式导航、键盘焦点和减少动态效果支持
 - Hugo Pipes 自动压缩与资源指纹
@@ -69,6 +70,24 @@ hugo server -D
 ```
 
 主题自带文章原型。发布前将文章 Front Matter 中的 `draft` 改为 `false`。
+
+示例 Front Matter：
+
+```yaml
+---
+title: "你好世界"
+date: 2026-08-10T10:00:00+08:00
+lastmod: 2026-08-15T18:30:00+08:00
+draft: false
+description: "摘要，会在文章卡片和 meta 区域显示。"
+categories: ["笔记"]
+tags: ["Hugo", "写作"]
+cover: "images/hello-world.jpg"   # 可选；首先查 page-bundle 资源，找不到时 fallback 到 static/ 路径
+toc: true
+---
+```
+
+`cover` 可选。设置后会在归档列表页作为文章卡片缩略图。值先按 page-bundle 资源查找，找不到时 fallback 到 `static/` 下的路径（例如 `cover: images/foo.png` 解析为 `/images/foo.png`）。
 
 ## 相册 shortcode
 

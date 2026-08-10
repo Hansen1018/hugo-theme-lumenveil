@@ -1,5 +1,5 @@
 {{ define "main" }}
-<article class="article">
+<article class="article fade-up">
   <header class="article-header">
     <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><a href="{{ "/archives/" | relURL }}">文章</a><span>/</span><span>{{ .Title }}</span></div>
     <div class="post-meta">
@@ -27,9 +27,9 @@
     </aside>
     {{ end }}{{ end }}
   </div>
-  <nav class="post-nav" aria-label="文章导航">
-    {{ with .PrevInSection }}<a href="{{ .RelPermalink }}"><span>上一篇</span><strong>{{ .LinkTitle }}</strong></a>{{ else }}<span></span>{{ end }}
-    {{ with .NextInSection }}<a href="{{ .RelPermalink }}" class="post-nav__next"><span>下一篇</span><strong>{{ .LinkTitle }}</strong></a>{{ end }}
-  </nav>
+  {{ if and .PrevInSection .NextInSection }}<nav class="post-nav" aria-label="文章导航">
+    <a href="{{ .PrevInSection.RelPermalink }}"><span>上一篇</span><strong>{{ .PrevInSection.LinkTitle }}</strong></a>
+    <a href="{{ .NextInSection.RelPermalink }}" class="post-nav__next"><span>下一篇</span><strong>{{ .NextInSection.LinkTitle }}</strong></a>
+  </nav>{{ end }}
 </article>
 {{ end }}
