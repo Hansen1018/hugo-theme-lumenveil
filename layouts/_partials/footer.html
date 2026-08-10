@@ -12,7 +12,8 @@
     </div>
   </div>
   <div class="footer-bottom">
-    <span>© {{ now.Year }} {{ site.Params.author }}</span>
-    <span>由 Hugo 驱动 · Lumenveil 主题</span>
+    <span>© {{ if site.Params.since }}{{ site.Params.since }} – {{ end }}{{ now.Year }} {{ site.Params.author }}</span>
+    <span>由 Hugo 驱动 · <a href="https://github.com/Hansen1018/hugo-theme-lumenveil" target="_blank" rel="noopener noreferrer">Theme Lumenveil designed by Hansen</a></span>
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans" target="_blank" rel="noopener noreferrer">Licensed under CC BY-NC-SA 4.0</a>
   </div>
 </footer>

@@ -2,7 +2,7 @@
 <article class="article">
   <header class="article-header">
     <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><a href="{{ "posts/" | relURL }}">文章</a><span>/</span><span>{{ .Title }}</span></div>
-    <div class="post-meta"><time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006 年 01 月 02 日" }}</time><span>{{ .ReadingTime }} 分钟阅读</span><span>{{ .WordCount }} 字</span></div>
+    <div class="post-meta"><time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006 年 01 月 02 日" }}</time>{{ if and .Lastmod (gt .Lastmod .Date) }}<time datetime="{{ .Lastmod.Format "2006-01-02" }}">更新于 {{ .Lastmod.Format "2006 年 01 月 02 日" }}</time>{{ end }}<span>{{ .ReadingTime }} 分钟阅读</span><span>{{ .WordCount }} 字</span></div>
     <h1>{{ .Title }}</h1>
     {{ with .Description }}<p class="article-deck">{{ . }}</p>{{ end }}
     {{ with .Params.tags }}<div class="tag-list tag-list--large">{{ range . }}<a href="{{ printf "/tags/%s/" (. | urlize) | relURL }}">#{{ . }}</a>{{ end }}</div>{{ end }}
