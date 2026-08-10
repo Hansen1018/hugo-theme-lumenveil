@@ -5,6 +5,8 @@
       {{ $img := $.Resources.GetMatch (printf "%s" .) }}
       {{ if $img }}
         {{ $cover = $img.RelPermalink }}
+      {{ else }}
+        {{ $cover = . | relURL }}
       {{ end }}
     {{ end }}
     {{ if $cover }}
