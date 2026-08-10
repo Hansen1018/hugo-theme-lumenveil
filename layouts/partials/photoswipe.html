@@ -5,7 +5,16 @@ document.querySelectorAll('.pswp-gallery').forEach(g=>{
   new PhotoSwipeLightbox({
     gallery:g,children:'a.pswp-item',
     pswpModule:()=>import('https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe.esm.min.js'),
-    bgOpacity:.92,showHideAnimationType:'fade'
+    bgOpacity:.80, padding:{top:180,right:180,bottom:180,left:180},showHideAnimationType:'fade'
+  }).init();
+});
+document.querySelectorAll('.article-main').forEach(a=>{
+  const inline=a.querySelectorAll('a.pswp-inline');
+  if(!inline.length)return;
+  new PhotoSwipeLightbox({
+    gallery:a,children:'a.pswp-inline',
+    pswpModule:()=>import('https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe.esm.min.js'),
+    bgOpacity:.80, padding:{top:180,right:180,bottom:180,left:180},showHideAnimationType:'fade'
   }).init();
 });
 </script>
