@@ -17,7 +17,7 @@
     <p>{{ .Description | default (.Summary | plainify | truncate 140) }}</p>
     <div class="post-card__foot">
       <div class="tag-list">
-        {{ range first 3 .Params.tags }}<a href="{{ printf "/tags/%s/" (. | urlize) | relURL }}">#{{ . }}</a>{{ end }}
+        {{ range .Params.tags }}<a href="{{ printf "/tags/%s/" (. | urlize) | relURL }}">#{{ . }}</a>{{ end }}
       </div>
       <a class="read-link" href="{{ .RelPermalink }}">阅读全文 <span>→</span></a>
     </div>
