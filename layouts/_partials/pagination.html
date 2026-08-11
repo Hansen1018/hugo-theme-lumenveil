@@ -1,9 +1,15 @@
-{{ if gt .TotalPages 1 }}
+{{ $paginator := . }}
+{{ $year := "" }}
+{{ if reflect.IsMap . }}
+  {{ with index . "Paginator" }}{{ $paginator = . }}{{ end }}
+  {{ with index . "Year" }}{{ $year = . }}{{ end }}
+{{ end }}
+{{ if gt $paginator.TotalPages 1 }}
 <nav class="pagination" aria-label="分页">
-  {{ with .Prev }}<a href="{{ .URL }}" rel="prev" class="pagination-item">← 上一页</a>{{ else }}<span class="pagination-item is-disabled" aria-disabled="true">← 上一页</span>{{ end }}
+  {{ with $paginator.Prev }}<a href="{{ if $year }}{{ printf "%s?year=%s&page=%d" (urls.Parse .URL).Path $year .PageNumber }}{{ else }}{{ replaceRE `\?.*$` (printf "?page=%d" .PageNumber) .URL }}{{ end }}" rel="prev" class="pagination-item">← 上一页</a>{{ else }}<span class="pagination-item is-disabled" aria-disabled="true">← 上一页</span>{{ end }}
   <span class="pagination-pages">
-    {{ range .Pagers }}{{ if eq .PageNumber $.PageNumber }}<span class="pagination-item is-active" aria-current="page">{{ .PageNumber }}</span>{{ else }}<a href="{{ .URL }}" class="pagination-item">{{ .PageNumber }}</a>{{ end }}{{ end }}
+    {{ range $paginator.Pagers }}<a href="{{ if $year }}{{ printf "%s?year=%s&page=%d" (urls.Parse .URL).Path $year .PageNumber }}{{ else }}{{ replaceRE `\?.*$` (printf "?page=%d" .PageNumber) .URL }}{{ end }}" class="pagination-item{{ if eq .PageNumber $paginator.PageNumber }} is-active{{ end }}"{{ if eq .PageNumber $paginator.PageNumber }} aria-current="page"{{ end }}>{{ .PageNumber }}</a>{{ end }}
   </span>
-  {{ with .Next }}<a href="{{ .URL }}" rel="next" class="pagination-item">下一页 →</a>{{ else }}<span class="pagination-item is-disabled" aria-disabled="true">下一页 →</span>{{ end }}
+  {{ with $paginator.Next }}<a href="{{ if $year }}{{ printf "%s?year=%s&page=%d" (urls.Parse .URL).Path $year .PageNumber }}{{ else }}{{ replaceRE `\?.*$` (printf "?page=%d" .PageNumber) .URL }}{{ end }}" rel="next" class="pagination-item">下一页 →</a>{{ else }}<span class="pagination-item is-disabled" aria-disabled="true">下一页 →</span>{{ end }}
 </nav>
 {{ end }}
