@@ -1,4 +1,15 @@
 {{ define "main" }}
+{{ $year := "" }}
+{{ $list := .RegularPagesRecursive.ByDate.Reverse }}
+{{ if eq .Section "posts" }}
+  {{ $query := urls.Parse .Permalink }}
+  {{ with $query.RawQuery }}
+    {{ range split . "&" }}
+      {{ $kv := split . "=" }}
+      {{ if eq (index $kv 0) "year" }}{{ $year = index $kv 1 }}{{ end }}
+    {{ end }}
+  {{ end }}
+{{ end }}
 <section class="page-hero">
   <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><span>{{ .Title }}</span></div>
   <span class="eyebrow">Writing Archive</span>
@@ -11,21 +22,23 @@
   {{ $pages := where site.RegularPages "Section" "in" site.Params.mainSections }}
   {{ if $pages }}
     <div class="tag-list tag-list--archive" role="list">
-      <a href="{{ "/posts/" | relURL }}" data-archive-all role="listitem">全部<span class="archive-count">{{ len $pages }}</span></a>
-      {{ range ($pages.GroupByDate "2006").Reverse }}<a href="{{ printf "/posts/?year=%s" .Key }}" data-year="{{ .Key }}" role="listitem">{{ .Key }}<span class="archive-count">{{ len .Pages }}</span></a>{{ end }}
+      <a href="{{ "/posts/" | relURL }}" data-archive-all{{ if not $year }} class="is-active"{{ end }} role="listitem">全部<span class="archive-count">{{ len $pages }}</span></a>
+      {{ range sort ($pages.GroupByDate "2006") "Key" "desc" }}<a href="{{ printf "/posts/?year=%s" .Key }}" data-year="{{ .Key }}"{{ if eq $year .Key }} class="is-active"{{ end }} role="listitem">{{ .Key }}<span class="archive-count">{{ len .Pages }}</span></a>{{ end }}
     </div>
   {{ end }}
 </section>
+{{ if $year }}
+  {{ $list = where $list "Date.Year" (int $year) }}
+{{ end }}
 {{ end }}
 <section class="section section--compact" data-reveal>
-  <header class="section-head"><div><span class="section-index">01</span><span class="eyebrow" data-archive-label>All Articles</span></div><h2 data-archive-title>全部文章</h2><div class="section-rule"></div></header>
-  {{ $paginator := .Paginate .RegularPagesRecursive.ByDate.Reverse }}
+  <header class="section-head"><div><span class="section-index">01</span><span class="eyebrow" data-archive-label>{{ if $year }}Year {{ $year }}{{ else }}All Articles{{ end }}</span></div><h2 data-archive-title>{{ if $year }}{{ $year }} 年文章{{ else }}全部文章{{ end }}</h2><div class="section-rule"></div></header>
+  {{ $paginator := .Paginate $list }}
   {{ if $paginator.Pages }}
     <div class="post-grid" data-post-grid>{{ range $paginator.Pages }}{{ partial "post-card.html" . }}{{ end }}</div>
-    {{ partial "pagination.html" $paginator }}
+    {{ partial "pagination.html" (dict "Paginator" $paginator "Year" $year) }}
   {{ else }}
-    <div class="empty-state"><strong>暂无文章</strong><p>内容发布后会显示在这里。</p></div>
+    <div class="empty-state"><strong>{{ if $year }}{{ $year }} 年暂无文章{{ else }}暂无文章{{ end }}</strong><p>{{ if $year }}换个年份试试，或<a href="{{ "/posts/" | relURL }}">查看全部文章</a>。{{ else }}内容发布后会显示在这里。{{ end }}</p></div>
   {{ end }}
-  <p class="archive-empty" data-archive-empty hidden>所选年份暂无文章。<a href="{{ "/posts/" | relURL }}">查看全部 →</a></p>
 </section>
 {{ end }}
