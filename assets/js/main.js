@@ -149,6 +149,47 @@
     const emptyNode = document.querySelector('[data-archive-empty]')
     const pills = archive.querySelectorAll('[data-year]')
     const cards = grid ? Array.from(grid.children) : []
+    const pagination = document.querySelector('.pagination')
+    const perPage = parseInt(grid?.dataset.perPage || '8', 10) || 8
+    const buildClientPagination = (visible) => {
+      if (!pagination) return
+      const total = Math.max(1, Math.ceil(visible / perPage))
+      const url = new URL(window.location.href)
+      const params = url.searchParams
+      pagination.innerHTML = ''
+      const nav = document.createElement('nav')
+      nav.className = 'pagination'
+      nav.setAttribute('aria-label', '分页')
+      const prev = document.createElement('span')
+      prev.className = 'pagination-item is-disabled'
+      prev.setAttribute('aria-disabled', 'true')
+      prev.textContent = '← 上一页'
+      nav.appendChild(prev)
+      const pages = document.createElement('span')
+      pages.className = 'pagination-pages'
+      const item = document.createElement('span')
+      item.className = 'pagination-item is-active'
+      item.setAttribute('aria-current', 'page')
+      item.textContent = '1'
+      pages.appendChild(item)
+      nav.appendChild(pages)
+      const next = document.createElement('span')
+      next.className = 'pagination-item is-disabled'
+      next.setAttribute('aria-disabled', 'true')
+      next.textContent = '下一页 →'
+      nav.appendChild(next)
+      pagination.appendChild(nav)
+      pagination.dataset.client = '1'
+    }
+    const restoreServerPagination = () => {
+      if (!pagination) return
+      const tpl = pagination.querySelector('[data-pagination-template]')
+      if (tpl) {
+        pagination.innerHTML = tpl.innerHTML
+        pagination.dataset.client = '0'
+      }
+    }
+    const yearPills = Array.from(pills)
     const update = (year) => {
       let visible = 0
       cards.forEach((card) => {
@@ -157,12 +198,19 @@
         card.classList.toggle('is-hidden', !match)
         if (match) visible += 1
       })
-      pills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year === year))
+      yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year === year))
       const allPill = archive.querySelector('[data-archive-all]')
       if (allPill) allPill.classList.toggle('is-active', !year)
       if (titleNode) titleNode.textContent = year ? `${year} 年文章` : '全部文章'
       if (labelNode) labelNode.textContent = year ? `Year ${year}` : 'All Articles'
       if (emptyNode) emptyNode.hidden = visible !== 0 || !year
+      if (pagination) {
+        if (year) {
+          buildClientPagination(visible)
+        } else {
+          restoreServerPagination()
+        }
+      }
     }
     archive.querySelector('[data-archive-all]')?.addEventListener('click', (event) => {
       event.preventDefault()
@@ -183,6 +231,12 @@
       const date = card.querySelector('time[datetime]')
       if (date) card.dataset.year = (date.getAttribute('datetime') || '').slice(0, 4)
     })
+    if (pagination && !pagination.querySelector('[data-pagination-template]')) {
+      const tpl = document.createElement('template')
+      tpl.setAttribute('data-pagination-template', '')
+      tpl.innerHTML = pagination.innerHTML
+      pagination.appendChild(tpl)
+    }
     update(new URLSearchParams(window.location.search).get('year') || '')
   }
 })()
