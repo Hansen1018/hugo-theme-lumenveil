@@ -1,0 +1,313 @@
+{{/*
+  Comments partial — Artalk (https://artalkjs.com/)
+
+  Enable in your site's hugo.toml:
+    [params.comments]
+    service = "artalk"                            # or "disqus" / "giscus" / etc.
+    server  = "https://your-artalk.example.com"   # Artalk backend URL
+    site    = "Your site name"                    # optional; falls back to site.Title
+
+  Renders nothing unless `service = "artalk"` and `server` is set.
+
+  CSS injection maps host site's design tokens to Artalk's `--at-*` variables
+  and overrides specific Artalk classes to mirror the host's article card style
+  (`.article-main.glass`, `.button--ghost`, etc.).
+*/}}
+{{ with site.Params.comments }}
+  {{ if eq .service "artalk" }}
+    {{ $server := .server | default "" }}
+    {{ if $server }}
+      {{ $siteName := .site | default site.Title }}
+      <link href="{{ $server }}/dist/Artalk.css" rel="stylesheet" />
+      <script src="{{ $server }}/dist/Artalk.js" defer></script>
+      <style>
+        /* ===== Token bridge: blog → Artalk ===== */
+        .artalk, .atk-layer-wrap {
+          --at-color-main:              var(--accent-2, #22d3ee);
+          --at-color-light:             var(--accent-2, #22d3ee);
+          --at-color-font:              var(--ink-1, rgba(255,255,255,.96));
+          --at-color-deep:              var(--ink-1, rgba(255,255,255,.96));
+          --at-color-sub:               var(--ink-2, rgba(255,255,255,.72));
+          --at-color-grey:              var(--ink-3, rgba(255,255,255,.48));
+          --at-color-meta:              var(--ink-3, rgba(255,255,255,.48));
+          --at-color-border:            var(--line, rgba(255,255,255,.08));
+          --at-color-bg:                transparent;
+          --at-color-bg-transl:         var(--glass-bg, rgba(255,255,255,.045));
+          --at-color-bg-grey:           rgba(255,255,255,.04);
+          --at-color-bg-grey-transl:    rgba(255,255,255,.06);
+          --at-color-bg-light:          rgba(34,211,238,.08);
+          --at-color-gradient:          linear-gradient(180deg, transparent, var(--bg-1, #0f121a));
+          font-family:                  var(--font-sans, system-ui, sans-serif);
+        }
+        html[data-theme=light] .artalk,
+        html[data-theme=light] .atk-layer-wrap {
+          --at-color-font:              rgba(15,23,42,.92);
+          --at-color-deep:              rgba(15,23,42,.92);
+          --at-color-sub:               rgba(15,23,42,.66);
+          --at-color-grey:              rgba(15,23,42,.42);
+          --at-color-meta:              rgba(15,23,42,.42);
+          --at-color-border:            rgba(15,23,42,.10);
+          --at-color-bg-transl:         rgba(255,255,255,.72);
+          --at-color-bg-grey:           rgba(15,23,42,.04);
+          --at-color-bg-grey-transl:    rgba(15,23,42,.06);
+          --at-color-gradient:          linear-gradient(180deg, transparent, #fff);
+        }
+
+        /* ===== Outer wrapper — mirror .article-main.glass exactly ===== */
+        .artalk {
+          background:                 var(--glass-bg, rgba(255,255,255,.045)) !important;
+          border:                     1px solid rgba(255,255,255,.1) !important;
+          border-radius:              var(--radius-xl, 32px) !important;
+          padding:                    clamp(28px, 5vw, 58px) !important;
+          box-shadow:                 inset 0 1px rgba(255,255,255,6%), 0 30px 60px -24px rgba(0,0,0,.65) !important;
+          backdrop-filter:            blur(24px) saturate(140%) !important;
+          -webkit-backdrop-filter:    blur(24px) saturate(140%) !important;
+          color:                      var(--ink-1, rgba(255,255,255,.96)) !important;
+          /* Width + gap: match .article-layout (820+240 grid) and add vertical gap */
+          width:                      100%;
+          max-width:                  820px;
+          margin:                     4px 0 0;
+          box-sizing:                 border-box;
+        }
+        html[data-theme=light] .artalk {
+          background:                 rgba(255,255,255,.72) !important;
+          border-color:               rgba(15,23,42,.1) !important;
+          box-shadow:                 inset 0 1px rgba(255,255,255,.9), 0 30px 70px -34px rgba(51,65,85,.28) !important;
+        }
+
+        /* ===== Header — match article's .post-meta (mono, uppercase, small) ===== */
+        .artalk .atk-header {
+          font:                       550 10px/1.5 var(--font-mono, ui-monospace) !important;
+          letter-spacing:             .07em !important;
+          text-transform:             uppercase !important;
+          color:                      var(--ink-3, rgba(255,255,255,.48)) !important;
+          padding-bottom:             16px !important;
+          margin-bottom:              24px !important;
+          border-bottom:             1px solid var(--line, rgba(255,255,255,.08)) !important;
+          display:                    flex !important;
+          align-items:                center !important;
+          gap:                        14px !important;
+        }
+        /* Hide the chevron that screams "collapsible widget" */
+        .artalk .atk-header .atk-arrow-down-icon,
+        .artalk .atk-header svg.atk-arrow-down-icon,
+        .artalk .atk-header > svg,
+        .artalk .atk-header [class*="arrow"],
+        .artalk .atk-header [class*="chevron"] {
+          display:                    none !important;
+        }
+        .artalk .atk-comment-count,
+        .artalk .atk-comment-count-num {
+          font-weight:                550 !important;
+          color:                      var(--ink-2, rgba(255,255,255,.72)) !important;
+        }
+        .artalk .atk-comment-sort,
+        .artalk .atk-sort {
+          color:                      var(--ink-3, rgba(255,255,255,.48)) !important;
+          font-size:                 10px !important;
+        }
+
+        /* ===== Identity inputs row (nickname / email / website) ===== */
+        .artalk .atk-comment-editor-wrap,
+        .artalk .atk-comment-editor,
+        .artalk .atk-input-wrap,
+        .artalk .atk-form-row {
+          background:                 transparent !important;
+          border:                     none !important;
+          padding:                    0 !important;
+          margin:                     0 0 14px !important;
+          display:                    flex !important;
+          flex-wrap:                  wrap !important;
+          gap:                        10px !important;
+        }
+        /* Hide default vertical dividers between identity inputs */
+        .artalk .atk-input-wrap > * + *::before,
+        .artalk .atk-form-row > * + *::before,
+        .artalk .atk-form-row .sep,
+        .artalk .atk-input-wrap .atk-input-sep {
+          display:                    none !important;
+        }
+        .artalk .atk-input,
+        .artalk .atk-input-wrap > input,
+        .artalk .atk-form-row input {
+          background:                 rgba(255,255,255,.04) !important;
+          border:                     1px solid var(--line, rgba(255,255,255,.08)) !important;
+          border-radius:              var(--radius-md, 18px) !important;
+          color:                      var(--ink-1, rgba(255,255,255,.96)) !important;
+          font:                       14px/1 var(--font-sans, system-ui, sans-serif) !important;
+          padding:                    0 14px !important;
+          height:                     44px !important;
+          width:                      auto !important;
+          flex:                       1 1 180px !important;
+          min-width:                  140px !important;
+          transition:                 border-color .2s ease, background .2s ease !important;
+          box-sizing:                 border-box !important;
+        }
+        html[data-theme=light] .artalk .atk-input,
+        html[data-theme=light] .artalk .atk-input-wrap > input,
+        html[data-theme=light] .artalk .atk-form-row input {
+          background:                 rgba(15,23,42,.04) !important;
+          border-color:               rgba(15,23,42,.10) !important;
+        }
+        .artalk .atk-input:focus,
+        .artalk .atk-input-wrap > input:focus,
+        .artalk .atk-form-row input:focus {
+          border-color:               var(--accent-2, #22d3ee) !important;
+          outline:                    none !important;
+          background:                 rgba(255,255,255,.06) !important;
+        }
+        html[data-theme=light] .artalk .atk-input:focus,
+        html[data-theme=light] .artalk .atk-input-wrap > input:focus,
+        html[data-theme=light] .artalk .atk-form-row input:focus {
+          background:                 rgba(15,23,42,.06) !important;
+        }
+        .artalk .atk-input::placeholder,
+        .artalk .atk-input-wrap > input::placeholder {
+          color:                      var(--ink-3, rgba(255,255,255,.48)) !important;
+        }
+
+        /* ===== Textarea — match article's inner prose area ===== */
+        .artalk .atk-textarea-wrap > .atk-textarea,
+        .artalk textarea {
+          background:                 rgba(255,255,255,.04) !important;
+          border:                     1px solid var(--line, rgba(255,255,255,.08)) !important;
+          border-radius:              var(--radius-md, 18px) !important;
+          min-height:                 120px !important;
+          padding:                    16px 18px !important;
+          font:                       15px/1.65 var(--font-sans, system-ui, sans-serif) !important;
+          color:                      var(--ink-1, rgba(255,255,255,.96)) !important;
+          transition:                 border-color .2s ease !important;
+          box-sizing:                 border-box !important;
+          resize:                     vertical !important;
+        }
+        html[data-theme=light] .artalk .atk-textarea-wrap > .atk-textarea,
+        html[data-theme=light] .artalk textarea {
+          background:                 rgba(15,23,42,.04) !important;
+          border-color:               rgba(15,23,42,.10) !important;
+        }
+        .artalk .atk-textarea-wrap > .atk-textarea:focus,
+        .artalk textarea:focus {
+          border-color:               var(--accent-2, #22d3ee) !important;
+          outline:                    none !important;
+        }
+        .artalk .atk-textarea-wrap > .atk-textarea::placeholder,
+        .artalk textarea::placeholder {
+          color:                      var(--ink-3, rgba(255,255,255,.48)) !important;
+        }
+
+        /* ===== Toolbar (emoji / image / md icons + Send) ===== */
+        .artalk .atk-toolbar,
+        .artalk .atk-comment-editor-tools {
+          margin-top:                 16px !important;
+          display:                    flex !important;
+          align-items:                center !important;
+          justify-content:             space-between !important;
+          gap:                        12px !important;
+        }
+        .artalk .atk-toolbar > *:not(.atk-send-btn):not(.atk-btn-send),
+        .artalk .atk-comment-editor-tools > *:not(.atk-send-btn):not(.atk-btn-send) {
+          color:                      var(--ink-3, rgba(255,255,255,.48)) !important;
+          font-size:                 13px !important;
+        }
+        .artalk .atk-toolbar svg,
+        .artalk .atk-comment-editor-tools svg {
+          color:                      var(--ink-3, rgba(255,255,255,.48)) !important;
+        }
+
+        /* ===== Send button — match .button--ghost + accent border for primary hint ===== */
+        .artalk .atk-send-btn,
+        .artalk .atk-btn-send {
+          background:                 transparent !important;
+          color:                      var(--accent-2, #22d3ee) !important;
+          border:                     1px solid var(--accent-2, #22d3ee) !important;
+          border-radius:              999px !important;
+          font:                       550 14px/1 var(--font-sans, system-ui, sans-serif) !important;
+          height:                     44px !important;
+          min-width:                  88px !important;
+          padding:                    11px 21px !important;
+          letter-spacing:             0 !important;
+          cursor:                     pointer !important;
+          transition:                 background .25s ease, color .25s ease, transform .25s ease !important;
+        }
+        .artalk .atk-send-btn:hover,
+        .artalk .atk-btn-send:hover {
+          background:                 var(--accent-2, #22d3ee) !important;
+          color:                      var(--bg-0, #0a0c12) !important;
+        }
+        .artalk .atk-send-btn:active,
+        .artalk .atk-btn-send:active {
+          transform:                  scale(.98) !important;
+        }
+        html[data-theme=light] .artalk .atk-send-btn:hover,
+        html[data-theme=light] .artalk .atk-btn-send:hover {
+          color:                      #fff !important;
+        }
+
+        /* ===== Comment card — same glass treatment, slightly smaller radius ===== */
+        .artalk .atk-comment-wrap {
+          background:                 rgba(255,255,255,.025) !important;
+          border:                     1px solid var(--line, rgba(255,255,255,.08)) !important;
+          border-radius:              var(--radius-lg, 24px) !important;
+          padding:                    18px 22px !important;
+          margin-top:                 14px !important;
+          transition:                 background .2s ease, border-color .2s ease !important;
+        }
+        .artalk .atk-comment-wrap:hover {
+          background:                 rgba(255,255,255,.045) !important;
+          border-color:               var(--line-strong, rgba(255,255,255,.16)) !important;
+        }
+        html[data-theme=light] .artalk .atk-comment-wrap {
+          background:                 rgba(15,23,42,.025) !important;
+          border-color:               rgba(15,23,42,.08) !important;
+        }
+        .artalk .atk-nick {
+          color:                      var(--ink-1, rgba(255,255,255,.96)) !important;
+          font:                       600 14px/1.4 var(--font-sans, system-ui, sans-serif) !important;
+        }
+        .artalk .atk-content {
+          color:                      var(--ink-1, rgba(255,255,255,.96)) !important;
+          font:                       15px/1.7 var(--font-sans, system-ui, sans-serif) !important;
+        }
+        .artalk .atk-date,
+        .artalk .atk-text-muted,
+        .artalk .atk-meta {
+          color:                      var(--ink-3, rgba(255,255,255,.48)) !important;
+          font:                       12px/1.4 var(--font-sans, system-ui, sans-serif) !important;
+        }
+        .artalk .atk-btn,
+        .artalk .atk-common-action-btn,
+        .artalk .atk-reply-at {
+          color:                      var(--accent-2, #22d3ee) !important;
+        }
+
+        /* ===== Footer + copyright ===== */
+        .artalk .atk-footer,
+        .artalk .atk-copyright {
+          color:                      var(--ink-3, rgba(255,255,255,.48)) !important;
+          font:                       12px/1.5 var(--font-sans, system-ui, sans-serif) !important;
+          margin-top:                 24px !important;
+        }
+
+        /* ===== List empty placeholder ===== */
+        .artalk .atk-list-no-comment {
+          color:                      var(--ink-3, rgba(255,255,255,.48)) !important;
+          font:                       14px/1.6 var(--font-sans, system-ui, sans-serif) !important;
+          padding:                    28px 0 !important;
+          text-align:                 center !important;
+        }
+      </style>
+      <div id="Comments"></div>
+      <script>
+        document.addEventListener('DOMContentLoaded', function() {
+          Artalk.init({
+            el: '#Comments',
+            pageKey: "{{ $.Permalink }}",
+            pageTitle: "{{ $.Title }}",
+            server: "{{ $server }}",
+            site: "{{ $siteName }}"
+          })
+        })
+      </script>
+    {{ end }}
+  {{ end }}
+{{ end }}
