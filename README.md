@@ -37,7 +37,7 @@ Live preview: <https://blog.hansendong.top>
 - Automatic light and dark mode with a persistent manual switch
 - Client-side search powered by Hugo JSON output
 - Categories, tags, pagination, RSS, sitemap, and robots.txt
-- Article table of contents, reading time, word count, and last modified indicator
+- Article table of contents, reading time, word count, last modified indicator, and a real-time cross-user page view count via the busuanzi partial (third-party CN service)
 - Dynamic copyright range (from `since` to the current year) and CC BY-NC-SA 4.0 license badge in the footer
 - Syntax highlighting and one-click code or article-link copy
 - PhotoSwipe-powered image gallery shortcode with a CSS grid layout
