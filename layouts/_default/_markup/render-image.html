@@ -1,15 +1,44 @@
+{{/*
+  render-image.html — Smart image rendering for Lumenveil
+
+  Resolves the image destination in this order:
+    1. Page bundle resource (.Page.Resources.GetMatch)
+       — colocated images in the page bundle folder, returns .RelPermalink
+    2. External URL (http://, https://, //)
+       — passed through unchanged
+    3. Absolute path (/images/foo.jpg)
+       — passed through unchanged
+    4. Relative path (images/foo.jpg)
+       — auto-prefixed with "/" so it resolves from the site root,
+         matching Hugo's static/ directory convention
+
+  Without step 4, writing `![alt](images/foo.jpg)` on a page at
+  `/posts/foo/` produces `<img src="images/foo.jpg">`, which the browser
+  resolves to `/posts/foo/images/foo.jpg` and 404s.
+
+  Always wraps output in a PhotoSwipe <figure> for lightbox behavior.
+*/}}
 {{- $dest := .Destination -}}
 {{- $img := "" -}}
+{{- $src := $dest -}}
 {{- with .Page.Resources -}}
   {{- $img = .GetMatch (printf "%s" $dest) -}}
 {{- end -}}
+{{- if $img -}}
+  {{- $src = $img.RelPermalink -}}
+{{- else -}}
+  {{- $isExternal := or (hasPrefix $dest "http://") (hasPrefix $dest "https://") (hasPrefix $dest "//") -}}
+  {{- if and (not $isExternal) (not (hasPrefix $dest "/")) -}}
+    {{- $src = printf "/%s" $dest -}}
+  {{- end -}}
+{{- end -}}
 <figure class="pswp-figure">
-  <a href="{{ $dest | safeURL }}"
+  <a href="{{ $src | safeURL }}"
      class="pswp-inline"
-     data-pswp-src="{{ $dest | safeURL }}"
+     data-pswp-src="{{ $src | safeURL }}"
      data-pswp-width="{{ with $img }}{{ .Width }}{{ else }}1600{{ end }}"
      data-pswp-height="{{ with $img }}{{ .Height }}{{ else }}1067{{ end }}">
-    <img src="{{ with $img }}{{ .RelPermalink }}{{ else }}{{ $dest | safeURL }}{{ end }}"
+    <img src="{{ $src | safeURL }}"
          alt="{{ .Text }}"
          {{- with .Title }} title="{{ . }}" {{- end }}
          loading="lazy"
