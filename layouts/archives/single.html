@@ -27,10 +27,10 @@
     </aside>
     {{ end }}{{ end }}
   </div>
+  <div class="article-layout" style="margin-top:24px"><div class="article-comments">{{ partial "comments.html" . }}</div></div>
   {{ if and .PrevInSection .NextInSection }}<nav class="post-nav" aria-label="文章导航">
     <a href="{{ .PrevInSection.RelPermalink }}"><span>上一篇</span><strong>{{ .PrevInSection.LinkTitle }}</strong></a>
     <a href="{{ .NextInSection.RelPermalink }}" class="post-nav__next"><span>下一篇</span><strong>{{ .NextInSection.LinkTitle }}</strong></a>
   </nav>{{ end }}
-  <div class="article-layout" style="margin-top:24px"><div class="article-comments">{{ partial "comments.html" . }}</div></div>
 </article>
 {{ end }}
