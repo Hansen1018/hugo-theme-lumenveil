@@ -140,4 +140,47 @@
     }
     window.setTimeout(() => { event.currentTarget.textContent = '复制文章链接' }, 1600)
   })
+
+  const archive = document.querySelector('[data-archive]')
+  if (archive) {
+    const grid = document.querySelector('[data-post-grid]')
+    const titleNode = document.querySelector('[data-archive-title]')
+    const labelNode = document.querySelector('[data-archive-label]')
+    const emptyNode = document.querySelector('[data-archive-empty]')
+    const pills = archive.querySelectorAll('[data-year]')
+    const cards = grid ? Array.from(grid.children) : []
+    const update = (year) => {
+      let visible = 0
+      cards.forEach((card) => {
+        const cardYear = card.dataset.year || ''
+        const match = !year || cardYear === year
+        card.classList.toggle('is-hidden', !match)
+        if (match) visible += 1
+      })
+      pills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year === year))
+      if (titleNode) titleNode.textContent = year ? `${year} 年文章` : '全部文章'
+      if (labelNode) labelNode.textContent = year ? `Year ${year}` : 'All Articles'
+      if (emptyNode) emptyNode.hidden = visible !== 0 || !year
+    }
+    archive.querySelector('[data-archive-all]')?.addEventListener('click', (event) => {
+      event.preventDefault()
+      const url = new URL(window.location.href)
+      url.searchParams.delete('year')
+      window.history.replaceState(null, '', url)
+      update('')
+    })
+    pills.forEach((pill) => pill.addEventListener('click', (event) => {
+      event.preventDefault()
+      const year = pill.dataset.year
+      const url = new URL(window.location.href)
+      url.searchParams.set('year', year)
+      window.history.replaceState(null, '', url)
+      update(year)
+    }))
+    cards.forEach((card) => {
+      const date = card.querySelector('time[datetime]')
+      if (date) card.dataset.year = (date.getAttribute('datetime') || '').slice(0, 4)
+    })
+    update(new URLSearchParams(window.location.search).get('year') || '')
+  }
 })()

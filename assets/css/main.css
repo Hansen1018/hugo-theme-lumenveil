@@ -292,8 +292,13 @@ img { display: block; max-width: 100%; }
 .archive-block__title { margin: 0 0 12px; font-size: 15px; letter-spacing: -.02em; color: var(--ink-2); }
 .tag-list--archive { padding: 18px 20px; border: 1px solid var(--line); border-radius: var(--radius-md); background: rgba(255,255,255,.025); gap: 10px; }
 .tag-list--archive a { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; font: 12px var(--font-mono); letter-spacing: .04em; }
+.tag-list--archive a.is-active { background: var(--accent-grad); color: #fff; border-color: transparent; box-shadow: 0 12px 30px -12px rgba(124,92,255,.6), inset 0 1px 0 rgba(255,255,255,.18); }
+.tag-list--archive a.is-active .archive-count { background: rgba(255,255,255,.18); color: #fff; }
 .archive-count { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: rgba(255,255,255,.06); color: var(--ink-3); font: 10px var(--font-mono); }
 .section--compact + .section--compact { border-top: 1px solid var(--line); padding-top: 56px; margin-top: 40px; }
+.post-card.is-hidden, .empty-state.is-hidden { display: none; }
+.archive-empty { margin-top: 18px; text-align: center; color: var(--ink-3); font-size: 13px; }
+.archive-empty a { color: var(--accent-2); }
 html[data-theme="light"] .tag-list--archive { background: rgba(255, 255, 255, .6); }
 html[data-theme="light"] .archive-count { background: rgba(15, 23, 42, .08); color: var(--ink-2); }
 .toc { position: sticky; top: 110px; }
