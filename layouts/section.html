@@ -6,7 +6,18 @@
   <p>{{ .Description | default "所有文章，按时间倒序排列。" }}</p>
   <div class="page-hero__stats"><span>{{ len .RegularPagesRecursive }} 篇文章</span><span>{{ len site.Taxonomies.categories }} 个分类</span><span>{{ len site.Taxonomies.tags }} 个标签</span></div>
 </section>
+{{ if eq .Section "posts" }}
 <section class="section section--compact" data-reveal>
+  {{ $pages := where site.RegularPages "Section" "in" site.Params.mainSections }}
+  {{ if $pages }}
+    <div class="tag-list tag-list--archive">
+      {{ range ($pages.GroupByDate "2006").Reverse }}<a href="{{ printf "/posts/?year=%s" .Key }}">{{ .Key }}<span class="archive-count">{{ len .Pages }}</span></a>{{ end }}
+    </div>
+  {{ end }}
+</section>
+{{ end }}
+<section class="section section--compact" data-reveal>
+  <header class="section-head"><div><span class="section-index">01</span><span class="eyebrow">All Articles</span></div><h2>全部文章</h2><div class="section-rule"></div></header>
   {{ $paginator := .Paginate .RegularPagesRecursive.ByDate.Reverse }}
   {{ if $paginator.Pages }}
     <div class="post-grid">{{ range $paginator.Pages }}{{ partial "post-card.html" . }}{{ end }}</div>
