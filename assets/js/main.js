@@ -274,18 +274,12 @@ yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year
   }
 })()
 
-  // Page view counter — front matter baseline + per-visitor localStorage count
-  // Display = .Params.views (authoritative baseline) + this visitor's localStorage count
-  // Only the inner [data-page-views-num] gets updated; the " 次阅读" suffix stays put.
-  const pageViews = document.querySelector('[data-page-views]')
-  if (pageViews) {
-    const counter = pageViews.querySelector('[data-page-views-num]')
-    if (counter) {
-      const baseline = parseInt(pageViews.dataset.pageViews, 10) || 0
-      const key = 'lumenveil-views-' + location.pathname
-      let visited = parseInt(localStorage.getItem(key), 10) || 0
-      visited += 1
-      try { localStorage.setItem(key, visited) } catch {}
-      counter.textContent = baseline + visited
-    }
-  }
+  // Page view counter — busuanzi (third-party CN service).
+  // The <span id="busuanzi_value_page_pv"> element is auto-populated by
+  // the busuanzi.pure.mini.js script (loaded via layouts/partials/busuanzi.html).
+  // No manual JS handling needed here — busuanzi fills the inner span on load,
+  // and the outer "阅读 ... 次" wrapper stays intact.
+  // (Earlier we tried Artalk.loadCountWidget + nested <span> structure + manual
+  // fetch to Artalk PV API — Artalk 2.x doesn't expose PV via REST and the
+  // widget UI doesn't auto-fill an inline <span>. busuanzi is the simplest
+  // path that preserves "阅读 X 次" format and gives real cross-user counts.)
