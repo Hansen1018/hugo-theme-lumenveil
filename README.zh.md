@@ -41,6 +41,7 @@ Lumenveil（光幕）是一款面向个人博客的 Hugo 主题，以通透玻�
 - 页脚动态版权（`since` 至今）和 CC BY-NC-SA 4.0 许可链接
 - 代码高亮、代码复制与文章链接复制
 - 由 PhotoSwipe 驱动的相册 shortcode，使用 CSS 网格布局
+- 可选的 Artalk 评论模块 —— 配置驱动的 partial，样式与文章卡片对齐（玻璃卡片、按钮--ghost 等），自动通过现有 CSS Grid 与 .article-main 列对齐
 - 可选的 `cover` 封面图 — 支持 page-bundle 图片或 `static/` 静态资源，在文章列表中作为缩略图展示
 - Open Graph、Twitter Card、Canonical 和 JSON-LD
 - 响应式导航、键盘焦点和减少动态效果支持
