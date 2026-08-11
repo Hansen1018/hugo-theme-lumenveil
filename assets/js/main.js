@@ -158,6 +158,8 @@
         if (match) visible += 1
       })
       pills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year === year))
+      const allPill = archive.querySelector('[data-archive-all]')
+      if (allPill) allPill.classList.toggle('is-active', !year)
       if (titleNode) titleNode.textContent = year ? `${year} 年文章` : '全部文章'
       if (labelNode) labelNode.textContent = year ? `Year ${year}` : 'All Articles'
       if (emptyNode) emptyNode.hidden = visible !== 0 || !year
