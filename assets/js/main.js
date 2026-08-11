@@ -147,38 +147,63 @@
     const titleNode = document.querySelector('[data-archive-title]')
     const labelNode = document.querySelector('[data-archive-label]')
     const emptyNode = document.querySelector('[data-archive-empty]')
+    const allPill = archive.querySelector('[data-archive-all]')
     const pills = archive.querySelectorAll('[data-year]')
     const cards = grid ? Array.from(grid.children) : []
     const pagination = document.querySelector('.pagination')
     const perPage = parseInt(grid?.dataset.perPage || '8', 10) || 8
     const buildClientPagination = (visible) => {
       if (!pagination) return
-      const total = Math.max(1, Math.ceil(visible / perPage))
       const url = new URL(window.location.href)
       const params = url.searchParams
+      const currentPage = Math.max(1, parseInt(params.get('page') || '1', 10))
+      const totalPages = Math.max(1, Math.ceil(visible / perPage))
+      const pageHref = (page) => {
+        const u = new URL(window.location.href)
+        u.searchParams.set('page', String(page))
+        return `${u.pathname}${u.search}`
+      }
       pagination.innerHTML = ''
-      const nav = document.createElement('nav')
-      nav.className = 'pagination'
-      nav.setAttribute('aria-label', '分页')
-      const prev = document.createElement('span')
-      prev.className = 'pagination-item is-disabled'
-      prev.setAttribute('aria-disabled', 'true')
-      prev.textContent = '← 上一页'
-      nav.appendChild(prev)
+      const prev = document.createElement(currentPage > 1 ? 'a' : 'span')
+      prev.className = `pagination-item${currentPage > 1 ? '' : ' is-disabled'}`
+      if (currentPage > 1) {
+        prev.rel = 'prev'
+        prev.href = pageHref(currentPage - 1)
+        prev.textContent = '← 上一页'
+      } else {
+        prev.setAttribute('aria-disabled', 'true')
+        prev.textContent = '← 上一页'
+      }
+      pagination.appendChild(prev)
       const pages = document.createElement('span')
       pages.className = 'pagination-pages'
-      const item = document.createElement('span')
-      item.className = 'pagination-item is-active'
-      item.setAttribute('aria-current', 'page')
-      item.textContent = '1'
-      pages.appendChild(item)
-      nav.appendChild(pages)
-      const next = document.createElement('span')
-      next.className = 'pagination-item is-disabled'
-      next.setAttribute('aria-disabled', 'true')
-      next.textContent = '下一页 →'
-      nav.appendChild(next)
-      pagination.appendChild(nav)
+      for (let i = 1; i <= totalPages; i++) {
+        if (i === currentPage) {
+          const item = document.createElement('span')
+          item.className = 'pagination-item is-active'
+          item.setAttribute('aria-current', 'page')
+          item.textContent = String(i)
+          pages.appendChild(item)
+        } else {
+          const item = document.createElement('a')
+          item.className = 'pagination-item'
+          item.href = pageHref(i)
+          item.textContent = String(i)
+          pages.appendChild(item)
+        }
+      }
+      pagination.appendChild(pages)
+      const next = document.createElement(currentPage < totalPages ? 'a' : 'span')
+      next.className = `pagination-item${currentPage < totalPages ? '' : ' is-disabled'}`
+      if (currentPage < totalPages) {
+        next.rel = 'next'
+        next.href = pageHref(currentPage + 1)
+        next.textContent = '下一页 →'
+      } else {
+        next.setAttribute('aria-disabled', 'true')
+        next.textContent = '下一页 →'
+      }
+      pagination.appendChild(next)
       pagination.dataset.client = '1'
     }
     const restoreServerPagination = () => {
@@ -198,7 +223,7 @@
         card.classList.toggle('is-hidden', !match)
         if (match) visible += 1
       })
-      yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year === year))
+yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year === year))
       const allPill = archive.querySelector('[data-archive-all]')
       if (allPill) allPill.classList.toggle('is-active', !year)
       if (titleNode) titleNode.textContent = year ? `${year} 年文章` : '全部文章'
