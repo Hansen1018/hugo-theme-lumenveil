@@ -22,7 +22,7 @@
   {{ $pages := where site.RegularPages "Section" "in" site.Params.mainSections }}
   {{ if $pages }}
     <div class="tag-list tag-list--archive" role="list">
-      <a href="{{ "/posts/" | relURL }}" data-archive-all{{ if not $year }} class="is-active"{{ end }} role="listitem">全部<span class="archive-count">{{ len $pages }}</span></a>
+      <a href="{{ "/posts/" | relURL }}" data-archive-all{{ if eq $year "" }} class="is-active"{{ end }} role="listitem">全部<span class="archive-count">{{ len $pages }}</span></a>
       {{ range sort ($pages.GroupByDate "2006") "Key" "desc" }}<a href="{{ printf "/posts/?year=%s" .Key }}" data-year="{{ .Key }}"{{ if eq $year .Key }} class="is-active"{{ end }} role="listitem">{{ .Key }}<span class="archive-count">{{ len .Pages }}</span></a>{{ end }}
     </div>
   {{ end }}
