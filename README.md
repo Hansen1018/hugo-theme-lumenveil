@@ -41,6 +41,7 @@ Live preview: <https://blog.hansendong.top>
 - Dynamic copyright range (from `since` to the current year) and CC BY-NC-SA 4.0 license badge in the footer
 - Syntax highlighting and one-click code or article-link copy
 - PhotoSwipe-powered image gallery shortcode with a CSS grid layout
+- Optional Artalk comments module — config-driven partial that mirrors the article card style (glass, button--ghost, mono uppercase header) and auto-aligns to `.article-main` via the existing CSS grid
 - Optional `cover` front matter per post — page-bundle image or `static/` asset, used as the archive-page thumbnail
 - Open Graph, Twitter Card, canonical URL, and JSON-LD metadata
 - Reduced-motion support, keyboard focus states, and mobile navigation
