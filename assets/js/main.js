@@ -152,6 +152,15 @@
     const cards = grid ? Array.from(grid.children) : []
     const pagination = document.querySelector('.pagination')
     const perPage = parseInt(grid?.dataset.perPage || '8', 10) || 8
+    const yearCounts = new Map()
+    archive.querySelectorAll('[data-year]').forEach((pill) => {
+      const countEl = pill.querySelector('.archive-count')
+      if (countEl) yearCounts.set(pill.dataset.year, parseInt(countEl.textContent, 10) || 0)
+    })
+    const allCount = (() => {
+      const el = archive.querySelector('[data-archive-all] .archive-count')
+      return el ? (parseInt(el.textContent, 10) || 0) : cards.length
+    })()
     const buildClientPagination = (visible) => {
       if (!pagination) return
       const url = new URL(window.location.href)
@@ -216,13 +225,12 @@
     }
     const yearPills = Array.from(pills)
     const update = (year) => {
-      let visible = 0
       cards.forEach((card) => {
         const cardYear = card.dataset.year || ''
         const match = !year || cardYear === year
         card.classList.toggle('is-hidden', !match)
-        if (match) visible += 1
       })
+      const visible = year ? (yearCounts.get(year) || 0) : allCount
 yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year === year))
       const allPill = archive.querySelector('[data-archive-all]')
       if (allPill) allPill.classList.toggle('is-active', !year)
