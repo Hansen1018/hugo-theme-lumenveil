@@ -273,3 +273,19 @@ yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year
     update(new URLSearchParams(window.location.search).get('year') || '')
   }
 })()
+
+  // Page view counter — front matter baseline + per-visitor localStorage count
+  // Display = .Params.views (authoritative baseline) + this visitor's localStorage count
+  // Only the inner [data-page-views-num] gets updated; the " 次阅读" suffix stays put.
+  const pageViews = document.querySelector('[data-page-views]')
+  if (pageViews) {
+    const counter = pageViews.querySelector('[data-page-views-num]')
+    if (counter) {
+      const baseline = parseInt(pageViews.dataset.pageViews, 10) || 0
+      const key = 'lumenveil-views-' + location.pathname
+      let visited = parseInt(localStorage.getItem(key), 10) || 0
+      visited += 1
+      try { localStorage.setItem(key, visited) } catch {}
+      counter.textContent = baseline + visited
+    }
+  }
