@@ -7,23 +7,25 @@
   <div class="page-hero__stats"><span>{{ len .RegularPagesRecursive }} 篇文章</span><span>{{ len site.Taxonomies.categories }} 个分类</span><span>{{ len site.Taxonomies.tags }} 个标签</span></div>
 </section>
 {{ if eq .Section "posts" }}
-<section class="section section--compact" data-reveal>
+<section class="section section--compact" data-reveal data-archive>
   {{ $pages := where site.RegularPages "Section" "in" site.Params.mainSections }}
   {{ if $pages }}
-    <div class="tag-list tag-list--archive">
-      {{ range ($pages.GroupByDate "2006").Reverse }}<a href="{{ printf "/posts/?year=%s" .Key }}">{{ .Key }}<span class="archive-count">{{ len .Pages }}</span></a>{{ end }}
+    <div class="tag-list tag-list--archive" role="list">
+      <a href="{{ "/posts/" | relURL }}" data-archive-all role="listitem">全部<span class="archive-count">{{ len $pages }}</span></a>
+      {{ range ($pages.GroupByDate "2006").Reverse }}<a href="{{ printf "/posts/?year=%s" .Key }}" data-year="{{ .Key }}" role="listitem">{{ .Key }}<span class="archive-count">{{ len .Pages }}</span></a>{{ end }}
     </div>
   {{ end }}
 </section>
 {{ end }}
 <section class="section section--compact" data-reveal>
-  <header class="section-head"><div><span class="section-index">01</span><span class="eyebrow">All Articles</span></div><h2>全部文章</h2><div class="section-rule"></div></header>
+  <header class="section-head"><div><span class="section-index">01</span><span class="eyebrow" data-archive-label>All Articles</span></div><h2 data-archive-title>全部文章</h2><div class="section-rule"></div></header>
   {{ $paginator := .Paginate .RegularPagesRecursive.ByDate.Reverse }}
   {{ if $paginator.Pages }}
-    <div class="post-grid">{{ range $paginator.Pages }}{{ partial "post-card.html" . }}{{ end }}</div>
+    <div class="post-grid" data-post-grid>{{ range $paginator.Pages }}{{ partial "post-card.html" . }}{{ end }}</div>
     {{ partial "pagination.html" $paginator }}
   {{ else }}
     <div class="empty-state"><strong>暂无文章</strong><p>内容发布后会显示在这里。</p></div>
   {{ end }}
+  <p class="archive-empty" data-archive-empty hidden>所选年份暂无文章。<a href="{{ "/posts/" | relURL }}">查看全部 →</a></p>
 </section>
 {{ end }}
