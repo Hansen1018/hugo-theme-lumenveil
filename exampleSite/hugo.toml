@@ -44,6 +44,8 @@ theme = 'lumenveil'
   github = 'https://github.com/Hansen1018'
   twitter = 'https://twitter.com/Hansen1018'
   since = 2024
+  copyright = 'CC BY-NC-ND 4.0 DEED'
+  copyright_url = 'https://creativecommons.org/licenses/by-nc-nd/4.0/deed.zh-hans'
   mainSections = ['posts']
 
 [menus]
