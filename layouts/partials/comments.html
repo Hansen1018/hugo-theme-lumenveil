@@ -77,7 +77,9 @@
           box-shadow:                 none !important;
           backdrop-filter:            none !important;
           -webkit-backdrop-filter:    none !important;
-          padding:                    clamp(28px, 5vw, 58px) !important;
+          /* No inner padding: inputs/textarea must span the same width as
+             the article prose above (user feedback in #31152). */
+          padding:                    0 !important;
           color:                      var(--ink-1, rgba(255,255,255,.96)) !important;
           width:                      100% !important;
           max-width:                  100% !important;
