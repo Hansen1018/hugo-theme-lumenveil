@@ -132,13 +132,27 @@
   })
 
   document.querySelector('[data-copy-link]')?.addEventListener('click', async (event) => {
+    const btn = event.currentTarget
+    const author = btn.dataset.author || ''
+    const title = btn.dataset.title || ''
+    const date = btn.dataset.date || ''
+    const url = btn.dataset.url || window.location.href
+    const copyright = btn.dataset.copyright || ''
+    const copyrightUrl = btn.dataset.copyrightUrl || ''
+    const text = [
+      `作者:${author}`,
+      `文章标题:[${title}](${url})`,
+      `发表时间:${date}`,
+      `文章链接:${url}`,
+      `版权说明:[${copyright}](${copyrightUrl})`
+    ].join('\n')
     try {
-      await navigator.clipboard.writeText(window.location.href)
-      event.currentTarget.textContent = '链接已复制'
+      await navigator.clipboard.writeText(text)
+      btn.textContent = '✓ 引用已复制'
     } catch {
-      event.currentTarget.textContent = '复制失败'
+      btn.textContent = '复制失败'
     }
-    window.setTimeout(() => { event.currentTarget.textContent = '复制文章链接' }, 1600)
+    window.setTimeout(() => { btn.textContent = '复制文章链接' }, 1600)
   })
 
   const archive = document.querySelector('[data-archive]')
