@@ -1,9 +1,87 @@
 {{ define "main" }}
 <section class="not-found">
-  <span class="not-found__code">404</span>
-  <span class="eyebrow">Page not found</span>
-  <h1>这一页走丢了。</h1>
-  <p>你访问的页面不存在、已移动，或者链接输入有误。</p>
-  <div><a class="button button--primary" href="{{ site.Home.RelPermalink }}">返回首页</a><button class="button button--ghost" type="button" data-search-open>搜索文章</button></div>
+  {{/* decorative halo: glass ring with a fracture, echoes the theme's glassmorphism */}}
+  <div class="not-found__halo" aria-hidden="true">
+    <svg viewBox="0 0 360 360" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="halo-grad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#7c5cff" stop-opacity=".55"/>
+          <stop offset="50%" stop-color="#22d3ee" stop-opacity=".45"/>
+          <stop offset="100%" stop-color="#f472b6" stop-opacity=".55"/>
+        </linearGradient>
+        <radialGradient id="halo-glow" cx=".5" cy=".5" r=".5">
+          <stop offset="0%" stop-color="#7c5cff" stop-opacity=".35"/>
+          <stop offset="100%" stop-color="#7c5cff" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <circle cx="180" cy="180" r="170" fill="url(#halo-glow)"/>
+      <circle cx="180" cy="180" r="158" fill="none" stroke="url(#halo-grad)" stroke-width="1.2" stroke-dasharray="2 6" opacity=".6"/>
+      <circle cx="180" cy="180" r="118" fill="none" stroke="url(#halo-grad)" stroke-width="1" opacity=".45"/>
+      {{/* fracture: an arc with a chunk missing on the right side */}}
+      <path d="M 60 180 A 120 120 0 1 1 248 260" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M 252 258 L 244 282 L 268 286 L 260 262 Z" fill="rgba(255,255,255,.18)" stroke="rgba(255,255,255,.55)" stroke-width="1.2" stroke-linejoin="round"/>
+      <line x1="248" y1="260" x2="300" y2="312" stroke="rgba(255,255,255,.4)" stroke-width="1" stroke-dasharray="2 4"/>
+      <line x1="252" y1="258" x2="316" y2="234" stroke="rgba(255,255,255,.3)" stroke-width="1" stroke-dasharray="2 4"/>
+      {{/* glints */}}
+      <circle cx="118" cy="118" r="3" fill="#22d3ee"/>
+      <circle cx="240" cy="142" r="2" fill="#f472b6"/>
+      <circle cx="156" cy="246" r="2.4" fill="#7c5cff"/>
+    </svg>
+  </div>
+
+  <span class="not-found__code" aria-hidden="true">404</span>
+
+  <div class="not-found__content glass">
+    <span class="eyebrow">Page not found</span>
+    <h1>这一页走丢了。</h1>
+    <p>你访问的页面不存在、已移动，或者链接输入有误。<br>不如从下面这几个入口继续。</p>
+    <code class="not-found__path" id="not-found-path" aria-live="polite">/</code>
+    <div class="not-found__cta">
+      <a class="button button--primary" href="{{ site.Home.RelPermalink }}">返回首页</a>
+      <button class="button button--ghost" type="button" data-search-open>搜索文章</button>
+    </div>
+  </div>
 </section>
+
+{{/* Show the latest writing as a fallback — same pattern as home.html #latest */}}
+{{ $pages := where site.RegularPages "Section" "in" site.Params.mainSections }}
+{{ if $pages }}
+<section class="section section--compact not-found__suggest" data-reveal>
+  <header class="section-head">
+    <div><span class="section-index">→</span><span class="eyebrow">Recent writing</span></div>
+    <h2>看看最近在写的</h2>
+    <div class="section-rule"></div>
+  </header>
+  <div class="not-found__suggest-grid">
+    {{ range first 3 $pages.ByDate.Reverse }}
+    <a class="suggest-card" href="{{ .RelPermalink }}">
+      <div class="post-meta">
+        <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006.01.02" }}</time>
+        <span>{{ .ReadingTime }} 分钟阅读</span>
+        {{ with .Params.views }}<span>{{ . }} 次阅读</span>{{ end }}
+      </div>
+      <strong>{{ .LinkTitle }}</strong>
+      <p>{{ .Description | default (.Summary | plainify | truncate 78) }}</p>
+      <span class="read-link">阅读全文 <span>→</span></span>
+    </a>
+    {{ end }}
+  </div>
+  <div class="section-action">
+    {{ with site.GetPage "section" (index site.Params.mainSections 0 | default "archives") }}
+      <a class="button button--ghost" href="{{ .RelPermalink }}">浏览全部文章 <span>→</span></a>
+    {{ end }}
+  </div>
+</section>
+{{ end }}
+
+<script>
+  // Echo the path the visitor tried to reach — helps confirm it's really our 404.
+  (function () {
+    var el = document.getElementById('not-found-path');
+    if (!el) return;
+    var p = window.location.pathname || '/';
+    if (p.length > 80) p = p.slice(0, 77) + '…';
+    el.textContent = p;
+  })();
+</script>
 {{ end }}
