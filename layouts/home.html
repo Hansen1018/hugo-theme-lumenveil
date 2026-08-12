@@ -30,13 +30,18 @@
     <div class="section-rule"></div>
   </header>
   {{ $pages := where site.RegularPages "Section" "in" site.Params.mainSections }}
+  {{ $sectionName := index site.Params.mainSections 0 | default "posts" }}
   {{ if $pages }}
     <div class="post-grid">
       {{ range first 6 $pages.ByDate.Reverse }}{{ partial "post-card.html" . }}{{ end }}
     </div>
-    <div class="section-action"><a class="button button--ghost" href="{{ "posts/" | relURL }}">浏览全部文章 <span>→</span></a></div>
+    <div class="section-action">
+      {{ with site.GetPage "section" $sectionName }}
+        <a class="button button--ghost" href="{{ .RelPermalink }}">浏览全部文章 <span>→</span></a>
+      {{ end }}
+    </div>
   {{ else }}
-    <div class="empty-state"><strong>还没有文章</strong><p>使用 Hugo 新建第一篇内容后，它会出现在这里。</p><code>hugo new content posts/hello.md</code></div>
+    <div class="empty-state"><strong>还没有文章</strong><p>使用 Hugo 新建第一篇内容后，它会出现在这里。</p><code>hugo new content {{ $sectionName }}/hello.md</code></div>
   {{ end }}
 </section>
 

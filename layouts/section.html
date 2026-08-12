@@ -1,7 +1,9 @@
 {{ define "main" }}
 {{ $year := "" }}
 {{ $list := .RegularPagesRecursive.ByDate.Reverse }}
-{{ if eq .Section "posts" }}
+{{ $yearBase := "/posts/" }}
+{{ if or (eq .Section "archives") (eq .Section "posts") }}
+  {{ if eq .Section "archives" }}{{ $yearBase = "/archives/" }}{{ else }}{{ $yearBase = "/posts/" }}{{ end }}
   {{ $query := urls.Parse .Permalink }}
   {{ with $query.RawQuery }}
     {{ range split . "&" }}
@@ -17,13 +19,13 @@
   <p>{{ .Description | default "所有文章，按时间倒序排列。" }}</p>
   <div class="page-hero__stats"><span>{{ len .RegularPagesRecursive }} 篇文章</span><span>{{ len site.Taxonomies.categories }} 个分类</span><span>{{ len site.Taxonomies.tags }} 个标签</span></div>
 </section>
-{{ if eq .Section "posts" }}
+{{ if or (eq .Section "archives") (eq .Section "posts") }}
 <section class="section section--compact" data-reveal data-archive>
   {{ $pages := where site.RegularPages "Section" "in" site.Params.mainSections }}
   {{ if $pages }}
     <div class="tag-list tag-list--archive" role="list">
-      <a href="{{ "/posts/" | relURL }}" data-archive-all{{ if eq $year "" }} class="is-active"{{ end }} role="listitem">全部<span class="archive-count">{{ len $pages }}</span></a>
-      {{ range sort ($pages.GroupByDate "2006") "Key" "desc" }}<a href="{{ printf "/posts/?year=%s" .Key }}" data-year="{{ .Key }}"{{ if eq $year .Key }} class="is-active"{{ end }} role="listitem">{{ .Key }}<span class="archive-count">{{ len .Pages }}</span></a>{{ end }}
+<a href="{{ $yearBase | relURL }}" data-archive-all{{ if eq $year "" }} class="is-active"{{ end }} role="listitem">全部<span class="archive-count">{{ len $pages }}</span></a>
+      {{ range sort ($pages.GroupByDate "2006") "Key" "desc" }}<a href="{{ printf "%s?year=%s" $yearBase .Key }}" data-year="{{ .Key }}"{{ if eq $year .Key }} class="is-active"{{ end }} role="listitem">{{ .Key }}<span class="archive-count">{{ len .Pages }}</span></a>{{ end }}
     </div>
   {{ end }}
 </section>
@@ -38,7 +40,7 @@
     <div class="post-grid" data-post-grid data-per-page="{{ .Site.Params.pagerSize | default 8 }}">{{ range $paginator.Pages }}{{ partial "post-card.html" . }}{{ end }}</div>
     {{ partial "pagination.html" (dict "Paginator" $paginator "Year" $year) }}
   {{ else }}
-    <div class="empty-state"><strong>{{ if $year }}{{ $year }} 年暂无文章{{ else }}暂无文章{{ end }}</strong><p>{{ if $year }}换个年份试试，或<a href="{{ "/posts/" | relURL }}">查看全部文章</a>。{{ else }}内容发布后会显示在这里。{{ end }}</p></div>
+    <div class="empty-state"><strong>{{ if $year }}{{ $year }} 年暂无文章{{ else }}暂无文章{{ end }}</strong><p>{{ if $year }}换个年份试试，或<a href="{{ $yearBase | relURL }}">查看全部文章</a>。{{ else }}内容发布后会显示在这里。{{ end }}</p></div>
   {{ end }}
 </section>
 {{ end }}
