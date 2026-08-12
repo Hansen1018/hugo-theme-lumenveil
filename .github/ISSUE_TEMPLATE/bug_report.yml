@@ -1,0 +1,107 @@
+name: 🐛 Bug Report
+description: Report a bug, regression, or rendering issue.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! Please fill out the form — required fields are marked with *.
+
+        💡 **Before opening:**
+        - Search [existing issues](https://github.com/Hansen1018/hugo-theme-lumenveil/issues) for duplicates
+        - Try the [latest release](https://github.com/Hansen1018/hugo-theme-lumenveil/releases)
+        - Check the [README](https://github.com/Hansen1018/hugo-theme-lumenveil#readme)
+
+  - type: dropdown
+    id: feedback-type
+    attributes:
+      label: Feedback Type *
+      description: What kind of bug is this?
+      options:
+        - Bug Report
+        - Regression (used to work, no longer works)
+        - Visual / Rendering Glitch
+        - Build or Deploy Error
+        - Browser Compatibility Issue
+    validations:
+      required: true
+
+  - type: dropdown
+    id: affected-area
+    attributes:
+      label: Affected Area *
+      description: Which part of the theme is affected?
+      options:
+        - Templates (layouts/)
+        - CSS / Styling (assets/css/)
+        - JavaScript (assets/js/)
+        - Documentation
+        - Configuration (hugo.toml)
+        - Content / Front Matter
+        - Build / Hugo Version
+        - Other / Not Sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: hugo-version
+    attributes:
+      label: Hugo Version *
+      options:
+        - Latest stable (>= 0.145)
+        - 0.121.x
+        - 0.110.x or earlier
+        - Extended version
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser (if visual)
+      options:
+        - Chrome
+        - Firefox
+        - Safari
+        - Edge
+        - Mobile Safari (iOS)
+        - Mobile Chrome (Android)
+        - N/A — Build / Template Bug
+    validations:
+      required: false
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce *
+      description: Minimal numbered steps to trigger the bug.
+      value: |
+        1. 
+        2. 
+        3. 
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior *
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior *
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshots / Logs
+      description: Paste screenshots, browser console output, or `hugo --logLevel info` output here.
+    validations:
+      required: false

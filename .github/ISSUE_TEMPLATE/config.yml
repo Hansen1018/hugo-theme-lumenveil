@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 GitHub Discussions
+    url: https://github.com/Hansen1018/hugo-theme-lumenveil/discussions
+    about: For longer-form Q&A and open-ended conversations
+  - name: 📖 README & Docs
+    url: https://github.com/Hansen1018/hugo-theme-lumenveil#readme
+    about: Installation, configuration, front matter reference
+  - name: 📦 Releases
+    url: https://github.com/Hansen1018/hugo-theme-lumenveil/releases
+    about: Changelog and version downloads
+  - name: 🔒 Security Advisory
+    url: https://github.com/Hansen1018/hugo-theme-lumenveil/security/advisories/new
+    about: Report security vulnerabilities privately (do NOT open a public issue)
