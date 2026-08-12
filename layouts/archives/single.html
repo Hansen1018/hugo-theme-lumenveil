@@ -19,6 +19,7 @@
     <div class="article-main glass">
       <div class="prose">{{ .Content }}</div>
       <div class="article-share"><span>这篇文章有帮助？</span><button class="button button--ghost" type="button" data-copy-link data-author="{{ site.Params.author }}" data-title="{{ .Title }}" data-date="{{ .Date.Format "2006 年 1 月 2 日" }}" data-url="{{ .Permalink }}" data-copyright="{{ site.Params.copyright }}" data-copyright-url="{{ site.Params.copyright_url }}">复制文章链接</button></div>
+      <div class="article-comments">{{ partial "comments.html" . }}</div>
     </div>
     {{ if .TableOfContents }}{{ if ne .Params.toc false }}
     <aside class="toc">
@@ -30,7 +31,6 @@
     </aside>
     {{ end }}{{ end }}
   </div>
-  <div class="article-layout" style="margin-top:24px"><div class="article-comments">{{ partial "comments.html" . }}</div></div>
   {{ if and .PrevInSection .NextInSection }}<nav class="post-nav" aria-label="文章导航">
     <a href="{{ .PrevInSection.RelPermalink }}"><span>上一篇</span><strong>{{ .PrevInSection.LinkTitle }}</strong></a>
     <a href="{{ .NextInSection.RelPermalink }}" class="post-nav__next"><span>下一篇</span><strong>{{ .NextInSection.LinkTitle }}</strong></a>
