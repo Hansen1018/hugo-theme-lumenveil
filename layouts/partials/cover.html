@@ -1,18 +1,25 @@
 {{- /*
-  Article cover image renderer.
+  Article cover image renderer with optional caption.
   Reads `cover` from front matter:
     - "cover.jpg"            → page resource (bundled in same dir as index.md)
     - "/images/foo.jpg"      → absolute path via relURL
     - "https://example.com/x" → external URL via relURL
-  Empty/missing → renders nothing.
+  Empty/missing `cover` → renders nothing.
+  `cover_caption` (optional) → short text rendered centered below the image.
 */ -}}
 {{ with .Params.cover }}
   {{ if ne . "" }}
     {{ $img := $.Resources.GetMatch (printf "%s" .) }}
     {{ if $img }}
-      <figure class="article-cover"><img src="{{ $img.RelPermalink }}" alt="{{ $.Title }}" loading="lazy" decoding="async"></figure>
+      <figure class="article-cover">
+        <img src="{{ $img.RelPermalink }}" alt="{{ $.Title }}" loading="lazy" decoding="async">
+        {{ with $.Params.cover_caption }}<figcaption>{{ . }}</figcaption>{{ end }}
+      </figure>
     {{ else }}
-      <figure class="article-cover"><img src="{{ . | relURL }}" alt="{{ $.Title }}" loading="lazy" decoding="async"></figure>
+      <figure class="article-cover">
+        <img src="{{ . | relURL }}" alt="{{ $.Title }}" loading="lazy" decoding="async">
+        {{ with $.Params.cover_caption }}<figcaption>{{ . }}</figcaption>{{ end }}
+      </figure>
     {{ end }}
   {{ end }}
 {{ end }}

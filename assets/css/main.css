@@ -252,7 +252,9 @@ img { display: block; max-width: 100%; }
 .article-header { max-width: 920px; margin: 0 auto 54px; text-align: center; }
 .article-header .breadcrumbs, .article-header .post-meta, .article-header .tag-list { justify-content: center; }
 .article-header h1 { margin: 22px 0 18px; font-size: clamp(42px,7vw,76px); line-height: 1.06; letter-spacing: -.05em; }
-.article-cover { display: block; width: 100%; height: auto; aspect-ratio: 16 / 8; object-fit: cover; border-radius: var(--radius-lg); margin: 0 0 28px 0; background: var(--bg-1); }
+.article-cover { display: block; width: 100%; margin: 0 0 28px 0; overflow: hidden; border-radius: var(--radius-lg); }
+.article-cover img { display: block; width: 100%; height: auto; }
+.article-cover figcaption { text-align: center; font-size: 0.82em; color: var(--ink-2); margin: -10px 0 28px 0; opacity: 0.78; letter-spacing: 0.02em; }
 .article-deck { max-width: 680px; margin: auto; color: var(--ink-2); font-size: clamp(16px,2vw,19px); line-height: 1.7; }
 .tag-list--large { margin-top: 24px; }
 .tag-list--large a { padding: 5px 10px; font-size: 11px; }
