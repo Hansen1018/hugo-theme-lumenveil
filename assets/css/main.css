@@ -389,7 +389,7 @@ kbd { padding: 3px 6px; border: 1px solid var(--line); border-radius: 5px; color
   .article-main { padding: 28px 20px; border-radius: var(--radius-lg); }
   .article-header h1 { font-size: clamp(39px,12vw,62px); }
   .post-nav { grid-template-columns: 1fr; }
-  .article-share { align-items: flex-start; flex-direction: column; }
+  .article-share { flex-wrap: wrap; }
   .footer-inner { grid-template-columns: 1fr; }
   .footer-bottom { flex-direction: column; }
 }
