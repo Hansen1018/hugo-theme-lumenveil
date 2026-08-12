@@ -2,8 +2,11 @@
 {{ $year := "" }}
 {{ $list := .RegularPagesRecursive.ByDate.Reverse }}
 {{ $yearBase := "/posts/" }}
-{{ if or (eq .Section "archives") (eq .Section "posts") }}
-  {{ if eq .Section "archives" }}{{ $yearBase = "/archives/" }}{{ else }}{{ $yearBase = "/posts/" }}{{ end }}
+{{ if eq .Section "archives" }}{{ $yearBase = "/archives/" }}{{ end }}
+{{ $isList := or (eq .Section "archives") (eq .Section "posts") }}
+{{ $yearCount := 0 }}
+{{ if $isList }}
+  {{ $yearCount = len ((where site.RegularPages "Section" "in" site.Params.mainSections).GroupByDate "2006") }}
   {{ $query := urls.Parse .Permalink }}
   {{ with $query.RawQuery }}
     {{ range split . "&" }}
@@ -17,7 +20,12 @@
   <span class="eyebrow">Writing Archive</span>
   <h1>{{ if eq .Section "posts" }}文章{{ else if eq .Section "categories" }}分类{{ else if eq .Section "tags" }}标签{{ else }}{{ .Title }}{{ end }}</h1>
   <p>{{ .Description | default "所有文章，按时间倒序排列。" }}</p>
-  <div class="page-hero__stats"><span>{{ len .RegularPagesRecursive }} 篇文章</span><span>{{ len site.Taxonomies.categories }} 个分类</span><span>{{ len site.Taxonomies.tags }} 个标签</span></div>
+  <div class="page-hero__stats">
+    <span>{{ len .RegularPagesRecursive }} 篇文章</span>
+    <span>{{ len site.Taxonomies.categories }} 个分类</span>
+    <span>{{ len site.Taxonomies.tags }} 个标签</span>
+    {{ if $isList }}<span>{{ $yearCount }} 个年份</span>{{ end }}
+  </div>
 </section>
 {{ if or (eq .Section "archives") (eq .Section "posts") }}
 <section class="section section--compact" data-reveal data-archive>
