@@ -1,0 +1,18 @@
+{{- /*
+  Article cover image renderer.
+  Reads `cover` from front matter:
+    - "cover.jpg"            → page resource (bundled in same dir as index.md)
+    - "/images/foo.jpg"      → absolute path via relURL
+    - "https://example.com/x" → external URL via relURL
+  Empty/missing → renders nothing.
+*/ -}}
+{{ with .Params.cover }}
+  {{ if ne . "" }}
+    {{ $img := $.Resources.GetMatch (printf "%s" .) }}
+    {{ if $img }}
+      <figure class="article-cover"><img src="{{ $img.RelPermalink }}" alt="{{ $.Title }}" loading="lazy" decoding="async"></figure>
+    {{ else }}
+      <figure class="article-cover"><img src="{{ . | relURL }}" alt="{{ $.Title }}" loading="lazy" decoding="async"></figure>
+    {{ end }}
+  {{ end }}
+{{ end }}
