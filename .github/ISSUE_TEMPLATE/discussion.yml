@@ -1,0 +1,57 @@
+name: 💬 Discussion
+description: General feedback, design questions, or ideas.
+title: "[Discussion] "
+labels: ["type:discussion"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Open a discussion for design questions, ideas, or general feedback — not for bug reports (use 🐛 Bug Report) or feature requests (use ✨ Feature Request).
+
+        For "how do I…" questions, check the [README](https://github.com/Hansen1018/hugo-theme-lumenveil#readme) first.
+
+  - type: dropdown
+    id: feedback-type
+    attributes:
+      label: Discussion Type *
+      options:
+        - Idea / Brainstorming
+        - Design Feedback
+        - Roadmap Input
+        - Showcase (Theme in the Wild)
+        - Documentation Gap
+        - General Question
+    validations:
+      required: true
+
+  - type: dropdown
+    id: affected-area
+    attributes:
+      label: Topic Area *
+      options:
+        - General
+        - Templates
+        - CSS / Styling
+        - JavaScript
+        - Documentation
+        - Configuration
+        - Roadmap / Release Planning
+        - Other / Not Sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: topic
+    attributes:
+      label: Topic *
+      placeholder: What would you like to discuss?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context (optional)
+      description: Screenshots, links, references, or what you've already tried.
+    validations:
+      required: false

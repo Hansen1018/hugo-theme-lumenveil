@@ -1,0 +1,76 @@
+name: ✨ Feature Request
+description: Suggest a new feature or enhancement.
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Strong requests describe a **problem** (not just a solution) and show you've thought about trade-offs.
+
+  - type: dropdown
+    id: feedback-type
+    attributes:
+      label: Feedback Type *
+      description: What kind of feature is this?
+      options:
+        - New Feature
+        - Enhancement to Existing Feature
+        - UX / Readability Improvement
+        - Accessibility Improvement
+        - Performance Improvement
+        - Documentation Improvement
+    validations:
+      required: true
+
+  - type: dropdown
+    id: affected-area
+    attributes:
+      label: Affected Area *
+      description: Which part of the theme would this touch?
+      options:
+        - Templates (layouts/)
+        - CSS / Styling
+        - JavaScript
+        - Documentation
+        - Configuration (hugo.toml)
+        - Content / Front Matter
+        - Theme Structure
+        - Build / Tooling
+        - Other / Not Sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Use Case *
+      description: What problem does this solve? What's your workflow?
+      placeholder: I am trying to ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution *
+      description: How do you imagine it working?
+      placeholder: Add a new partial `layouts/partials/...` that ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Other approaches you thought about, and why they're worse.
+    validations:
+      required: false
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: Mockups / Examples
+      description: Links to sites that already do this well, or paste ASCII layouts / screenshots.
+    validations:
+      required: false
