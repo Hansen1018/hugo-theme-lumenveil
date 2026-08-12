@@ -155,6 +155,22 @@
     window.setTimeout(() => { btn.textContent = '复制文章链接' }, 1600)
   })
 
+  const backToTop = document.querySelector('[data-back-to-top]')
+  if (backToTop) {
+    const toggleVisible = () => {
+      if (window.scrollY > 300) {
+        backToTop.classList.add('is-visible')
+      } else {
+        backToTop.classList.remove('is-visible')
+      }
+    }
+    toggleVisible()
+    window.addEventListener('scroll', toggleVisible, { passive: true })
+    backToTop.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    })
+  }
+
   const archive = document.querySelector('[data-archive]')
   if (archive) {
     const grid = document.querySelector('[data-post-grid]')
