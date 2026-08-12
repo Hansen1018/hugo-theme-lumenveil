@@ -1,0 +1,11 @@
+{{/*
+  Renders the article's Lastmod time (only if strictly after Date) as:
+    <time datetime="ISO 8601">更新于 YYYY 年 MM 月 DD 日 HH:MM (UTC+8)</time>
+  - The `datetime` attribute stays as a real, parseable offset (`Z07:00`) for screen readers,
+    crawlers, and any JS that consumes it.
+  - The visible suffix `(UTC+8)` is hard-coded because this site is authored exclusively in
+    CST+8 (Asia/Shanghai). If the site ever spans timezones, replace this with a lookup.
+*/}}
+{{ if and .Lastmod (gt .Lastmod .Date) }}
+<time datetime="{{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" }}">更新于 {{ .Lastmod.Format "2006 年 01 月 02 日 15:04" }} (UTC+8)</time>
+{{ end }}
