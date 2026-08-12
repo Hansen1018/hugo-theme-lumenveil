@@ -62,7 +62,6 @@
           background:                 var(--glass-bg, rgba(255,255,255,.045)) !important;
           border:                     1px solid rgba(255,255,255,.1) !important;
           border-radius:              var(--radius-xl, 32px) !important;
-          box-shadow:                 inset 0 1px rgba(255,255,255,6%), 0 30px 60px -24px rgba(0,0,0,.65) !important;
           backdrop-filter:            blur(24px) saturate(140%) !important;
           -webkit-backdrop-filter:    blur(24px) saturate(140%) !important;
           /* Width + gap: match .article-layout (820+240 grid) and add vertical gap */
@@ -74,10 +73,23 @@
           overflow:                   hidden;
           isolation:                  isolate;
           position:                   relative;
+          z-index:                    0;
+        }
+        /* Box-shadow lives on a ::before pseudo so the radius strictly clips
+           it (Chromium leaks backdrop-filter+box-shadow shadow at corners). */
+        #Comments::before {
+          content:                    '';
+          position:                   absolute;
+          inset:                      0;
+          border-radius:              inherit;
+          box-shadow:                 inset 0 1px rgba(255,255,255,6%), 0 30px 60px -24px rgba(0,0,0,.65) !important;
+          pointer-events:             none;
         }
         html[data-theme=light] #Comments {
           background:                 rgba(255,255,255,.72) !important;
           border-color:               rgba(15,23,42,.1) !important;
+        }
+        html[data-theme=light] #Comments::before {
           box-shadow:                 inset 0 1px rgba(255,255,255,.9), 0 30px 70px -34px rgba(51,65,85,.28) !important;
         }
 
