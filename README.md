@@ -26,13 +26,7 @@ Live preview: <https://blog.hansendong.top>
 
 | Article | About |
 | --- | --- |
-| ![Single post in dark mode with PhotoSwipe gallery / 深色文章页：PhotoSwipe 图集](docs/screenshots/post-dark.png) | ![About page in dark mode with glass surfaces / 深色关于页：玻璃表面](docs/screenshots/about-dark.png)
-### Mobile
-
-| Light | Dark |
-| --- | --- |
-| ![Posts archive on mobile, light mode / 移动端文章归档页（浅色）](docs/screenshots/posts-mobile.png) | ![Posts archive on mobile, dark mode / 移动端文章归档页（深色）](docs/screenshots/posts-mobile-dark.png) |
- |
+| ![Single post in dark mode with PhotoSwipe gallery / 深色文章页：PhotoSwipe 图集](docs/screenshots/post-dark.png) | ![About page in dark mode with glass surfaces / 深色关于页：玻璃表面](docs/screenshots/about-dark.png) |
 
 ## English
 
