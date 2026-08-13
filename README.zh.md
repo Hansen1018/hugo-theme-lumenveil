@@ -28,7 +28,25 @@ Lumenveil（光幕）是一款面向个人博客的 Hugo 主题，以通透玻�
 
 | 文章页 | 关于页 |
 | --- | --- |
-| ![深色文章页：PhotoSwipe 图集](docs/screenshots/post-dark.png) | ![深色关于页：玻璃表面](docs/screenshots/about-dark.png) |
+| ![深色文章页：PhotoSwipe 图集](docs/screenshots/post-dark.png) | ![深色关于页：玻璃表面](docs/screenshots/about-dark.png)
+### 移动端
+
+| 首页 | 文章列表 |
+| --- | --- |
+| ![移动端首页（浅色）](docs/screenshots/home-mobile.png) | ![移动端文章列表（浅色）](docs/screenshots/posts-mobile.png) |
+
+| 文章页 | 关于页 |
+| --- | --- |
+| ![移动端文章页（浅色）](docs/screenshots/post-mobile.png) | ![移动端关于页（浅色）](docs/screenshots/about-mobile.png) |
+
+| 首页（深色） | 文章列表（深色） |
+| --- | --- |
+| ![移动端首页（深色）](docs/screenshots/home-mobile-dark.png) | ![移动端文章列表（深色）](docs/screenshots/posts-mobile-dark.png) |
+
+| 文章页（深色） | 关于页（深色） |
+| --- | --- |
+| ![移动端文章页（深色）](docs/screenshots/post-mobile-dark.png) | ![移动端关于页（深色）](docs/screenshots/about-mobile-dark.png) |
+ |
 
 ## 主要功能
 

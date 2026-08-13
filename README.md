@@ -26,7 +26,25 @@ Live preview: <https://blog.hansendong.top>
 
 | Article | About |
 | --- | --- |
-| ![Single post in dark mode with PhotoSwipe gallery / 深色文章页：PhotoSwipe 图集](docs/screenshots/post-dark.png) | ![About page in dark mode with glass surfaces / 深色关于页：玻璃表面](docs/screenshots/about-dark.png) |
+| ![Single post in dark mode with PhotoSwipe gallery / 深色文章页：PhotoSwipe 图集](docs/screenshots/post-dark.png) | ![About page in dark mode with glass surfaces / 深色关于页：玻璃表面](docs/screenshots/about-dark.png)
+### Mobile
+
+| Home | Articles |
+| --- | --- |
+| ![Home hero on mobile, light / 移动端首页（浅色）](docs/screenshots/home-mobile.png) | ![Posts archive on mobile, light / 移动端文章列表（浅色）](docs/screenshots/posts-mobile.png) |
+
+| Article | About |
+| --- | --- |
+| ![Single post on mobile, light / 移动端文章页（浅色）](docs/screenshots/post-mobile.png) | ![About on mobile, light / 移动端关于页（浅色）](docs/screenshots/about-mobile.png) |
+
+| Home (dark) | Articles (dark) |
+| --- | --- |
+| ![Home hero on mobile, dark / 移动端首页（深色）](docs/screenshots/home-mobile-dark.png) | ![Posts archive on mobile, dark / 移动端文章列表（深色）](docs/screenshots/posts-mobile-dark.png) |
+
+| Article (dark) | About (dark) |
+| --- | --- |
+| ![Single post on mobile, dark / 移动端文章页（深色）](docs/screenshots/post-mobile-dark.png) | ![About on mobile, dark / 移动端关于页（深色）](docs/screenshots/about-mobile-dark.png) |
+ |
 
 ## English
 
