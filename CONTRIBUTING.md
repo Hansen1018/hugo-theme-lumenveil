@@ -87,11 +87,38 @@ Small fixes (typos, one-line CSS) don't need an issue. For larger changes:
 4. Test locally:
    ```bash
    hugo --minify
-   # visit the affected page; check mobile + desktop
+   # visit the affected page; check mobile + desktop, light + dark
    ```
 5. Follow existing style: **2-space indent**, **kebab-case** file names, scoped CSS classes.
-6. Update docs / `README.md` if you change public-facing config or front matter.
-7. Squash commits and reference the issue (`Closes #N`) in the PR body.
+6. Update docs / `README.md` / `README.zh.md` if you change public-facing config or front matter.
+7. **Use the [PR template](.github/PULL_REQUEST_TEMPLATE.md)** — it covers type, affected area, testing, screenshots, breaking changes, and the pre-submit checklist.
+8. Squash commits and reference the issue (`Closes #N`) in the PR body.
+
+### Commit Messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) so history is scannable and `standard-version` / release-please can auto-generate the changelog:
+
+| Prefix | Use for |
+|---|---|
+| `feat:` | New feature |
+| `fix:` | Bug fix |
+| `docs:` | Documentation only |
+| `style:` | CSS / formatting polish, no logic change |
+| `refactor:` | Neither fixes a bug nor adds a feature |
+| `perf:` | Performance improvement |
+| `test:` | Add or fix tests |
+| `chore:` | Tooling, deps, build |
+| `ci:` | CI configuration |
+
+Add a scope when it helps: `feat(hero):`, `fix(single):`, `docs(readme):`.
+
+Examples:
+```
+feat(hero): add aurora opacity setting
+fix(single): correct share-button data-* attrs
+docs(readme): update screenshot dimensions
+chore(deps): bump Hugo to 0.145
+```
 
 ## 🤝 Code of Conduct
 
