@@ -30,7 +30,7 @@
     <div class="section-rule"></div>
   </header>
   {{ $pages := where site.RegularPages "Section" "in" site.Params.mainSections }}
-  {{ $sectionName := index site.Params.mainSections 0 | default "posts" }}
+  {{ $sectionName := index site.Params.mainSections 0 | default "archives" }}
   {{ if $pages }}
     <div class="post-grid">
       {{ range first 6 $pages.ByDate.Reverse }}{{ partial "post-card.html" . }}{{ end }}
