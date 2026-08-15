@@ -1,0 +1,71 @@
+{{/*
+  Article like button — centered at the bottom of the article body.
+  Count synced across devices via same-origin /api/like/* endpoint
+  (like-server.py at /var/www/blog/like-server.py, JSON file backend).
+  localStorage is used only for per-user like state (persistent across refresh).
+*/}}
+<div class="article-like">
+  <button class="like-btn" data-key="{{ .File.UniqueID }}" type="button" aria-label="点赞" aria-pressed="false">
+    <svg class="like-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+    </svg>
+    <span class="like-count" aria-live="polite">0</span>
+  </button>
+</div>
+<script>
+(function() {
+  var btn = document.querySelector('.like-btn');
+  if (!btn) return;
+  var pageKey = window.location.pathname;
+  var LOCAL_KEY = 'lumenveil-like-' + btn.dataset.key;
+  var countEl = btn.querySelector('.like-count');
+  var isLiked = localStorage.getItem(LOCAL_KEY) === '1';
+
+  // Initialize button state from localStorage (per-user only)
+  btn.setAttribute('aria-pressed', isLiked ? 'true' : 'false');
+  if (isLiked) btn.classList.add('is-liked');
+
+  function setCount(count) {
+    countEl.textContent = count;
+    try { localStorage.setItem(LOCAL_KEY + ':count', count); } catch (e) {}
+  }
+
+  // Fetch global count from like-server backend (same-origin /api/like/*)
+  fetch('/api/like/count?key=' + encodeURIComponent(pageKey))
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data && typeof data.count === 'number') setCount(data.count);
+    })
+    .catch(function () {
+      var localCount = parseInt(localStorage.getItem(LOCAL_KEY + ':count') || '0', 10);
+      setCount(localCount);
+    });
+
+  // Click handler — one-way: once liked, cannot cancel.
+  // Optimistic UI; POST to backend; revert on network/server error.
+  btn.addEventListener('click', function () {
+    if (btn.classList.contains('is-liked')) return;
+
+    btn.classList.add('is-liked');
+    btn.setAttribute('aria-pressed', 'true');
+    var prevCount = parseInt(countEl.textContent || '0', 10);
+    setCount(prevCount + 1);
+    btn.classList.add('bump');
+    setTimeout(function () { btn.classList.remove('bump'); }, 600);
+    try { localStorage.setItem(LOCAL_KEY, '1'); } catch (e) {}
+
+    fetch('/api/like/up?key=' + encodeURIComponent(pageKey), { method: 'POST' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data && typeof data.count === 'number') setCount(data.count);
+      })
+      .catch(function () {
+        // Revert on error
+        btn.classList.remove('is-liked');
+        btn.setAttribute('aria-pressed', 'false');
+        setCount(prevCount);
+        try { localStorage.removeItem(LOCAL_KEY); } catch (e) {}
+      });
+  });
+})();
+</script>
