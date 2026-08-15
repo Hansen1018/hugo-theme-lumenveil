@@ -319,6 +319,31 @@
             server: "{{ $server }}",
             site: "{{ $siteName }}"
           })
+
+          // Stagger fade-in for each individual comment item.
+          // Artalk hydrates the list asynchronously after init, so hook
+          // into its events rather than running on DOMContentLoaded.
+          // Each .atk-comment-wrap gets the global .fade-up keyframe
+          // (0.7s, cubic-bezier(.22,1,.36,1), 14px translate) with a
+          // 70ms cascade. The dataset flag prevents re-animating on
+          // list re-renders (sort, page changes).
+          function staggerComments() {
+            var items = document.querySelectorAll('#Comments .atk-comment-wrap');
+            items.forEach(function(item, i) {
+              if (item.dataset.staggered) return;
+              item.dataset.staggered = '1';
+              item.style.animationDelay = (i * 70) + 'ms';
+              item.classList.add('fade-up');
+            });
+          }
+          if (Artalk && typeof Artalk.on === 'function') {
+            Artalk.on('list-loaded', staggerComments);
+            Artalk.on('comments-refresh', staggerComments);
+          } else {
+            // Fallback: if the Artalk instance API isn't available,
+            // wait one tick and query whatever Artalk has rendered.
+            setTimeout(staggerComments, 300);
+          }
         })
       </script>
     {{ end }}
