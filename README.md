@@ -60,7 +60,7 @@ Live preview: <https://blog.hansendong.top>
 - Syntax highlighting and one-click code or article-link copy
 - PhotoSwipe-powered image gallery shortcode with a CSS grid layout
 - Optional Artalk comments module — config-driven partial that mirrors the article card style (glass, button--ghost, mono uppercase header) and auto-aligns to `.article-main` via the existing CSS grid
-- Optional article like button — centered heart CTA at the bottom of the article body, one-way semantics (no cancel after click) with bump animation, pink accent (#ff6b8a) when liked, persisted per-device via `localStorage`; cursor switches to `not-allowed` to signal the action is locked
+- Optional article like button — centered heart CTA at the bottom of the article body, one-way semantics (no cancel after click) with bump animation, pink accent (#ff6b8a) when liked, count synced across devices via a self-hosted `/api/like/*` endpoint (like-server.py, JSON file backend) with `localStorage` fallback for per-user like state; cursor switches to `not-allowed` to signal the action is locked
 - Optional `cover` front matter per post — page-bundle image or `static/` asset, used as the archive-page thumbnail
 - Open Graph, Twitter Card, canonical URL, and JSON-LD metadata
 - Reduced-motion support, keyboard focus states, and mobile navigation
