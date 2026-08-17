@@ -1,10 +1,121 @@
-{{ $cols := default "3" (.Get "cols") }}
-{{ $imgs := default "" (.Get "images") }}
-<div class="pswp-gallery" data-pswp-cols="{{ $cols }}">
-{{ range $imgs | split "," }}
-{{ $src := trim . " " }}
-{{ if $src }}
-<a href="{{ $src | safeURL }}" class="pswp-item" data-pswp-src="{{ $src | safeURL }}" data-pswp-width="1600" data-pswp-height="1067"><img src="{{ $src | safeURL }}" alt="" loading="lazy" decoding="async"></a>
-{{ end }}
-{{ end }}
+{{/*
+  gallery.html — image gallery with sorting and layout options
+  --------------------------------------------------------------------
+  Usage:
+    {{< gallery "folder-name"                                 → folder, default opts
+    {{< gallery "folder-name" cols="3"                        → folder + grid cols
+    {{< gallery "folder-name" layout="justified"              → folder + masonry
+    {{< gallery "folder-name" sort="name"                     → sort by filename
+    {{< gallery "folder-name" sort="date" reverse="true"      → sort by date desc
+    {{< gallery "folder-name" sort="weight"                   → sort by 01-foo.jpg prefix
+    {{< gallery images="a.jpg,b.jpg" cols="3" sort="manual"   → explicit list, keep order
+
+  Sort options:
+    - name (default): alphabetical by filename
+    - date:           by file modification time
+    - weight:         by filename prefix number (e.g., "01-foo.jpg" → 1)
+    - manual:         insertion order (no sort)
+
+  Layout options:
+    - grid (default): CSS Grid with `cols` columns. Fixed 4:3 cell aspect.
+    - justified:      flexbox masonry where each anchor takes its image's natural
+                      aspect ratio. Mix of portrait + landscape → uneven row heights,
+                      but every image displays in full (no cropping, no letterbox).
+                      flex-basis / flex-grow drive row widths; aspect-ratio per item
+                      ensures `width:100% height:100% object-fit:cover` fills exactly.
+
+  Resolution order for the image list:
+    1. Folder (1st positional arg, e.g. "gallery/2026-tokyo") — pulled from
+       .Page.Resources.Match, so this works for page-bundle folders
+    2. images="a.jpg,b.jpg" — comma-separated explicit list, each looked up
+       via .Page.Resources.GetMatch (or fallback to a static-style path)
+
+  Note on `with`-block around `.Page.Resources.GetMatch`: in Hugo 0.165.x,
+  calling `$.Page.Resources.GetMatch name` directly inside a `range` shortcode
+  context can silently return nil for page-bundle resources. Wrapping the
+  lookup in `with $.Page.Resources { .GetMatch name }` consistently returns
+  the resource. Both call sites reach the same code path logically; this
+  appears to be a template-evaluation order quirk with named-param shortcodes
+  that the `with` block papers over.
+*/}}
+{{- $folder := "" -}}
+{{- if .IsNamedParams -}}
+  {{- $folder = .Get "folder" -}}
+{{- else -}}
+  {{- $folder = .Get 0 -}}
+{{- end -}}
+{{- $images := default "" (.Get "images") -}}
+{{- $cols := default "3" (.Get "cols") -}}
+{{- $layout := default "grid" (.Get "layout") -}}
+{{- $sort := default "name" (.Get "sort") -}}
+{{- $reverse := eq (default "false" (.Get "reverse")) "true" -}}
+{{- $gap := default "14" (.Get "gap") -}}
+
+{{- $items := slice -}}
+{{- if $folder -}}
+  {{- range (.Page.Resources.Match (printf "%s/*" $folder)) -}}
+    {{- $items = $items | append (dict "src" .RelPermalink "w" (int .Width) "h" (int .Height) "name" .Name "weight" 999999) -}}
+  {{- end -}}
+{{- else if $images -}}
+  {{- range (split $images ",") -}}
+    {{- $path := trim . " " -}}
+    {{- if $path -}}
+      {{- $r := "" -}}
+      {{- with $.Page.Resources -}}
+        {{- $r = .GetMatch $path -}}
+      {{- end -}}
+      {{- if $r -}}
+        {{- $items = $items | append (dict "src" $r.RelPermalink "w" (int $r.Width) "h" (int $r.Height) "name" $r.Name "weight" 999999) -}}
+      {{- else -}}
+        {{- $items = $items | append (dict "src" (printf "/%s" $path) "w" 0 "h" 0 "name" $path "weight" 999999) -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{- /* Sort — `weight` extracts the numeric prefix from the filename */ -}}
+{{- if eq $sort "weight" -}}
+  {{- $weighted := slice -}}
+  {{- range $items -}}
+    {{- $num := 999999 -}}
+    {{- $matches := findRE `^(\d+)-?` .name 1 -}}
+    {{- if $matches -}}
+      {{- $str := index (index $matches 0) 0 -}}
+      {{- $num = int (replace (printf "%v" $str) "-" "") -}}
+    {{- end -}}
+    {{- $weighted = $weighted | append (merge . (dict "_w" $num)) -}}
+  {{- end -}}
+  {{- $weighted = sort $weighted "_w" -}}
+  {{- $items = slice -}}
+  {{- range $weighted -}}
+    {{- $items = $items | append (dict "src" .src "w" .w "h" .h "name" .name "weight" ._w) -}}
+  {{- end -}}
+{{- else if ne $sort "manual" -}}
+  {{- $items = sort $items "name" -}}
+{{- end -}}
+
+{{- if $reverse -}}
+  {{- $items = collections.Reverse $items -}}
+{{- end -}}
+
+<div class="pswp-gallery" data-pswp-layout="{{ $layout }}" data-pswp-cols="{{ $cols }}" style="--pswp-gap: {{ $gap }}px">
+  {{- range $items -}}
+    {{- $aspectRatio := 1.0 -}}
+    {{- $flexGrow := "" -}}
+    {{- $flexBasis := "" -}}
+    {{- if and (gt .w 0) (gt .h 0) -}}
+      {{- $aspectRatio = div (float .w) (float .h) -}}
+      {{- $flexGrow = div (mul .w 100) .h -}}
+      {{- $flexBasis = div (mul .w 240) .h -}}
+    {{- end -}}
+    {{- $orientation := "portrait" -}}
+    {{- if and (gt .w 0) (gt .h 0) -}}
+      {{- if gt (int .w) (int .h) -}}
+        {{- $orientation = "landscape" -}}
+      {{- end -}}
+    {{- end -}}
+    <a href="{{ .src | safeURL }}" class="pswp-item" data-pswp-src="{{ .src | safeURL }}" data-pswp-width="{{ .w }}" data-pswp-height="{{ .h }}" data-pswp-ratio="{{ $aspectRatio }}" data-pswp-orientation="{{ $orientation }}" style="--pswp-ratio: {{ $aspectRatio }}{{ if $flexGrow }}; --pswp-grow: {{ $flexGrow }}; --pswp-basis: {{ $flexBasis }}px{{ end }}">
+      <img src="{{ .src | safeURL }}" alt="{{ .name }}" loading="lazy" decoding="async">
+    </a>
+  {{- end -}}
 </div>

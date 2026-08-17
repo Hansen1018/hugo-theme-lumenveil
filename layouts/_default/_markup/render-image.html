@@ -17,6 +17,13 @@
   resolves to `/posts/foo/images/foo.jpg` and 404s.
 
   Always wraps output in a PhotoSwipe <figure> for lightbox behavior.
+  When the destination resolves to a page-bundle resource with known
+  dimensions, the <figure> also carries `data-flex-grow` / `data-flex-basis`
+  (and matching CSS variables) so the gallery auto-grouping JS in main.js
+  can wrap consecutive images into a justified-row masonry container.
+  Calculation:
+    flex-grow  = width  * 100 / height
+    flex-basis = width  * 240 / height   (row target height in px)
 */}}
 {{- $dest := .Destination -}}
 {{- $img := "" -}}
@@ -32,7 +39,19 @@
     {{- $src = printf "/%s" $dest -}}
   {{- end -}}
 {{- end -}}
-<figure class="pswp-figure">
+{{- $hasDims := false -}}
+{{- if $img -}}
+  {{- if and $img.Width $img.Height -}}
+    {{- $hasDims = true -}}
+  {{- end -}}
+{{- end -}}
+{{- $flexGrow := "" -}}
+{{- $flexBasis := "" -}}
+{{- if $hasDims -}}
+  {{- $flexGrow = (div (mul $img.Width 100) $img.Height) -}}
+  {{- $flexBasis = (div (mul $img.Width 240) $img.Height) -}}
+{{- end -}}
+<figure class="pswp-figure gallery-image"{{ if $flexGrow }} data-flex-grow="{{ $flexGrow }}" data-flex-basis="{{ $flexBasis }}px" style="--pswp-grow: {{ $flexGrow }}; --pswp-basis: {{ $flexBasis }}px"{{ end }}>
   <a href="{{ $src | safeURL }}"
      class="pswp-inline"
      data-pswp-src="{{ $src | safeURL }}"

@@ -58,8 +58,8 @@ Live preview: <https://blog.hansendong.top>
 - Article table of contents, reading time, word count, last modified indicator, and a real-time cross-user page view count via the busuanzi partial (third-party CN service)
 - Dynamic copyright range (from `since` to the current year) and CC BY-NC-SA 4.0 license badge in the footer
 - Syntax highlighting and one-click code or article-link copy
-- PhotoSwipe-powered image gallery shortcode with a CSS grid layout
-- Optional Artalk comments module — config-driven partial that mirrors the article card style (glass, button--ghost, mono uppercase header) and auto-aligns to `.article-main` via the existing CSS grid
+- PhotoSwipe-powered image gallery shortcode with CSS grid + justified masonry layouts, sortable by name / date / weight prefix
+- Optional Artalk comments module — config-driven partial that mirrors the article card style (glass, button--ghost, mono uppercase header) and auto-aligns to `.article-main` via the existing CSS grid, with a per-comment stagger fade-in on list load
 - Optional article like button — centered heart CTA at the bottom of the article body, one-way semantics (no cancel after click) with bump animation, pink accent (#ff6b8a) when liked, count synced across devices via a self-hosted `/api/like/*` endpoint (like-server.py, JSON file backend) with `localStorage` fallback for per-user like state; cursor switches to `not-allowed` to signal the action is locked
 - Optional `cover` front matter per post — page-bundle image or `static/` asset, used as the archive-page thumbnail
 - Open Graph, Twitter Card, canonical URL, and JSON-LD metadata
@@ -210,7 +210,34 @@ Drop one or more images into a directory, then use the shortcode by folder name:
 {{< gallery "gallery/2026-tokyo" >}}
 ```
 
-The shortcode renders a responsive CSS grid and uses PhotoSwipe for full-screen previews. Images are served as-is from `static/`.
+The shortcode renders a responsive CSS grid and uses PhotoSwipe for full-screen previews. Images are pulled from the page bundle (`content/posts/.../gallery/2026-tokyo/*.jpg`); they can also be referenced explicitly with `images="a.jpg,b.jpg"`.
+
+#### Layout: `grid` (default) vs `justified`
+
+- `grid` — even CSS Grid columns, `cols` controls column count.
+- `justified` — flexbox masonry that respects each image's aspect ratio. Each row fills the container proportionally; image height stays at the row target.
+
+```md
+{{< gallery "gallery/2026-tokyo" layout="justified" cols="3" gap="14" >}}
+```
+
+#### Sort
+
+- `sort="name"` (default) — alphabetical by filename.
+- `sort="date"` — by file modification time (`.Lastmod`).
+- `sort="weight"` — by numeric prefix in the filename, e.g. `01-foo.jpg`, `02-bar.jpg` (ascending). Images without a prefix sort last.
+- `sort="manual"` — keeps the order images were listed in (no sort).
+- `reverse="true"` — flip the chosen order.
+
+```md
+{{< gallery "gallery/2026-tokyo" layout="justified" sort="weight" reverse="false" >}}
+```
+
+The `weight` strategy is convenient when filenames come from a camera or scanner that doesn't preserve capture order — rename to add a prefix and the gallery reorders.
+
+#### Inline images in markdown
+
+Single images rendered via the standard `![alt](image.jpg)` markdown also join the gallery: the render hook attaches the same `data-flex-grow` / `data-flex-basis` attributes, and a small JS helper in `main.js` groups consecutive figures into a justified masonry container automatically.
 
 ### Run locally
 
