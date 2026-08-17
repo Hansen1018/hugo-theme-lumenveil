@@ -327,13 +327,22 @@
           // (0.7s, cubic-bezier(.22,1,.36,1), 14px translate) with a
           // 70ms cascade. The dataset flag prevents re-animating on
           // list re-renders (sort, page changes).
+          var reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
           function staggerComments() {
             var items = document.querySelectorAll('#Comments .atk-comment-wrap');
             items.forEach(function(item, i) {
               if (item.dataset.staggered) return;
               item.dataset.staggered = '1';
-              item.style.animationDelay = (i * 70) + 'ms';
-              item.classList.add('fade-up');
+              // CSS only shortens animation-duration under reduced-motion;
+              // the inline animation-delay isn't covered, so for users
+              // with reduced-motion we skip the cascade entirely
+              // (first item becomes visible immediately, no .fade-up).
+              if (!reduceMotion) {
+                item.style.animationDelay = (i * 70) + 'ms';
+                item.classList.add('fade-up');
+              } else {
+                item.classList.add('is-visible');
+              }
             });
           }
           if (Artalk && typeof Artalk.on === 'function') {

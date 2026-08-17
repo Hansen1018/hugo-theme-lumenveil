@@ -1,9 +1,9 @@
 {{ define "main" }}
 {{ $year := "" }}
 {{ $list := .RegularPagesRecursive.ByDate.Reverse }}
-{{ $yearBase := "/posts/" }}
-{{ if eq .Section "archives" }}{{ $yearBase = "/archives/" }}{{ end }}
 {{ $isList := or (eq .Section "archives") (eq .Section "posts") }}
+{{ $yearBase := "/posts/" }}
+{{ if and $isList (eq .Section "archives") }}{{ $yearBase = "/archives/" }}{{ end }}
 {{ $yearCount := 0 }}
 {{ if $isList }}
   {{ $yearCount = len ((where site.RegularPages "Section" "in" site.Params.mainSections).GroupByDate "2006") }}
@@ -27,7 +27,7 @@
     {{ if $isList }}<span>{{ $yearCount }} 个年份</span>{{ end }}
   </div>
 </section>
-{{ if or (eq .Section "archives") (eq .Section "posts") }}
+{{ if $isList }}
 <section class="section section--compact" data-reveal data-archive>
   {{ $pages := where site.RegularPages "Section" "in" site.Params.mainSections }}
   {{ if $pages }}

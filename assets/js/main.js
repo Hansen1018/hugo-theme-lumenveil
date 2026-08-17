@@ -47,6 +47,14 @@
     menuToggle?.setAttribute('aria-expanded', 'false')
   }))
 
+  // Escape closes the mobile menu (keyboard a11y).
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && menu?.classList.contains('is-open')) {
+      menu.classList.remove('is-open')
+      menuToggle?.setAttribute('aria-expanded', 'false')
+    }
+  })
+
   const revealNodes = document.querySelectorAll('[data-reveal]')
   if ('IntersectionObserver' in window) {
     const revealObserver = new IntersectionObserver((entries) => {
@@ -87,7 +95,7 @@
 
   const openSearch = async () => {
     if (!searchDialog) return
-    if (typeof searchDialog.showModal === 'function') searchDialog.showModal()
+    if (typeof searchDialog.showModal === 'function' && !searchDialog.open) searchDialog.showModal()
     searchInput?.focus()
     if (!searchIndex) searchResults.innerHTML = '<p class="search-empty">正在加载搜索索引…</p>'
     try {
@@ -308,8 +316,8 @@ yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year
   // The <span id="busuanzi_value_page_pv"> element is auto-populated by
   // the busuanzi.pure.mini.js script (loaded via layouts/partials/busuanzi.html).
   // No manual JS handling needed here — busuanzi fills the inner span on load,
-  // and the outer "阅读 ... 次" wrapper stays intact.
+  // and the outer "X reads" wrapper stays intact.
   // (Earlier we tried Artalk.loadCountWidget + nested <span> structure + manual
   // fetch to Artalk PV API — Artalk 2.x doesn't expose PV via REST and the
   // widget UI doesn't auto-fill an inline <span>. busuanzi is the simplest
-  // path that preserves "阅读 X 次" format and gives real cross-user counts.)
+  // path that preserves "X reads" format and gives real cross-user counts.)
