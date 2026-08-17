@@ -605,69 +605,47 @@ html[data-theme="light"] .theme-icon--sun { display: block; }
   gap: var(--pswp-gap, 14px);
   margin: 2em 0;
 }
-/* Justified / adaptive sizing — pure CSS Grid where each item takes one
-   column at the column's full width and the <img> displays at its own
-   natural aspect ratio (height:auto, no aspect-ratio on the anchor).
-   This is the simplest "every image shown in full, no cropping, no
-   letterbox" layout: cell width is set by the column, cell height is set
-   by the image's intrinsic ratio, and grid-auto-rows handles the rest.
-   Rows end up with varying heights since images have different ratios;
-   that's the intended masonry effect, not a bug. */
+/* Justified / 2-per-row flex — each image fills exactly 50% of the
+   container width (minus half the gap so two fit cleanly per row).
+   Images render at their natural aspect ratio (height: auto, no
+   object-fit) so nothing is ever cropped. Items in the same row may
+   have different heights (L vs P scale to different ratios), which is
+   intentional. Odd-count last item is centered at 50% width. */
 .pswp-gallery[data-pswp-layout="justified"] {
-  display: grid;
-  grid-template-columns: repeat(var(--pswp-cols, 3), minmax(0, 1fr));
+  /* 2-per-row Stack-style masonry. JS pairs items and sets flex-basis
+     in px so widths distribute by aspect ratio. Both items in a pair
+     end up the same height naturally (w / aspect = (W - gap) / sum).
+     No aspect-ratio / object-fit overrides — images render at their
+     own ratio, no cropping, no letterbox. Items align to flex-start
+     (no centering) — gaps fall wherever the items sit, never
+     forced symmetric. Lone items (odd count) take 100% width so
+     they fill their row, no centering needed. */
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--pswp-gap, 14px);
   margin: 2em 0;
 }
 .pswp-gallery[data-pswp-layout="justified"] > .pswp-item,
 .pswp-gallery[data-pswp-layout="justified"] > .gallery-image {
-  /* Drop the base rule's 4:3 cell aspect-ratio, dark letterbox bg,
-     1px border, and rounded corners — none of them help here, and the
-     bg/border can leak through subpixel rendering gaps to look like a
-     black frame around the photo. */
-  aspect-ratio: auto;
-  background: transparent;
-  border: 0;
-}
-/* Landscape (w > h) items span 2 columns so they don't look squashed
-   next to portrait items. Portrait stays at 1 column. Grid auto-flow
-   dense packs the remaining portrait slots into the leftover cells. */
-.pswp-gallery[data-pswp-layout="justified"] > .pswp-item[data-pswp-orientation="landscape"],
-.pswp-gallery[data-pswp-layout="justified"] > .gallery-image[data-pswp-orientation="landscape"] {
-  grid-column: span 3;
-}
-.pswp-gallery[data-pswp-layout="justified"] {
-  grid-auto-flow: dense;
-}
-.pswp-gallery .pswp-item,
-.pswp-gallery .gallery-image {
-  display: block;
-  position: relative;
+  /* Default to 50% width as a no-overflow fallback. JS sets the exact
+     inline flex-basis (proportional to aspect ratio) on load; before
+     JS runs, items are still constrained to half the container width
+     so they don't overflow. */
+  flex: 0 0 calc(50% - var(--pswp-gap, 14px) / 2);
+  margin: 0;
   overflow: hidden;
   border-radius: 12px;
-  aspect-ratio: 4 / 3;
-  background: var(--bg-1, rgba(255,255,255,.04));
-  border: 1px solid var(--line, rgba(255,255,255,.08));
-  transition: transform .25s ease, border-color .25s ease;
-  cursor: zoom-in;
-}
-.pswp-gallery .pswp-item:hover,
-.pswp-gallery .gallery-image:hover {
-  transform: translateY(-2px);
-  border-color: var(--accent-2, #22d3ee);
-}
-.pswp-gallery .pswp-item img,
-.pswp-gallery .gallery-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  background: transparent;
+  border: 0;
   display: block;
+  cursor: zoom-in;
+  transition: transform .25s ease;
 }
-.pswp-gallery[data-pswp-layout="justified"] > .pswp-item img,
-.pswp-gallery[data-pswp-layout="justified"] > .gallery-image img {
-  /* height:auto + no object-fit → image renders at its natural aspect
-     ratio. Width is the column width, so the image always fills its
-     column at the image's true ratio — never cropped, never letterboxed. */
+.pswp-gallery[data-pswp-layout="justified"] > .pswp-item:hover {
+  transform: translateY(-2px);
+}
+.pswp-gallery[data-pswp-layout="justified"] > .pswp-item img {
+  width: 100%;
   height: auto;
   display: block;
 }

@@ -321,3 +321,52 @@ yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year
   // fetch to Artalk PV API — Artalk 2.x doesn't expose PV via REST and the
   // widget UI doesn't auto-fill an inline <span>. busuanzi is the simplest
   // path that preserves "X reads" format and gives real cross-user counts.)
+
+// Gallery 2-per-row with widths proportional to aspect ratio (Stack-
+// style masonry). For each pair, set flex-basis in px so the row
+// distributes width by aspect ratio. Both items end up the same
+// height naturally because w / aspect = (W - gap) / sum for both.
+// Odd-count last item gets 100% row width.
+(() => {
+  function layout(gallery) {
+    const items = Array.from(gallery.children).filter(el =>
+      el.classList && el.classList.contains('pswp-item'));
+    if (!items.length) return;
+    const cs = getComputedStyle(gallery);
+    const gap = parseFloat(cs.columnGap || cs.gap) || 14;
+    const W = gallery.clientWidth;
+    if (!W) return;
+    for (let i = 0; i < items.length; i += 2) {
+      const a = items[i], b = items[i + 1];
+      if (b) {
+        const rA = parseFloat(a.dataset.pswpRatio) || 1;
+        const rB = parseFloat(b.dataset.pswpRatio) || 1;
+        const sum = rA + rB;
+        const avail = W - gap;
+        a.style.flex = '0 0 ' + ((rA / sum) * avail) + 'px';
+        b.style.flex = '0 0 ' + ((rB / sum) * avail) + 'px';
+      } else {
+        a.style.flex = '0 0 ' + W + 'px';
+        a.style.maxWidth = '100%';
+      }
+    }
+  }
+  function run() {
+    document.querySelectorAll('.pswp-gallery[data-pswp-layout="justified"]').forEach(layout);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', run);
+  } else {
+    run();
+  }
+  window.addEventListener('load', run);
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    document.querySelectorAll('.pswp-gallery[data-pswp-layout="justified"] > .pswp-item').forEach(el => {
+      el.style.flex = '';
+      el.style.maxWidth = '';
+    });
+    resizeTimer = setTimeout(run, 150);
+  });
+})();

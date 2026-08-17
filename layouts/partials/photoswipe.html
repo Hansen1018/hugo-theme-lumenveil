@@ -17,4 +17,51 @@ document.querySelectorAll('.article-main').forEach(a=>{
     bgOpacity:.80, padding:{top:180,right:180,bottom:180,left:180},showHideAnimationType:'fade'
   }).init();
 });
+
+// Gallery 2-per-row pairing — inlined here so it runs independently of
+// main.min.js (which has been throwing a runtime error and prevented
+// the pairing from running, leaving items at default 50% width with
+// unequal heights across landscape+portrait pairs).
+// Stack-style masonry: for each pair, set flex-basis proportional to
+// aspect ratio so both items end up the same height naturally.
+function pairGallery(g) {
+  const items = Array.from(g.querySelectorAll('.pswp-item'));
+  if (!items.length) return;
+  const cs = getComputedStyle(g);
+  const gap = parseFloat(cs.columnGap || cs.gap) || 14;
+  const W = g.clientWidth;
+  if (!W) return;
+  for (let i = 0; i < items.length; i += 2) {
+    const a = items[i], b = items[i + 1];
+    if (b) {
+      const rA = parseFloat(a.dataset.pswpRatio) || 1;
+      const rB = parseFloat(b.dataset.pswpRatio) || 1;
+      const sum = rA + rB;
+      const avail = W - gap;
+      a.style.flex = '0 0 ' + ((rA / sum) * avail) + 'px';
+      b.style.flex = '0 0 ' + ((rB / sum) * avail) + 'px';
+    } else {
+      a.style.flex = '0 0 ' + W + 'px';
+      a.style.maxWidth = '100%';
+    }
+  }
+}
+function runPairing() {
+  document.querySelectorAll('.pswp-gallery[data-pswp-layout="justified"]').forEach(pairGallery);
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', runPairing);
+} else {
+  runPairing();
+}
+window.addEventListener('load', runPairing);
+let _pairResizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(_pairResizeTimer);
+  document.querySelectorAll('.pswp-gallery[data-pswp-layout="justified"] > .pswp-item').forEach(el => {
+    el.style.flex = '';
+    el.style.maxWidth = '';
+  });
+  _pairResizeTimer = setTimeout(runPairing, 150);
+});
 </script>
