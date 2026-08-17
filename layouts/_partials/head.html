@@ -8,7 +8,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark light">
 <script>
-try{const t=localStorage.getItem('lumenveil-theme');document.documentElement.dataset.theme=t||((matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark')}catch(e){}
+try {
+  const t = localStorage.getItem('lumenveil-theme');
+  const valid = (t === 'light' || t === 'dark');
+  const system = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  const theme = valid ? t : system;
+  document.documentElement.dataset.theme = theme;
+  // Sync the theme toggle's label/title so a11y users don't get a wrong
+  // "切换浅色模式" while the main JS bundle is still loading.
+  const btn = document.querySelector('[data-theme-toggle]');
+  if (btn) {
+    const label = theme === 'light' ? '切换深色模式' : '切换浅色模式';
+    btn.setAttribute('aria-label', label);
+    btn.title = label;
+  }
+} catch (e) {}
 </script>
 <title>{{ $title }}</title>
 <meta name="description" content="{{ $description }}">
