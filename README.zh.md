@@ -117,53 +117,78 @@ toc: true
 ```
 
 短代码会渲染响应式 CSS 网格，并使用 PhotoSwipe 提供大图浏览。
-
 ### CSS 组件架构
 
-`main.css` 故意删除了。主题用 Hugo 的 `resources.Match` + `resources.Concat` 在 build 时把按组件拆分的文件 bundle 起来：
+`layouts/_partials/head.html` 在 build 时把每个组件文件按 cascade 顺序显式列在 slice 里，再用 `resources.Concat` 打包成一个 minified + fingerprinted 的 `main.css`：
 
 ```go
-{{ $main := resources.Match "css/components/_*.css" | resources.Concat "main.css" | minify | fingerprint }}
+{{ $components := slice
+    (resources.Get "css/components/tokens.css")
+    (resources.Get "css/components/reset.css")
+    (resources.Get "css/components/utilities.css")
+    (resources.Get "css/components/aurora.css")
+    (resources.Get "css/components/header.css")
+    (resources.Get "css/components/home.css")
+    (resources.Get "css/components/page-hero.css")
+    (resources.Get "css/components/pagination.css")
+    (resources.Get "css/components/gallery-prose.css")
+    (resources.Get "css/components/photoswipe.css")
+    (resources.Get "css/components/term.css")
+    (resources.Get "css/components/article.css")
+    (resources.Get "css/components/like.css")
+    (resources.Get "css/components/archive.css")
+    (resources.Get "css/components/toc.css")
+    (resources.Get "css/components/404.css")
+    (resources.Get "css/components/search.css")
+    (resources.Get "css/components/footer.css")
+    (resources.Get "css/components/back-to-top.css")
+    (resources.Get "css/components/responsive.css")
+    (resources.Get "css/components/motion.css")
+    (resources.Get "css/components/theme-light.css")
+    (resources.Get "css/components/gallery.css")
+}}
+{{ $main := $components | resources.Concat "css/main.css" | minify | fingerprint }}
 ```
 
-组件文件在 `assets/css/components/_<name>.css`，一个文件对应一个 BEM 命名空间：
+同样的 cascade 顺序在 `head.html` 顶部有一段编号注释，两边对得上。
 
-| 文件 | BEM 前缀 | 内容 |
-| --- | --- | --- |
-| `_tokens.css` | (root vars) | `:root` 自定义属性，浅色主题覆盖 |
-| `_reset.css` | (global) | `*, html, body, a, button, img, ::selection, :focus-visible, ::-webkit-scrollbar` |
-| `_utilities.css` | (global) | `.sr-only, .skip-link, .glass, .glass::before, .site-shell` |
-| `_aurora.css` | `.aurora, .aurora__*` | 背景画布，光斑，drift 动画 |
-| `_layout.css` | `.section, .page-hero, .breadcrumbs, .empty-state, .eyebrow` | 页面框架 |
-| `_article.css` | `.article, .article-header, .article-cover, .prose, .copy-code` | 文章正文 |
-| `_comments.css` | `.article-comments` | Artalk 评论容器 |
-| `_like.css` | `.article-like, .like-btn, .like-icon, .like-count` | 文章点赞 CTA |
-| `_gallery.css` | `.gallery-image, .pswp__*, .pswp-gallery, .pswp-item` | PhotoSwipe 覆盖 |
-| `_search.css` | `.search-dialog, .search-field, .search-result, .search-empty, kbd` | 搜索弹窗 |
-| `_term.css` | `.term-grid, .term-card` | 分类列表 |
-| `_post.css` | `.post-card, .post-grid, .post-meta, .post-nav, .read-link, .tag-list` | 文章列表 + 翻页 |
-| `_archive.css` | `.archive-board, .archive-block, .archive-count, .archive-empty` | archive 页 |
-| `_toc.css` | `.toc, .toc__inner` | TOC 侧边栏 |
-| `_404.css` | `.not-found, .not-found__*, .suggest-card` | 404 页 |
-| `_back-to-top.css` | `.back-to-top` | 返回顶部按钮 |
-| `_douban-card.css` | `.douban-card, .douban-card__*` | douban shortcode |
-| `_header.css` | `.site-header, .brand, .main-nav, .icon-button, .menu-toggle, .header-actions` | 顶部导航 |
-| `_footer.css` | `.site-footer, .footer-inner, .footer-bottom, .footer-links` | footer |
-| `_home.css` | `.hero, .hero__*, .chip, .button, .fade-up, .explore-panel, .about-panel` | 首页/hero |
+`assets/css/main.css`（685 行，拆分前的 monolithic 源文件）保留作为 **canonical 参考**，不是站点实际服务的资源——build pipeline 会忽略它，从上面那个 slice 重新生成 `main.css`。
 
-**下划线前缀**是关键：ASCII 排序时 `_` (0x5F) 在小写字母 (0x61+) 之前，所以 `resources.Match "css/components/_*.css"` 返回的文件顺序恰好匹配 CSS cascade 顺序：
+**为什么不用 `resources.Match`？** 之前的实现用过 `resources.Match "css/components/_*.css" | resources.Concat`，靠 ASCII 排序（下划线前缀）维持 cascade 顺序。这是不对的：`resources.Match` 返回的文件是按 **字母** 排，不是按 CSS cascade 排，结果真出了 bug——`_tokens.css` 跑到组件文件 *后面*，CSS 变量在下游被重新定义而不是上游先准备好，desktop 布局直接崩了（≈980px 的页面居中而不是填满 viewport）。修法就是按 cascade 顺序在 slice 里显式列出来，让 `resources.Concat` 按声明顺序拼接。所以加组件是个两步显式编辑（文件 + slice + 注释），不是 Match 自动拾起。
 
-- `_tokens` 和 `_reset` 最先（CSS 变量必须先定义）
-- `_aurora` / `_utilities` 接着（页面框架）
-- 之后是 BEM 组件按 cascade 顺序
+23 个组件按 cascade 顺序：
 
-Build 时 `resources.Concat` 把所有文件 bundle 成单个 `main.min.<hash>.css`（没有 `@import` 瀑布、单个 HTTP 请求、单个 cache key）。
+| # | 文件 | BEM 前缀 | 内容 |
+| --- | --- | --- | --- |
+| 1 | `tokens.css` | (root vars) | `:root` 自定义属性 |
+| 2 | `reset.css` | (global) | `*, html, body, a, button, img, ::selection, :focus-visible, ::-webkit-scrollbar` |
+| 3 | `utilities.css` | (global) | `.sr-only, .skip-link, .glass, .glass::before, .site-shell` |
+| 4 | `aurora.css` | `.aurora, .aurora__*` | 背景画布、光斑、drift 动画 |
+| 5 | `header.css` | `.site-header, .brand, .main-nav, .icon-button, .menu-toggle, .header-actions` | 顶部导航 |
+| 6 | `home.css` | `.hero, .hero__*, .chip, .button, .fade-up, .explore-panel, .about-panel` | 首页/hero |
+| 7 | `page-hero.css` | `.page-hero, .page-hero__stats, .breadcrumbs, .empty-state, .eyebrow` | section 框架 |
+| 8 | `pagination.css` | `.pagination, .pagination-item, .pagination-pages` | 分页 |
+| 9 | `gallery-prose.css` | `.pswp-figure, .pswp-inline, figcaption` | `.prose` 内联图片 reset |
+| 10 | `photoswipe.css` | `.pswp__bg, .pswp__container, .pswp__item, .pswp__img` | PhotoSwipe 覆盖 |
+| 11 | `term.css` | `.term-grid, .term-card` | 分类列表 |
+| 12 | `article.css` | `.article, .article-header, .article-cover, .prose, .copy-code` | 文章正文 |
+| 13 | `like.css` | `.article-like, .like-btn, .like-icon, .like-count` | 文章点赞 CTA |
+| 14 | `archive.css` | `.archive-board, .archive-block, .archive-count, .archive-empty` | archive 页 |
+| 15 | `toc.css` | `.toc, .toc__inner` | TOC 侧边栏 |
+| 16 | `404.css` | `.not-found, .not-found__*, .suggest-card` | 404 页 |
+| 17 | `search.css` | `.search-dialog, .search-field, .search-result, .search-empty, kbd` | 搜索弹窗 |
+| 18 | `footer.css` | `.site-footer, .footer-inner, .footer-bottom, .footer-links` | footer |
+| 19 | `back-to-top.css` | `.back-to-top` | 返回顶部按钮 |
+| 20 | `responsive.css` | (media queries) | 断点覆盖 |
+| 21 | `motion.css` | (media queries) | `prefers-reduced-motion` 覆盖 |
+| 22 | `theme-light.css` | `html[data-theme="light"] *` | 浅色主题覆盖 |
+| 23 | `gallery.css` | `.gallery, .gallery__*, .pswp-gallery, .pswp-item` | gallery shortcode |
 
 **添加新组件**：
 
-1. 创建 `assets/css/components/_<name>.css`，BEM 命名空间
-2. 文件名必须以 `_` 开头，确保 cascade 顺序正确
-3. 组件自动被 `resources.Match "css/components/_*.css"` 拾起——不用改 `head.html`
+1. 新建 `assets/css/components/<name>.css`，按 BEM 命名。选好 cascade 位置（variables → reset → utilities → chrome → page-specific → overrides）。
+2. 在 `head.html` 的 slice 末尾 append，并在顶部编号注释里同步加一行。如果 `resources.Get` 路径不存在，build 会直接失败。
+3. 重新构建：`hugo server -D`。
 
 ## 许可
 

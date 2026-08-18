@@ -246,53 +246,78 @@ hugo server -D
 ```
 
 Open `http://localhost:1313/` in your browser.
-
 ### CSS component architecture
 
-`main.css` is intentionally deleted. The theme uses Hugo's `resources.Match` + `resources.Concat` to bundle per-component files at build time:
+`layouts/_partials/head.html` bundles the per-component CSS files into a single minified, fingerprinted `main.css` at build time using an **explicit slice + `resources.Concat`**, in cascade order:
 
 ```go
-{{ $main := resources.Match "css/components/_*.css" | resources.Concat "main.css" | minify | fingerprint }}
+{{ $components := slice
+    (resources.Get "css/components/tokens.css")
+    (resources.Get "css/components/reset.css")
+    (resources.Get "css/components/utilities.css")
+    (resources.Get "css/components/aurora.css")
+    (resources.Get "css/components/header.css")
+    (resources.Get "css/components/home.css")
+    (resources.Get "css/components/page-hero.css")
+    (resources.Get "css/components/pagination.css")
+    (resources.Get "css/components/gallery-prose.css")
+    (resources.Get "css/components/photoswipe.css")
+    (resources.Get "css/components/term.css")
+    (resources.Get "css/components/article.css")
+    (resources.Get "css/components/like.css")
+    (resources.Get "css/components/archive.css")
+    (resources.Get "css/components/toc.css")
+    (resources.Get "css/components/404.css")
+    (resources.Get "css/components/search.css")
+    (resources.Get "css/components/footer.css")
+    (resources.Get "css/components/back-to-top.css")
+    (resources.Get "css/components/responsive.css")
+    (resources.Get "css/components/motion.css")
+    (resources.Get "css/components/theme-light.css")
+    (resources.Get "css/components/gallery.css")
+}}
+{{ $main := $components | resources.Concat "css/main.css" | minify | fingerprint }}
 ```
 
-Component files live in `assets/css/components/_<name>.css`, one per BEM namespace:
+The same cascade order is documented as a numbered comment block at the top of `head.html`, so the two stay in sync.
 
-| File | BEM prefix | What |
-| --- | --- | --- |
-| `_tokens.css` | (root vars) | `:root` custom properties, light theme override |
-| `_reset.css` | (global) | `*, html, body, a, button, img, ::selection, :focus-visible, ::-webkit-scrollbar` |
-| `_utilities.css` | (global) | `.sr-only, .skip-link, .glass, .glass::before, .site-shell` |
-| `_aurora.css` | `.aurora, .aurora__*` | background canvas, blobs, drift animations |
-| `_layout.css` | `.section, .page-hero, .breadcrumbs, .empty-state, .eyebrow` | page chrome |
-| `_article.css` | `.article, .article-header, .article-cover, .prose, .copy-code` | article body |
-| `_comments.css` | `.article-comments` | Artalk comments wrapper |
-| `_like.css` | `.article-like, .like-btn, .like-icon, .like-count` | article like CTA |
-| `_gallery.css` | `.gallery-image, .pswp__*, .pswp-gallery, .pswp-item` | PhotoSwipe overrides |
-| `_search.css` | `.search-dialog, .search-field, .search-result, .search-empty, kbd` | search modal |
-| `_term.css` | `.term-grid, .term-card` | taxonomy list |
-| `_post.css` | `.post-card, .post-grid, .post-meta, .post-nav, .read-link, .tag-list` | post list + nav |
-| `_archive.css` | `.archive-board, .archive-block, .archive-count, .archive-empty` | archive page |
-| `_toc.css` | `.toc, .toc__inner` | TOC sidebar |
-| `_404.css` | `.not-found, .not-found__*, .suggest-card` | 404 page |
-| `_back-to-top.css` | `.back-to-top` | back-to-top button |
-| `_douban-card.css` | `.douban-card, .douban-card__*` | douban shortcode |
-| `_header.css` | `.site-header, .brand, .main-nav, .icon-button, .menu-toggle, .header-actions` | top nav |
-| `_footer.css` | `.site-footer, .footer-inner, .footer-bottom, .footer-links` | footer |
-| `_home.css` | `.hero, .hero__*, .chip, .button, .fade-up, .explore-panel, .about-panel` | home/hero page |
+`assets/css/main.css` (685 lines, the pre-split monolithic source) is kept as a **canonical reference** of the previous bundle. It is not what the site serves — the build pipeline ignores it and produces `main.css` from the slice above.
 
-The **underscore prefix** on every filename is the key trick: in ASCII sort, `_` (0x5F) comes **before** lowercase letters (0x61+), so `resources.Match "css/components/_*.css"` returns files in an order that matches the intended CSS cascade:
+**Why not `resources.Match`?** An earlier attempt used `resources.Match "css/components/_*.css" | resources.Concat`, relying on ASCII sort (with an underscore prefix) to keep cascade order. That was wrong: `resources.Match` returns files in **alphabetical** order, which doesn't match the CSS cascade. The result was a real bug — `_tokens.css` ended up *after* component files, so CSS variables were redefined downstream instead of being available upstream, and the desktop layout visibly broke (≈980px-wide pages centered instead of filling the viewport). The fix is to list the files in cascade order in an explicit slice and let `resources.Concat` emit them in that order. Adding a component is therefore a deliberate two-step edit (file + slice + comment), not a free `Match` pickup.
 
-- `_tokens` and `_reset` come first (CSS variables must be defined before use)
-- `_aurora` / `_utilities` next (page chrome)
-- BEM components in cascade order
+The 23 components, in cascade order:
 
-At build time, `resources.Concat` bundles them all into a single `main.min.<hash>.css` (no `@import` waterfall, single HTTP request, single cache key).
+| # | File | BEM prefix | What |
+| --- | --- | --- | --- |
+| 1 | `tokens.css` | (root vars) | `:root` custom properties |
+| 2 | `reset.css` | (global) | `*, html, body, a, button, img, ::selection, :focus-visible, ::-webkit-scrollbar` |
+| 3 | `utilities.css` | (global) | `.sr-only, .skip-link, .glass, .glass::before, .site-shell` |
+| 4 | `aurora.css` | `.aurora, .aurora__*` | background canvas, blobs, drift animations |
+| 5 | `header.css` | `.site-header, .brand, .main-nav, .icon-button, .menu-toggle, .header-actions` | top nav |
+| 6 | `home.css` | `.hero, .hero__*, .chip, .button, .fade-up, .explore-panel, .about-panel` | home/hero |
+| 7 | `page-hero.css` | `.page-hero, .page-hero__stats, .breadcrumbs, .empty-state, .eyebrow` | section chrome |
+| 8 | `pagination.css` | `.pagination, .pagination-item, .pagination-pages` | pagination |
+| 9 | `gallery-prose.css` | `.pswp-figure, .pswp-inline, figcaption` | inline-image reset inside `.prose` |
+| 10 | `photoswipe.css` | `.pswp__bg, .pswp__container, .pswp__item, .pswp__img` | PhotoSwipe overrides |
+| 11 | `term.css` | `.term-grid, .term-card` | taxonomy list |
+| 12 | `article.css` | `.article, .article-header, .article-cover, .prose, .copy-code` | article body |
+| 13 | `like.css` | `.article-like, .like-btn, .like-icon, .like-count` | article like CTA |
+| 14 | `archive.css` | `.archive-board, .archive-block, .archive-count, .archive-empty` | archive page |
+| 15 | `toc.css` | `.toc, .toc__inner` | TOC sidebar |
+| 16 | `404.css` | `.not-found, .not-found__*, .suggest-card` | 404 page |
+| 17 | `search.css` | `.search-dialog, .search-field, .search-result, .search-empty, kbd` | search modal |
+| 18 | `footer.css` | `.site-footer, .footer-inner, .footer-bottom, .footer-links` | footer |
+| 19 | `back-to-top.css` | `.back-to-top` | back-to-top button |
+| 20 | `responsive.css` | (media queries) | breakpoint overrides |
+| 21 | `motion.css` | (media queries) | `prefers-reduced-motion` overrides |
+| 22 | `theme-light.css` | `html[data-theme="light"] *` | light-theme overrides |
+| 23 | `gallery.css` | `.gallery, .gallery__*, .pswp-gallery, .pswp-item` | gallery shortcode |
 
 **To add a new component**:
 
-1. Create `assets/css/components/_<name>.css` with BEM-namespaced styles
-2. Filename must start with `_` to sort correctly in the cascade
-3. The component is auto-picked-up by `resources.Match "css/components/_*.css"` — no `head.html` edit needed
+1. Create `assets/css/components/<name>.css` with BEM-namespaced styles. Pick the correct cascade position (variables → reset → utilities → chrome → page-specific → overrides).
+2. Append it to the slice in `head.html` and update the numbered comment block. The build will fail loudly if a `resources.Get` path doesn't resolve.
+3. Re-build: `hugo server -D`.
 
 ### Customization
 
