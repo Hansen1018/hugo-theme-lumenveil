@@ -1,0 +1,45 @@
+/* footer.css — extracted from main.css */
+
+.site-footer {
+width: min(calc(100% - 48px),var(--content)); margin: 70px auto 0; padding: 50px 0 26px; border-top: 1px solid var(--line);
+}
+
+.footer-inner {
+display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 30px;
+}
+
+.footer-inner p {
+margin: 0; color: var(--ink-3); font-size: 13px;
+}
+
+.footer-links {
+display: flex; flex-wrap: wrap; gap: 8px;
+}
+
+.footer-links a {
+padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-3); font-size: 11px;
+}
+
+.footer-links a:hover {
+color: var(--ink-1); border-color: var(--line-strong);
+}
+
+.footer-bottom {
+display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-top: 34px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--ink-4); font: 10px var(--font-mono);
+}
+
+.footer-bottom a {
+color: var(--ink-3); text-decoration: none; transition: color .2s ease;
+}
+
+.footer-bottom a:hover {
+color: var(--accent-2);
+}
+
+.footer-inner {
+grid-template-columns: 1fr;
+}
+
+.footer-bottom {
+flex-direction: column;
+}
