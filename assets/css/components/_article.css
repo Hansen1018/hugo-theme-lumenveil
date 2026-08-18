@@ -1,0 +1,174 @@
+/* article.css — extracted from main.css */
+
+.article {
+width: min(calc(100% - 48px),var(--content)); margin: auto; padding: 154px 0 100px;
+}
+
+.article-header {
+max-width: 920px; margin: 0 auto 54px; text-align: center;
+}
+
+.article-header .breadcrumbs, .article-header .post-meta, .article-header .tag-list {
+justify-content: center;
+}
+
+.article-header h1 {
+margin: 22px 0 18px; font-size: clamp(42px,7vw,76px); line-height: 1.06; letter-spacing: -.05em;
+}
+
+.article-cover {
+display: block; width: 100%; margin: 0 0 28px 0; overflow: hidden; border-radius: var(--radius-lg);
+}
+
+.article-cover img {
+display: block; width: 100%; height: auto;
+}
+
+.article-cover figcaption {
+text-align: center; font-size: 0.82em; color: var(--ink-2); margin: -10px 0 28px 0; opacity: 0.78; letter-spacing: 0.02em;
+}
+
+.article-deck {
+max-width: 680px; margin: auto; color: var(--ink-2); font-size: clamp(16px,2vw,19px); line-height: 1.7;
+}
+
+.article-layout {
+display: grid; grid-template-columns: minmax(0,820px) 240px; justify-content: center; align-items: start; gap: 44px; overflow: hidden;
+}
+
+.article-main {
+min-width: 0; max-width: 100%; padding: clamp(28px,5vw,58px); border-radius: var(--radius-xl); overflow: hidden;
+}
+
+.prose {
+color: rgba(255,255,255,.82); font-size: 16px; line-height: 1.9; overflow-wrap: break-word; overflow-x: hidden;
+}
+
+.prose > *:first-child {
+margin-top: 0;
+}
+
+.prose > *:last-child {
+margin-bottom: 0;
+}
+
+.prose h2, .prose h3, .prose h4 {
+color: var(--ink-1); line-height: 1.25; letter-spacing: -.025em; scroll-margin-top: 100px;
+}
+
+.prose h2 {
+margin: 2.3em 0 .8em; font-size: 29px;
+}
+
+.prose h3 {
+margin: 2em 0 .7em; font-size: 23px;
+}
+
+.prose h4 {
+margin: 1.7em 0 .6em; font-size: 19px;
+}
+
+.prose p, .prose ul, .prose ol {
+margin: 1.15em 0;
+}
+
+.prose a {
+color: var(--accent-2); text-decoration: underline; text-decoration-color: rgba(34,211,238,.35); text-underline-offset: 3px;
+}
+
+.prose strong {
+color: var(--ink-1);
+}
+
+.prose blockquote {
+margin: 1.8em 0; padding: 16px 20px; border-left: 3px solid var(--accent-1); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; background: rgba(124,92,255,.08); color: var(--ink-2);
+}
+
+.prose blockquote p {
+margin: 0;
+}
+
+.prose hr {
+margin: 3em 0; border: 0; border-top: 1px solid var(--line);
+}
+
+.prose img {
+margin: 2em auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.prose table {
+display: block; width: 100%; overflow-x: auto; margin: 1.8em 0; border-collapse: collapse;
+}
+
+.prose th, .prose td {
+padding: 10px 14px; border: 1px solid var(--line); text-align: left;
+}
+
+.prose th {
+background: rgba(255,255,255,.05); color: var(--ink-1);
+}
+
+.prose :not(pre) > code {
+padding: 2px 6px; border: 1px solid var(--line); border-radius: 5px; background: rgba(255,255,255,.06); color: #c4b5fd; font: .88em var(--font-mono);
+}
+
+.prose .highlight {
+position: relative; margin: 1.8em 0;
+}
+
+.prose pre {
+overflow-x: auto; margin: 0; padding: 22px; border: 1px solid var(--line); border-radius: var(--radius-md); background: #090b10 !important; color: rgba(255,255,255,.83); font: 13px/1.75 var(--font-mono);
+}
+
+.copy-code {
+position: absolute; top: 10px; right: 10px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 7px; background: rgba(255,255,255,.07); color: var(--ink-3); font-size: 10px; cursor: pointer;
+}
+
+.copy-code:hover {
+color: var(--ink-1); border-color: var(--line-strong);
+}
+
+.article-share {
+position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 20px; padding: 18px 0 20px; border-top: 1px solid var(--line); color: var(--ink-2); visibility: visible; opacity: 1;
+}
+
+.article-like {
+display: flex; justify-content: center; margin: 24px 0 16px; padding: 0 16px;
+}
+
+.article-share > span {
+display: inline-flex; align-items: center; min-height: 30px; font-size: 15px; font-weight: 500; letter-spacing: -0.005em; line-height: 1;
+}
+
+.article-share > .button {
+min-height: 30px; padding: 7px 16px; font-size: 14px;
+}
+
+.article-comments {
+position: relative; z-index: 1; margin-top: 8px; padding-top: 24px; border-top: 1px solid var(--line);
+}
+
+.article-layout {
+grid-template-columns: minmax(0,820px);
+}
+
+.article {
+padding-top: 126px;
+}
+
+.article-main {
+padding: 28px 20px; border-radius: var(--radius-lg);
+}
+
+.article-header h1 {
+font-size: clamp(39px,12vw,62px);
+}
+
+.article-share {
+flex-wrap: wrap;
+}

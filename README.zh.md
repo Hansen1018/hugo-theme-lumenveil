@@ -2,7 +2,7 @@
 
 A luminous, responsive Hugo theme with glass surfaces, aurora ambience, automatic light and dark modes, search, galleries, and a reading-first experience for long-form content.
 
-[English](README.md) · [中文说明](#lumenveil光幕) · [Screenshots](#截图)
+[English](README.md) · [中文说明](#lumenveil光幕) · [截图](#截图)
 
 Lumenveil（光幕）是一款面向个人博客的 Hugo 主题，以通透玻璃表面、柔和极光背景和舒适长文阅读为核心，并提供完整的浅色与深色模式。
 
@@ -46,7 +46,6 @@ Lumenveil（光幕）是一款面向个人博客的 Hugo 主题，以通透玻�
 | 文章页（深色） | 关于页（深色） |
 | --- | --- |
 | ![移动端文章页（深色）](docs/screenshots/post-mobile-dark.png) | ![移动端关于页（深色）](docs/screenshots/about-mobile-dark.png) |
- |
 
 ## 主要功能
 
@@ -58,7 +57,9 @@ Lumenveil（光幕）是一款面向个人博客的 Hugo 主题，以通透玻�
 - 文章目录、阅读时间、字数统计、最后更新时间与通过 busuanzi partial 显示的实时跨访客阅读次数（第三方 CN 服务）
 - 页脚动态版权（`since` 至今）和 CC BY-NC-SA 4.0 许可链接
 - 代码高亮、代码复制与文章链接复制
-- 由 PhotoSwipe 驱动的相册 shortcode，使用 CSS 网格布局
+- 由 PhotoSwipe 驱动的相册 shortcode，支持 CSS 网格 + justified masonry 两种布局，可按文件名 / 修改时间 / 数字前缀排序
+- `douban-card` shortcode —— 嵌入豆瓣电影 / 图书 / 音乐卡片（豆方公开 API 已于 2022 年关闭，所有元数据通过参数传入，不发请求）
+- Markdown 图片标题语法 `![alt](src "标题")` —— 在图下方渲染居中的 `<figcaption>`，与 HTML `title` 悬浮提示解耦（bug 修复）
 - 可选的 Artalk 评论模块 —— 配置驱动的 partial，样式与文章卡片对齐（玻璃卡片、按钮--ghost 等），自动通过现有 CSS Grid 与 .article-main 列对齐，并在评论列表加载时加入逐条 stagger fade-in
 - 可选的 `cover` 封面图 — 支持 page-bundle 图片或 `static/` 静态资源，在文章列表中作为缩略图展示
 - Open Graph、Twitter Card、Canonical 和 JSON-LD
@@ -116,7 +117,53 @@ toc: true
 {{< gallery "gallery/2026-tokyo" >}}
 ```
 
-短代码会渲染响应式 CSS 网格，并使用 PhotoSwipe 提供大图浏览。
+短代码会渲染响应式 CSS 网格，并使用 PhotoSwipe 提供大图浏览。详见 [README.md](README.md#image-gallery-shortcode) 中的完整参数说明（`layout`、`sort`、`reverse` 等）。
+
+## 图片标题（caption）
+
+用标准的 markdown title 语法在图片下方添加居中标题：
+
+```md
+![拿铁拉花](/coffee.jpg "清晨仪式 —— 跑完步来一杯 flat white。")
+```
+
+`.Title` 不为空时，文本会渲染为图下方居中的 `<figcaption>`；为空时不渲染 figcaption，保持纯净的 figure（不会因空元素产生多余 margin/padding）。
+
+- **向后兼容** —— 原有用法的文章完全不受影响（没有 figcaption）。
+- **向前兼容** —— 任何 Hugo + Goldmark 版本都可用，不需要额外扩展。
+- **bug 修复** —— title 语法不再给 `<img>` 加 HTML `title=` 悬浮提示。原本同一语法会同时产生 caption 和 tooltip，混用了两种语义。
+
+> 注意：Goldmark 的 `{attr="val"}` 语法（`![alt](src){caption="text"}`）在 Hugo 0.146.0+ 的 render-image hook 里不会写入 `.Attributes`，所以 `.Title` 是当前支持的唯一路径。
+
+## `douban-card` shortcode
+
+嵌入可点击的豆瓣风格卡片，跳转到豆瓣条目页。豆方公开 API 已于 2022 年关闭，所以所有元数据通过参数传入 —— 不发自动请求。
+
+支持通过 `type` 参数切换三种类型：
+
+- `type="movie"` *（默认）* —— 跳转到 `movie.douban.com`，缺省图标为摄像机，meta 标签为 `导演` / `主演`
+- `type="book"` —— 跳转到 `book.douban.com`，缺省图标为书本，meta 标签为 `作者` / `译者`
+- `type="music"` —— 跳转到 `music.douban.com`，缺省图标为音符，meta 标签为 `艺术家` / `专辑`
+
+```md
+{{< douban-card type="book" id="12345678" title="示例标题" year="2024"
+                director="示例作者" rating="8.5" cover="cover.jpg" >}}
+```
+
+参数：
+
+- `id` *（必填）* —— 豆瓣条目 ID，用于拼接跳转链接
+- `type` —— `movie`（默认）、`book` 或 `music`；切换 URL 子域、缺省图标和 meta 标签
+- `title` —— 卡片标题（默认：`"豆瓣条目"`）
+- `year` —— 上映年份
+- `region` —— 地区
+- `director` —— 导演（movie）/ 作者（book）/ 艺术家（music）；旁边显示的标签随 `type` 切换
+- `rating` —— 豆瓣评分（显示为星标）
+- `cast` —— 主演（movie）/ 译者（book）/ 专辑（music），单个字符串；旁边显示的标签随 `type` 切换
+- `synopsis` —— 简介，自动截断为 2 行
+- `cover` —— page bundle 内的封面图路径；找不到时 fallback 到对应类型的图标（摄像机 / 书本 / 音符）
+
+样式与文章卡片一致（玻璃质感 + hover 抬升），跟随主题浅色/深色模式自适应。三种 type 的卡片布局、padding、配色和 hover 效果完全一致 —— 只有缺省图标形状和 meta 标签文字不同，整个 `douban-card` 系列的视觉风格保持统一。
 
 ## 许可
 

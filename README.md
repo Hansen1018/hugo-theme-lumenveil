@@ -27,6 +27,7 @@ Live preview: <https://blog.hansendong.top>
 | Article | About |
 | --- | --- |
 | ![Single post in dark mode with PhotoSwipe gallery / 深色文章页：PhotoSwipe 图集](docs/screenshots/post-dark.png) | ![About page in dark mode with glass surfaces / 深色关于页：玻璃表面](docs/screenshots/about-dark.png)
+
 ### Mobile
 
 | Home | Articles |
@@ -44,7 +45,6 @@ Live preview: <https://blog.hansendong.top>
 | Article (dark) | About (dark) |
 | --- | --- |
 | ![Single post on mobile, dark / 移动端文章页（深色）](docs/screenshots/post-mobile-dark.png) | ![About on mobile, dark / 移动端关于页（深色）](docs/screenshots/about-mobile-dark.png) |
- |
 
 ## English
 
@@ -59,6 +59,8 @@ Live preview: <https://blog.hansendong.top>
 - Dynamic copyright range (from `since` to the current year) and CC BY-NC-SA 4.0 license badge in the footer
 - Syntax highlighting and one-click code or article-link copy
 - PhotoSwipe-powered image gallery shortcode with CSS grid + justified masonry layouts, sortable by name / date / weight prefix
+- `douban-card` shortcode for embedding Douban movie / book / music cards — all metadata passed as parameters (no API call, since Douban's public API closed in 2022)
+- Markdown image captions via standard `![alt](src "caption")` title syntax — renders a centered `<figcaption>` below the figure and is decoupled from the HTML `title` tooltip (bug fix)
 - Optional Artalk comments module — config-driven partial that mirrors the article card style (glass, button--ghost, mono uppercase header) and auto-aligns to `.article-main` via the existing CSS grid, with a per-comment stagger fade-in on list load
 - Optional article like button — centered heart CTA at the bottom of the article body, one-way semantics (no cancel after click) with bump animation, pink accent (#ff6b8a) when liked, count synced across devices via a self-hosted `/api/like/*` endpoint (like-server.py, JSON file backend) with `localStorage` fallback for per-user like state; cursor switches to `not-allowed` to signal the action is locked
 - Optional `cover` front matter per post — page-bundle image or `static/` asset, used as the archive-page thumbnail
@@ -238,6 +240,52 @@ The `weight` strategy is convenient when filenames come from a camera or scanner
 #### Inline images in markdown
 
 Single images rendered via the standard `![alt](image.jpg)` markdown also join the gallery: the render hook attaches the same `data-flex-grow` / `data-flex-basis` attributes, and a small JS helper in `main.js` groups consecutive figures into a justified masonry container automatically.
+
+### Image captions via markdown title syntax
+
+Use the standard markdown title syntax to add a centered caption below an image:
+
+```md
+![Latte art in a glass cup](/coffee.jpg "Morning ritual — a flat white after a 6am run.")
+```
+
+When the image's `.Title` is set, the text renders as a centered `<figcaption>` below the figure. When `.Title` is empty, no `<figcaption>` element is emitted — the figure stays clean, with no extra margin or padding from a phantom element.
+
+- **Backward compat** — existing articles without title syntax render unchanged (no figcaption).
+- **Forward compat** — works with any Hugo + Goldmark version, no special extensions required.
+- **Bug fix** — the title syntax no longer adds an HTML `title=` tooltip on the `<img>`. Previously the same syntax produced both a caption and a tooltip, conflating two semantics.
+
+> Note: Goldmark's `{attr="val"}` syntax (`![alt](src){caption="text"}`) does not populate `.Attributes` in this render-image hook on Hugo 0.146.0+, so `.Title` is the supported path.
+
+### `douban-card` shortcode
+
+Embed a clickable Douban-style card linking to a Douban subject page. Douban closed its public API in 2022, so all metadata is passed as parameters — no auto-fetch, no broken calls.
+
+Supports three types via the `type` parameter:
+
+- `type="movie"` *(default)* — links to `movie.douban.com`, fallback icon is a camera, meta labels are `导演` / `主演`
+- `type="book"` — links to `book.douban.com`, fallback icon is books, meta labels are `作者` / `译者`
+- `type="music"` — links to `music.douban.com`, fallback icon is music notes, meta labels are `艺术家` / `专辑`
+
+```md
+{{< douban-card type="book" id="12345678" title="Sample Title" year="2024"
+                director="Sample Author" rating="8.5" cover="cover.jpg" >}}
+```
+
+Parameters:
+
+- `id` *(required)* — Douban subject ID, used in the link URL
+- `type` — `movie` (default), `book`, or `music`; switches URL subdomain, fallback icon, and meta labels
+- `title` — card title (default: `"豆瓣条目"`)
+- `year` — release year
+- `region` — country / region
+- `director` — director (movie) / author (book) / artist (music) name; the label shown next to this value depends on `type`
+- `rating` — Douban rating, shown as a star
+- `cast` — main cast (movie) / translator (book) / album (music), single string; the label shown next to this value depends on `type`
+- `synopsis` — short summary, clamped to 2 lines
+- `cover` — path to a cover image inside the page bundle; falls back to a type-specific icon (camera / books / music notes) when omitted
+
+The card uses the theme's glass surface and hover lift, matches the article card aesthetic, and adapts to light / dark via standard CSS variables. The card layout, padding, colors, and hover effect are identical across all three types — only the fallback icon shape and the meta labels differ, keeping the visual style consistent across the `douban-card` family. Drop a demo post into `exampleSite/content/posts/` to see all three types rendered.
 
 ### Run locally
 
