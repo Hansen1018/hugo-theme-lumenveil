@@ -1,0 +1,14 @@
+/* PhotoSwipe — frosted glass background + fade between slides */
+.pswp__bg {
+  background-color: rgba(15, 18, 26, 0.80) !important;
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
+}
+/* Fade-in/out on each slide; keep PhotoSwipe's translate so left/right slide still works */
+.pswp__container {
+  transition: opacity .35s ease-in-out !important;
+}
+.pswp__item,
+.pswp__img {
+  transition: opacity .35s ease-in-out !important;
+}

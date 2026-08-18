@@ -1,55 +1,18 @@
-/* gallery.css — extracted from main.css */
-
-.pswp-figure {
-display: block;
-  margin: 0;
-}
-
-.pswp-figure > .pswp-inline {
-display: block;
-  line-height: 0;
-  text-decoration: none;
-}
-
-.pswp-figure > .pswp-inline > img {
-display: block;
-  margin: 2em auto;
-  max-width: 100%;
-  height: auto;
-}
-
-.pswp-figure > figcaption {
-display: block;
-  text-align: center;
-  font-size: 13px;
-  color: var(--ink-3);
-  margin: -1.5em auto 2em;
-}
-
-.pswp__bg {
-background-color: rgba(15, 18, 26, 0.80) !important;
-  backdrop-filter: blur(10px) saturate(150%);
-  -webkit-backdrop-filter: blur(10px) saturate(150%);
-}
-
-.pswp__container {
-transition: opacity .35s ease-in-out !important;
-}
-
-.pswp__item,
-.pswp__img {
-transition: opacity .35s ease-in-out !important;
-}
-
+/* ===== Gallery (PhotoSwipe grid + justified masonry) ===== */
 .pswp-gallery {
-display: grid;
+  display: grid;
   grid-template-columns: repeat(var(--pswp-cols, 3), minmax(0, 1fr));
   gap: var(--pswp-gap, 14px);
   margin: 2em 0;
 }
-
+/* Justified / 2-per-row flex — each image fills exactly 50% of the
+   container width (minus half the gap so two fit cleanly per row).
+   Images render at their natural aspect ratio (height: auto, no
+   object-fit) so nothing is ever cropped. Items in the same row may
+   have different heights (L vs P scale to different ratios), which is
+   intentional. Odd-count last item is centered at 50% width. */
 .pswp-gallery[data-pswp-layout="justified"] {
-/* 2-per-row Stack-style masonry. JS pairs items and sets flex-basis
+  /* 2-per-row Stack-style masonry. JS pairs items and sets flex-basis
      in px so widths distribute by aspect ratio. Both items in a pair
      end up the same height naturally (w / aspect = (W - gap) / sum).
      No aspect-ratio / object-fit overrides — images render at their
@@ -62,10 +25,9 @@ display: grid;
   gap: var(--pswp-gap, 14px);
   margin: 2em 0;
 }
-
 .pswp-gallery[data-pswp-layout="justified"] > .pswp-item,
 .pswp-gallery[data-pswp-layout="justified"] > .gallery-image {
-/* Default to 50% width as a no-overflow fallback. JS sets the exact
+  /* Default to 50% width as a no-overflow fallback. JS sets the exact
      inline flex-basis (proportional to aspect ratio) on load; before
      JS runs, items are still constrained to half the container width
      so they don't overflow. */
@@ -79,20 +41,17 @@ display: grid;
   cursor: zoom-in;
   transition: transform .25s ease;
 }
-
 .pswp-gallery[data-pswp-layout="justified"] > .pswp-item:hover {
-transform: translateY(-2px);
+  transform: translateY(-2px);
 }
-
 .pswp-gallery[data-pswp-layout="justified"] > .pswp-item img {
-width: 100%;
+  width: 100%;
   height: auto;
   display: block;
 }
-
 .pswp-gallery .pswp-item figcaption,
 .pswp-gallery .gallery-image figcaption {
-position: absolute;
+  position: absolute;
   inset: auto 0 0 0;
   padding: 8px 12px;
   font: 11px var(--font-mono, ui-monospace, monospace);
@@ -101,28 +60,26 @@ position: absolute;
   opacity: 0;
   transition: opacity .2s ease;
 }
-
 .pswp-gallery .pswp-item:hover figcaption,
-.pswp-gallery .gallery-image:hover figcaption {
-opacity: 1;
-}
-
+.pswp-gallery .gallery-image:hover figcaption { opacity: 1; }
 @media (max-width: 900px) {
-.pswp-gallery[data-pswp-layout="grid"] {
-grid-template-columns: repeat(2, minmax(0, 1fr));
+  .pswp-gallery[data-pswp-layout="grid"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-}
-
 @media (max-width: 520px) {
-.pswp-gallery[data-pswp-layout="grid"] {
-grid-template-columns: 1fr;
-}
+  .pswp-gallery[data-pswp-layout="grid"] { grid-template-columns: 1fr; }
 }
 
+
+/* Mobile (W < 700): one image per row, full width. The JS pairGallery
+   function early-returns on mobile (see layouts/partials/photoswipe.html),
+   so the layout is driven entirely by CSS. Each .pswp-item takes 100% of
+   the container width and wraps to its own row, with the standard gap
+   between rows. No height cap, no object-fit cover — images render at
+   their natural aspect ratio (height: auto) so nothing is cropped. */
 @media (max-width: 699px) {
-.pswp-gallery[data-pswp-layout="justified"] > .pswp-item,
+  .pswp-gallery[data-pswp-layout="justified"] > .pswp-item,
   .pswp-gallery[data-pswp-layout="justified"] > .gallery-image {
-flex: 0 0 100%;
+    flex: 0 0 100%;
     max-width: 100%;
-}
+  }
 }
