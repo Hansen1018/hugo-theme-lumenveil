@@ -1,7 +1,6 @@
-/* back-to-top.css — extracted from main.css */
-
+/* ===== Back-to-top button — fixed, glass, fades in past 300px scroll ===== */
 .back-to-top {
-position: fixed;
+  position: fixed;
   right: clamp(20px, 3vw, 32px);
   bottom: clamp(20px, 3vw, 32px);
   z-index: 50;
@@ -23,26 +22,22 @@ position: fixed;
   pointer-events: none;
   transition: opacity .25s ease, transform .25s ease, background .25s ease, color .25s ease, border-color .25s ease;
 }
-
 .back-to-top.is-visible {
-opacity: 1;
+  opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
 }
-
 .back-to-top:hover {
-background: var(--accent-2, #22d3ee);
+  background: var(--accent-2, #22d3ee);
   color: var(--bg-0, #0a0c12);
   border-color: transparent;
 }
-
 .back-to-top:focus-visible {
-outline: 2px solid var(--accent-2, #22d3ee);
+  outline: 2px solid var(--accent-2, #22d3ee);
   outline-offset: 3px;
 }
-
 .back-to-top svg {
-width: 18px;
+  width: 18px;
   height: 18px;
   fill: none;
   stroke: currentColor;
