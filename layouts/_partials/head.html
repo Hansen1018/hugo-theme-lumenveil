@@ -10,7 +10,7 @@
     9. gallery-prose 10. photoswipe   11. term          12. article
     13. like         14. archive      15. toc           16. 404
     17. search       18. footer       19. back-to-top   20. responsive
-    21. motion       22. theme-light  23. gallery
+    21. motion       22. theme-light  23. gallery     24. douban-card
 */}}
 {{ $components := slice
     (resources.Get "css/components/tokens.css")
@@ -36,6 +36,7 @@
     (resources.Get "css/components/motion.css")
     (resources.Get "css/components/theme-light.css")
     (resources.Get "css/components/gallery.css")
+    (resources.Get "css/components/douban-card.css")
 }}
 {{ $main := $components | resources.Concat "css/main.css" | minify | fingerprint }}
 {{ $stylesheets := slice

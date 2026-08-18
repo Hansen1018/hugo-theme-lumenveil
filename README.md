@@ -285,7 +285,7 @@ The same cascade order is documented as a numbered comment block at the top of `
 
 **Why not `resources.Match`?** An earlier attempt used `resources.Match "css/components/_*.css" | resources.Concat`, relying on ASCII sort (with an underscore prefix) to keep cascade order. That was wrong: `resources.Match` returns files in **alphabetical** order, which doesn't match the CSS cascade. The result was a real bug — `_tokens.css` ended up *after* component files, so CSS variables were redefined downstream instead of being available upstream, and the desktop layout visibly broke (≈980px-wide pages centered instead of filling the viewport). The fix is to list the files in cascade order in an explicit slice and let `resources.Concat` emit them in that order. Adding a component is therefore a deliberate two-step edit (file + slice + comment), not a free `Match` pickup.
 
-The 23 components, in cascade order:
+The 24 components, in cascade order:
 
 | # | File | BEM prefix | What |
 | --- | --- | --- | --- |
@@ -312,6 +312,7 @@ The 23 components, in cascade order:
 | 21 | `motion.css` | (media queries) | `prefers-reduced-motion` overrides |
 | 22 | `theme-light.css` | `html[data-theme="light"] *` | light-theme overrides |
 | 23 | `gallery.css` | `.gallery, .gallery__*, .pswp-gallery, .pswp-item` | gallery shortcode |
+| 24 | `douban-card.css` | `.douban-card, .douban-card__*` | douban-card shortcode |
 
 **To add a new component**:
 

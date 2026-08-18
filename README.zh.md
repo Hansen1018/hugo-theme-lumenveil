@@ -156,7 +156,7 @@ toc: true
 
 **为什么不用 `resources.Match`？** 之前的实现用过 `resources.Match "css/components/_*.css" | resources.Concat`，靠 ASCII 排序（下划线前缀）维持 cascade 顺序。这是不对的：`resources.Match` 返回的文件是按 **字母** 排，不是按 CSS cascade 排，结果真出了 bug——`_tokens.css` 跑到组件文件 *后面*，CSS 变量在下游被重新定义而不是上游先准备好，desktop 布局直接崩了（≈980px 的页面居中而不是填满 viewport）。修法就是按 cascade 顺序在 slice 里显式列出来，让 `resources.Concat` 按声明顺序拼接。所以加组件是个两步显式编辑（文件 + slice + 注释），不是 Match 自动拾起。
 
-23 个组件按 cascade 顺序：
+24 个组件按 cascade 顺序：
 
 | # | 文件 | BEM 前缀 | 内容 |
 | --- | --- | --- | --- |
@@ -183,6 +183,7 @@ toc: true
 | 21 | `motion.css` | (media queries) | `prefers-reduced-motion` 覆盖 |
 | 22 | `theme-light.css` | `html[data-theme="light"] *` | 浅色主题覆盖 |
 | 23 | `gallery.css` | `.gallery, .gallery__*, .pswp-gallery, .pswp-item` | gallery shortcode |
+| 24 | `douban-card.css` | `.douban-card, .douban-card__*` | douban-card 短代码 |
 
 **添加新组件**：
 
