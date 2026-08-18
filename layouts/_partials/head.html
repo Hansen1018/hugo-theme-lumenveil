@@ -41,7 +41,6 @@
 {{ $main := $components | resources.Concat "css/main.css" | minify | fingerprint }}
 {{ $stylesheets := slice
     $main
-    (resources.Get "css/chroma.css" | minify | fingerprint)
 }}
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
