@@ -295,6 +295,53 @@ hugo server -D
 
 Open `http://localhost:1313/` in your browser.
 
+### CSS component architecture
+
+`main.css` is intentionally deleted. The theme uses Hugo's `resources.Match` + `resources.Concat` to bundle per-component files at build time:
+
+```go
+{{ $main := resources.Match "css/components/_*.css" | resources.Concat "main.css" | minify | fingerprint }}
+```
+
+Component files live in `assets/css/components/_<name>.css`, one per BEM namespace:
+
+| File | BEM prefix | What |
+| --- | --- | --- |
+| `_tokens.css` | (root vars) | `:root` custom properties, light theme override |
+| `_reset.css` | (global) | `*, html, body, a, button, img, ::selection, :focus-visible, ::-webkit-scrollbar` |
+| `_utilities.css` | (global) | `.sr-only, .skip-link, .glass, .glass::before, .site-shell` |
+| `_aurora.css` | `.aurora, .aurora__*` | background canvas, blobs, drift animations |
+| `_layout.css` | `.section, .page-hero, .breadcrumbs, .empty-state, .eyebrow` | page chrome |
+| `_article.css` | `.article, .article-header, .article-cover, .prose, .copy-code` | article body |
+| `_comments.css` | `.article-comments` | Artalk comments wrapper |
+| `_like.css` | `.article-like, .like-btn, .like-icon, .like-count` | article like CTA |
+| `_gallery.css` | `.gallery-image, .pswp__*, .pswp-gallery, .pswp-item` | PhotoSwipe overrides |
+| `_search.css` | `.search-dialog, .search-field, .search-result, .search-empty, kbd` | search modal |
+| `_term.css` | `.term-grid, .term-card` | taxonomy list |
+| `_post.css` | `.post-card, .post-grid, .post-meta, .post-nav, .read-link, .tag-list` | post list + nav |
+| `_archive.css` | `.archive-board, .archive-block, .archive-count, .archive-empty` | archive page |
+| `_toc.css` | `.toc, .toc__inner` | TOC sidebar |
+| `_404.css` | `.not-found, .not-found__*, .suggest-card` | 404 page |
+| `_back-to-top.css` | `.back-to-top` | back-to-top button |
+| `_douban-card.css` | `.douban-card, .douban-card__*` | douban shortcode |
+| `_header.css` | `.site-header, .brand, .main-nav, .icon-button, .menu-toggle, .header-actions` | top nav |
+| `_footer.css` | `.site-footer, .footer-inner, .footer-bottom, .footer-links` | footer |
+| `_home.css` | `.hero, .hero__*, .chip, .button, .fade-up, .explore-panel, .about-panel` | home/hero page |
+
+The **underscore prefix** on every filename is the key trick: in ASCII sort, `_` (0x5F) comes **before** lowercase letters (0x61+), so `resources.Match "css/components/_*.css"` returns files in an order that matches the intended CSS cascade:
+
+- `_tokens` and `_reset` come first (CSS variables must be defined before use)
+- `_aurora` / `_utilities` next (page chrome)
+- BEM components in cascade order
+
+At build time, `resources.Concat` bundles them all into a single `main.min.<hash>.css` (no `@import` waterfall, single HTTP request, single cache key).
+
+**To add a new component**:
+
+1. Create `assets/css/components/_<name>.css` with BEM-namespaced styles
+2. Filename must start with `_` to sort correctly in the cascade
+3. The component is auto-picked-up by `resources.Match "css/components/_*.css"` — no `head.html` edit needed
+
 ### Customization
 
 - Edit site identity, social links, and license year under `[params]`.
