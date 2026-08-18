@@ -1,0 +1,73 @@
+/* search.css — extracted from main.css */
+
+.search-dialog {
+width: min(calc(100% - 32px),720px); max-height: min(720px,calc(100dvh - 48px)); padding: 0; overflow: hidden; border: 1px solid var(--line-strong); border-radius: var(--radius-lg); background: rgba(15,18,26,.96); color: var(--ink-1); box-shadow: 0 40px 100px rgba(0,0,0,.65); backdrop-filter: blur(30px);
+}
+
+.search-dialog::backdrop {
+background: rgba(3,4,8,.72); backdrop-filter: blur(8px);
+}
+
+.search-dialog[open] {
+animation: dialog-in .25s cubic-bezier(.22,1,.36,1);
+}
+
+@keyframes dialog-in {
+from { opacity: 0; transform: translateY(12px) scale(.98); }
+}
+
+.search-dialog__head {
+display: flex; align-items: center; justify-content: space-between; padding: 24px 24px 14px;
+}
+
+.search-dialog__head h2 {
+margin: 5px 0 0; font-size: 22px;
+}
+
+.search-field {
+display: flex; align-items: center; gap: 10px; margin: 0 24px 16px; padding: 0 14px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.045);
+}
+
+.search-field:focus-within {
+border-color: rgba(34,211,238,.55);
+}
+
+.search-field svg {
+width: 18px; height: 18px; fill: none; stroke: var(--ink-3); stroke-width: 1.8;
+}
+
+.search-field input {
+flex: 1; min-width: 0; padding: 14px 0; border: 0; outline: 0; background: transparent; color: var(--ink-1);
+}
+
+.search-field input::placeholder {
+color: var(--ink-4);
+}
+
+.search-results {
+max-height: 480px; padding: 4px 14px 18px; overflow-y: auto;
+}
+
+.search-result {
+display: block; padding: 15px 12px; border-radius: 12px; transition: background .2s ease;
+}
+
+.search-result:hover {
+background: rgba(255,255,255,.055);
+}
+
+.search-result strong {
+display: block; margin-bottom: 5px; font-size: 15px;
+}
+
+.search-result p {
+margin: 0; color: var(--ink-3); font-size: 12px; line-height: 1.55;
+}
+
+.search-result small {
+display: block; margin-top: 7px; color: var(--accent-2); font: 9px var(--font-mono);
+}
+
+.search-empty {
+padding: 34px 12px; color: var(--ink-3); text-align: center; font-size: 13px;
+}
