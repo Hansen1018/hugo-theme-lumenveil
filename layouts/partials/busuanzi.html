@@ -3,7 +3,13 @@
   Used by templates that render <span id="busuanzi_value_page_pv"> (or other
   busuanzi_value_* IDs). busuanzi auto-populates these elements with real
   cross-user view counts on page load.
+  Note: neither crossorigin nor integrity is set. busuanzi.ibruce.info
+  does not return Access-Control-Allow-Origin, so any crossorigin attribute
+  triggers a CORS block. Conversely, the integrity (SRI) attribute requires
+  CORS to verify the hash, so keeping it forces the script to be blocked
+  entirely. Without both attributes the script loads as a no-cors request
+  and runs (busuanzi only writes to the DOM, no response read needed). The
+  third-party trust trade-off is acceptable here since busuanzi is a widely
+  used open counter and any compromise would affect many sites equally.
 */}}
-<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
-        integrity="sha384-oaKlriFiEaHzTKw66TKlzwgjYHPT5tvx+uf4JRnAGvP7HCHj5NPqEoAkyyOAPxZN"
-        crossorigin="anonymous"></script>
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
