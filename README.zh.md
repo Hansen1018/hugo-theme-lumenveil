@@ -165,6 +165,53 @@ toc: true
 
 样式与文章卡片一致（玻璃质感 + hover 抬升），跟随主题浅色/深色模式自适应。三种 type 的卡片布局、padding、配色和 hover 效果完全一致 —— 只有缺省图标形状和 meta 标签文字不同，整个 `douban-card` 系列的视觉风格保持统一。
 
+### CSS 组件架构
+
+`main.css` 故意删除了。主题用 Hugo 的 `resources.Match` + `resources.Concat` 在 build 时把按组件拆分的文件 bundle 起来：
+
+```go
+{{ $main := resources.Match "css/components/_*.css" | resources.Concat "main.css" | minify | fingerprint }}
+```
+
+组件文件在 `assets/css/components/_<name>.css`，一个文件对应一个 BEM 命名空间：
+
+| 文件 | BEM 前缀 | 内容 |
+| --- | --- | --- |
+| `_tokens.css` | (root vars) | `:root` 自定义属性，浅色主题覆盖 |
+| `_reset.css` | (global) | `*, html, body, a, button, img, ::selection, :focus-visible, ::-webkit-scrollbar` |
+| `_utilities.css` | (global) | `.sr-only, .skip-link, .glass, .glass::before, .site-shell` |
+| `_aurora.css` | `.aurora, .aurora__*` | 背景画布，光斑，drift 动画 |
+| `_layout.css` | `.section, .page-hero, .breadcrumbs, .empty-state, .eyebrow` | 页面框架 |
+| `_article.css` | `.article, .article-header, .article-cover, .prose, .copy-code` | 文章正文 |
+| `_comments.css` | `.article-comments` | Artalk 评论容器 |
+| `_like.css` | `.article-like, .like-btn, .like-icon, .like-count` | 文章点赞 CTA |
+| `_gallery.css` | `.gallery-image, .pswp__*, .pswp-gallery, .pswp-item` | PhotoSwipe 覆盖 |
+| `_search.css` | `.search-dialog, .search-field, .search-result, .search-empty, kbd` | 搜索弹窗 |
+| `_term.css` | `.term-grid, .term-card` | 分类列表 |
+| `_post.css` | `.post-card, .post-grid, .post-meta, .post-nav, .read-link, .tag-list` | 文章列表 + 翻页 |
+| `_archive.css` | `.archive-board, .archive-block, .archive-count, .archive-empty` | archive 页 |
+| `_toc.css` | `.toc, .toc__inner` | TOC 侧边栏 |
+| `_404.css` | `.not-found, .not-found__*, .suggest-card` | 404 页 |
+| `_back-to-top.css` | `.back-to-top` | 返回顶部按钮 |
+| `_douban-card.css` | `.douban-card, .douban-card__*` | douban shortcode |
+| `_header.css` | `.site-header, .brand, .main-nav, .icon-button, .menu-toggle, .header-actions` | 顶部导航 |
+| `_footer.css` | `.site-footer, .footer-inner, .footer-bottom, .footer-links` | footer |
+| `_home.css` | `.hero, .hero__*, .chip, .button, .fade-up, .explore-panel, .about-panel` | 首页/hero |
+
+**下划线前缀**是关键：ASCII 排序时 `_` (0x5F) 在小写字母 (0x61+) 之前，所以 `resources.Match "css/components/_*.css"` 返回的文件顺序恰好匹配 CSS cascade 顺序：
+
+- `_tokens` 和 `_reset` 最先（CSS 变量必须先定义）
+- `_aurora` / `_utilities` 接着（页面框架）
+- 之后是 BEM 组件按 cascade 顺序
+
+Build 时 `resources.Concat` 把所有文件 bundle 成单个 `main.min.<hash>.css`（没有 `@import` 瀑布、单个 HTTP 请求、单个 cache key）。
+
+**添加新组件**：
+
+1. 创建 `assets/css/components/_<name>.css`，BEM 命名空间
+2. 文件名必须以 `_` 开头，确保 cascade 顺序正确
+3. 组件自动被 `resources.Match "css/components/_*.css"` 拾起——不用改 `head.html`
+
 ## 许可
 
 Lumenveil 主题以 [GNU General Public License v3.0](LICENSE) 发布。站点默认页脚的 CC BY-NC-SA 4.0 链接用于站点文字内容，请按需要替换为适合你的许可协议。
