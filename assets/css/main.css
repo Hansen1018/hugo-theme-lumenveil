@@ -669,3 +669,17 @@ html[data-theme="light"] .theme-icon--sun { display: block; }
   .pswp-gallery[data-pswp-layout="grid"] { grid-template-columns: 1fr; }
 }
 
+
+/* Mobile (W < 700): one image per row, full width. The JS pairGallery
+   function early-returns on mobile (see layouts/partials/photoswipe.html),
+   so the layout is driven entirely by CSS. Each .pswp-item takes 100% of
+   the container width and wraps to its own row, with the standard gap
+   between rows. No height cap, no object-fit cover — images render at
+   their natural aspect ratio (height: auto) so nothing is cropped. */
+@media (max-width: 699px) {
+  .pswp-gallery[data-pswp-layout="justified"] > .pswp-item,
+  .pswp-gallery[data-pswp-layout="justified"] > .gallery-image {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+}

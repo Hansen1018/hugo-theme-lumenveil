@@ -1,11 +1,43 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe.min.css" media="print" onload="this.media='all'">
 <script type="module">
 import PhotoSwipeLightbox from 'https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe-lightbox.esm.min.js';
+
+// Lightbox padding — small on mobile so the image fills the viewport
+// (a portrait screenshot at 180px padding on a 375px viewport leaves
+// only 15px for the image, which reads as "zoom ratio too small").
+// Desktop keeps the original 180px breathing room.
+const pswpPadding = () => window.innerWidth < 700
+  ? { top: 20, right: 20, bottom: 20, left: 20 }
+  : { top: 180, right: 180, bottom: 180, left: 180 };
+
+
+// Lightbox viewport size — return the LAYOUT viewport (not visual
+// viewport) so photoswipe's internal resize handler does not re-position
+// the image on every mobile address-bar show/hide.
+//
+// Visual viewport = window.innerWidth/Height. On mobile this changes
+// every scroll because the address bar shows/hides, and the photoswipe
+// library listens to the 'resize' event and calls updateSize() →
+// getViewportSizeFn() to recompute layout. Returning the visual viewport
+// here means the lightbox re-positions the image on every scroll → flicker.
+//
+// Layout viewport = document.documentElement.clientWidth/Height. This
+// stays stable when the address bar shows/hides (only changes on real
+// viewport changes like device rotation). Returning the layout viewport
+// makes the photoswipe resize handler a no-op on mobile. On desktop the
+// layout viewport equals the visual viewport (no address bar), so behavior
+// is unchanged.
+const getViewportSize = () => ({
+  x: document.documentElement.clientWidth,
+  y: document.documentElement.clientHeight
+});
+
 document.querySelectorAll('.pswp-gallery').forEach(g=>{
   new PhotoSwipeLightbox({
     gallery:g,children:'a.pswp-item',
     pswpModule:()=>import('https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe.esm.min.js'),
-    bgOpacity:.80, padding:{top:180,right:180,bottom:180,left:180},showHideAnimationType:'fade'
+    bgOpacity:.80, padding:pswpPadding(),showHideAnimationType:'fade',
+    getViewportSizeFn: getViewportSize
   }).init();
 });
 document.querySelectorAll('.article-main').forEach(a=>{
@@ -14,7 +46,8 @@ document.querySelectorAll('.article-main').forEach(a=>{
   new PhotoSwipeLightbox({
     gallery:a,children:'a.pswp-inline',
     pswpModule:()=>import('https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe.esm.min.js'),
-    bgOpacity:.80, padding:{top:180,right:180,bottom:180,left:180},showHideAnimationType:'fade'
+    bgOpacity:.80, padding:pswpPadding(),showHideAnimationType:'fade',
+    getViewportSizeFn: getViewportSize
   }).init();
 });
 
@@ -22,30 +55,120 @@ document.querySelectorAll('.article-main').forEach(a=>{
 // main.min.js (which has been throwing a runtime error and prevented
 // the pairing from running, leaving items at default 50% width with
 // unequal heights across landscape+portrait pairs).
-// Stack-style masonry: for each pair, set flex-basis proportional to
-// aspect ratio so both items end up the same height naturally.
+// Desktop (W >= 700): Stack-style masonry with row-height cap and
+// EXIF-aware ratio — both items in a pair end up the same height, with
+// the row capped at W * 0.93 so the natural variance (1.98x between
+// mixed and two-portrait pairs) is compressed to a readable ~1.66x.
+// Mobile (W < 700): CSS handles layout — one image per row, full width.
+// See the @media (max-width: 699px) rule for .pswp-gallery items in
+// main.css. No JS processing on mobile (no pairing, no height cap, no
+// object-fit cover, no inline-style writes, no resize re-pair).
 function pairGallery(g) {
   const items = Array.from(g.querySelectorAll('.pswp-item'));
   if (!items.length) return;
-  const cs = getComputedStyle(g);
-  const gap = parseFloat(cs.columnGap || cs.gap) || 14;
   const W = g.clientWidth;
   if (!W) return;
+  // Mobile: return BEFORE any inline-style writes. Previously the
+  // clear block ran first, then the early return — that meant every
+  // resize handler fire (mobile address bar show/hide triggers one on
+  // every scroll) synchronously toggled inline `flex`/`maxWidth` back
+  // to empty strings on every .pswp-item, causing a reflow and the
+  // visible flicker. Returning early here makes the resize handler a
+  // complete no-op on mobile.
+  if (W < 700) return;
+  const cs = getComputedStyle(g);
+  const gap = parseFloat(cs.columnGap || cs.gap) || 14;
+  // Clear any inline styles we may have written previously so a
+  // desktop↔mobile resize transition (which fires pairGallery again via
+  // the resize handler) does not leave stale flex from the previous
+  // run on the elements. Height/object-fit are no longer written by
+  // this function, so we don't need to clear them — but doing so is
+  // harmless and keeps the function idempotent against older builds.
+  items.forEach(it => {
+    it.style.flex = '';
+    it.style.maxWidth = '';
+    it.style.height = '';
+    it.style.overflow = '';
+    const img = it.querySelector('img');
+    if (img) {
+      img.style.width = '';
+      img.style.height = '';
+      img.style.objectFit = '';
+      img.style.objectPosition = '';
+    }
+  });
+  // Desktop: Stack-style 2-per-row.
+  //
+  // Each pair gets widths proportional to aspect ratio
+  //   wA = (rA / (rA + rB)) * (W - gap), wB = (rB / (rA + rB)) * (W - gap)
+  // which forces paired items to the same row height by construction:
+  //   hA = wA / rA = (W - gap) / (rA + rB) = wB / rB = hB
+  // so no `height` override and no `object-fit: cover` are needed to
+  // make the row look uniform — both images render at their natural
+  // aspect inside the box, never cropped.
+  //
+  // The previous implementation added two layers on top of this math:
+  //   (1) MAX_ROW_H = W * 0.93 cap that shrunk item widths (`scale <
+  //       1`) whenever a pair's natural row height exceeded the cap.
+  //       The cap kept row heights visually consistent across mixed
+  //       galleries, but it left `finalWA + finalWB + gap < W` —
+  //       i.e. ~5% empty space on the right of capped rows.
+  //   (2) object-fit: cover with height: rowH so lone portrait items
+  //       (and any pair whose container aspect didn't match its image
+  //       aspect due to EXIF rotation race) had their sides cropped
+  //       to fill the capped wide container.
+  // Both are removed: the proportional-width math already gives
+  // row-uniform heights within a pair (across pairs the heights vary
+  // naturally, which is the Stack-style masonry intent), every row
+  // sums to exactly W (no empty space), and images are never cropped.
+  //
+  // EXIF-aware ratio: prefer the decoded naturalWidth/naturalHeight
+  // (browser auto-respects EXIF orientation) over data-pswp-ratio.
+  // The two diverge for camera photos captured in portrait — raw file
+  // is landscape with an EXIF "rotate 90°" tag, so data-pswp-ratio can
+  // disagree with the displayed image. The load/error listeners at
+  // the end re-fire pairGallery once each image decodes, so any image
+  // whose natural size wasn't available at first paint gets re-laid-out
+  // after its EXIF orientation is applied.
+  const ratioOf = (it) => {
+    const img = it.querySelector('img');
+    if (img && img.naturalWidth > 0 && img.naturalHeight > 0) {
+      return img.naturalWidth / img.naturalHeight;
+    }
+    return parseFloat(it.dataset.pswpRatio) || 1;
+  };
   for (let i = 0; i < items.length; i += 2) {
     const a = items[i], b = items[i + 1];
     if (b) {
-      const rA = parseFloat(a.dataset.pswpRatio) || 1;
-      const rB = parseFloat(b.dataset.pswpRatio) || 1;
+      const rA = ratioOf(a);
+      const rB = ratioOf(b);
       const sum = rA + rB;
       const avail = W - gap;
-      a.style.flex = '0 0 ' + ((rA / sum) * avail) + 'px';
-      b.style.flex = '0 0 ' + ((rB / sum) * avail) + 'px';
+      const wA = (rA / sum) * avail;
+      const wB = (rB / sum) * avail;
+      a.style.flex = '0 0 ' + wA + 'px';
+      b.style.flex = '0 0 ' + wB + 'px';
+      // No height/object-fit — image fills width, height = w / r,
+      // and hA == hB so both items in this row are the same height.
     } else {
+      // Lone item (odd count): full container width, natural height.
+      // Image fills width, height = W / r. No cover, no cap — the
+      // full image is shown.
       a.style.flex = '0 0 ' + W + 'px';
       a.style.maxWidth = '100%';
     }
   }
+  // Re-pair after each image loads so the EXIF-aware ratio kicks in
+  // once naturalWidth is available (loading="lazy" + EXIF rotation).
+  items.forEach(it => {
+    const img = it.querySelector('img');
+    if (img && !img.complete) {
+      img.addEventListener('load', () => pairGallery(g), { once: true });
+      img.addEventListener('error', () => pairGallery(g), { once: true });
+    }
+  });
 }
+
 function runPairing() {
   document.querySelectorAll('.pswp-gallery[data-pswp-layout="justified"]').forEach(pairGallery);
 }
@@ -55,8 +178,21 @@ if (document.readyState === 'loading') {
   runPairing();
 }
 window.addEventListener('load', runPairing);
+
+// Resize handler: skip when the viewport is already mobile. On a
+// phone, the address bar showing/hiding on scroll triggers a resize
+// event every time; without this guard, the handler would clear all
+// .pswp-item inline styles and re-run pairGallery (which is a no-op
+// on mobile) on every scroll, causing the flicker. The handler still
+// fires once on the desktop→mobile transition (to clear the inline
+// styles written by the desktop algorithm) and on the mobile→desktop
+// transition (to repaint with the new algorithm).
+let _lastIsMobile = window.innerWidth < 700;
 let _pairResizeTimer;
 window.addEventListener('resize', () => {
+  const isMobile = window.innerWidth < 700;
+  if (isMobile && _lastIsMobile) return;
+  _lastIsMobile = isMobile;
   clearTimeout(_pairResizeTimer);
   document.querySelectorAll('.pswp-gallery[data-pswp-layout="justified"] > .pswp-item').forEach(el => {
     el.style.flex = '';
