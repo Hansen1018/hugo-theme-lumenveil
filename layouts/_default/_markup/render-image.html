@@ -24,6 +24,34 @@
   Calculation:
     flex-grow  = width  * 100 / height
     flex-basis = width  * 240 / height   (row target height in px)
+
+  ------------------------------------------------------------------------
+  Caption feature (v0.1.9+)
+
+  Use `.Title` (standard markdown title syntax) for caption:
+    ![alt](src "Some caption text")
+
+  When `.Title` is set, the text renders as a centered <figcaption>
+  below the figure. When `.Title` is empty, no <figcaption> is emitted
+  (empty case) — clean figure, no extra margin/padding from a phantom
+  element. The `.pswp-figure > figcaption` CSS already has
+  `text-align: center`, so captions render centered out of the box.
+
+  Backward compat: existing articles without title syntax render
+  unchanged (no figcaption). No current article on the blog uses
+  `.Title`, so no migration needed.
+
+  Forward compat: new articles add captions via standard markdown
+  title syntax:
+    ![alt](src "caption text")
+  Works with any Hugo + Goldmark version — no special extensions
+  required.
+
+  Note: `.Title` is now caption ONLY. It no longer adds an HTML
+  `title` attribute (tooltip) to the <img>. Previously the title
+  syntax produced both a caption below AND a tooltip on hover, which
+  was a bug (conflated two semantics). No current article on the blog
+  relied on the tooltip side effect.
 */}}
 {{- $dest := .Destination -}}
 {{- $img := "" -}}
@@ -59,9 +87,8 @@
      data-pswp-height="{{ with $img }}{{ .Height }}{{ else }}1067{{ end }}">
     <img src="{{ $src | safeURL }}"
          alt="{{ .Text }}"
-         {{- with .Title }} title="{{ . }}" {{- end }}
          loading="lazy"
          decoding="async">
   </a>
-  {{ with .Title }}<figcaption>{{ . }}</figcaption>{{ end }}
+  {{- with .Title }}<figcaption>{{ . }}</figcaption>{{- end -}}
 </figure>
