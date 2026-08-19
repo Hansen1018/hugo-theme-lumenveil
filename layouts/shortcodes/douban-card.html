@@ -18,7 +18,7 @@
   Optional: type (default "movie"), title, year, region, director, rating, cast, cover, synopsis
 
   Type values:
-    - movie: links to movie.douban.com,  导演 / 主演 labels, film icon
+    - movie: links to movie.douban.com,  导演 / 主演 labels, 摄像机+播放三角 icon
     - book:  links to book.douban.com,   作者 / 译者 labels, book icon
     - music: links to music.douban.com,  艺术家 / 专辑 labels, music icon
 */ -}}
@@ -39,7 +39,7 @@
 {{- $iconPath := "M3 7a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7zm13 1l5-3v11l-5-3V8z" -}}
 {{- $role1Label := "导演" -}}
 {{- $role2Label := "主演" -}}
-{{- $ariaIcon := "视频" -}}
+{{- $ariaIcon := "电影" -}}
 {{- if eq $type "book" -}}
   {{- $iconPath = "M3 5a2 2 0 0 1 2-2h5v16H5a2 2 0 0 1-2-2V5zm9-2h7a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-7V3z" -}}
   {{- $role1Label = "作者" -}}
@@ -56,7 +56,7 @@
   {{- if $cover }}
   <img class="douban-card__cover" src="{{ $cover | relURL }}" alt="{{ $title }} 封面" loading="lazy" decoding="async" />
   {{- else }}
-  <div class="douban-card__icon" aria-label="{{ $ariaIcon }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="{{ $iconPath }}"/></svg></div>
+  <div class="douban-card__icon" aria-label="{{ $ariaIcon }}"><svg viewBox="0 0 24 24" fill-rule="evenodd" aria-hidden="true"><path d="{{ $iconPath }}"/></svg></div>
   {{- end }}
   <div class="douban-card__body">
     <div class="douban-card__title">
