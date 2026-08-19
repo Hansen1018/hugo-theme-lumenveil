@@ -41,3 +41,28 @@
 .copy-code { position: absolute; top: 10px; right: 10px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 7px; background: rgba(255,255,255,.07); color: var(--ink-3); font-size: 10px; cursor: pointer; }
 .copy-code:hover { color: var(--ink-1); border-color: var(--line-strong); }
 .article-share { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 20px; padding: 18px 0 20px; border-top: 1px solid var(--line); color: var(--ink-2); visibility: visible; opacity: 1; }
+
+.meta-pills {
+display: flex; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 14px; margin-top: 24px;
+}
+
+.meta-pills .tag-list--large,
+.meta-pills .category-list {
+margin-top: 0;
+}
+
+.meta-pills .category-list {
+flex: 0 0 auto;
+}
+
+.meta-pills .tag-list {
+flex: 0 1 auto; min-width: 0;
+}
+
+.category-list a {
+border: 1px solid rgba(124,92,255,.4); background: rgba(124,92,255,.12); color: var(--accent-1); border-radius: 999px;
+}
+
+.category-list a:hover {
+border-color: rgba(124,92,255,.75); background: rgba(124,92,255,.2); color: var(--accent-1);
+}
