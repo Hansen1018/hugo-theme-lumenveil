@@ -13,12 +13,12 @@
     {{ if $img }}
       <figure class="article-cover">
         <img src="{{ $img.RelPermalink }}" alt="{{ $.Title }}" loading="lazy" decoding="async">
-        {{ with $.Params.cover_caption }}<figcaption>{{ . }}</figcaption>{{ end }}
+        {{ with $.Params.cover_caption }}<figcaption><span class="cover-caption-pill">{{ . }}</span></figcaption>{{ end }}
       </figure>
     {{ else }}
       <figure class="article-cover">
         <img src="{{ . | relURL }}" alt="{{ $.Title }}" loading="lazy" decoding="async">
-        {{ with $.Params.cover_caption }}<figcaption>{{ . }}</figcaption>{{ end }}
+        {{ with $.Params.cover_caption }}<figcaption><span class="cover-caption-pill">{{ . }}</span></figcaption>{{ end }}
       </figure>
     {{ end }}
   {{ end }}

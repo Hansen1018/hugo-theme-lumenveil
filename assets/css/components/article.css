@@ -4,7 +4,8 @@
 .article-header h1 { margin: 22px 0 18px; font-size: clamp(42px,7vw,76px); line-height: 1.06; letter-spacing: -.05em; }
 .article-cover { display: block; width: 100%; margin: 0 0 28px 0; overflow: hidden; border-radius: var(--radius-lg); }
 .article-cover img { display: block; width: 100%; height: auto; }
-.article-cover figcaption { text-align: center; font-size: 0.82em; color: var(--ink-2); margin: -10px 0 28px 0; opacity: 0.78; letter-spacing: 0.02em; }
+.article-cover figcaption { text-align: center; font-size: 0.82em; margin: -10px 0 28px 0; letter-spacing: 0.02em; }
+.article-cover figcaption .cover-caption-pill { display: inline-block; padding: 5px 14px; background: rgba(15,23,42,.72); border: 1px solid rgba(255,255,255,.08); border-radius: 999px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: rgba(255,255,255,.85); }
 .article-deck { max-width: 680px; margin: auto; color: var(--ink-2); font-size: clamp(16px,2vw,19px); line-height: 1.7; }
 .tag-list--large { margin-top: 24px; }
 .tag-list--large a { padding: 5px 10px; font-size: 11px; }
