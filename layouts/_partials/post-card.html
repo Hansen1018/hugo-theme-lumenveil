@@ -21,7 +21,7 @@
       <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006.01.02" }}</time>
       <span>{{ .ReadingTime }} 分钟阅读</span>
       {{ with .Params.views }}<span class="post-meta__views">{{ . }} 次阅读</span>{{ end }}
-      {{ with index .Params.categories 0 }}<a href="{{ printf "/categories/%s/" (. | urlize) | relURL }}">{{ . }}</a>{{ end }}
+      {{ with index .Params.categories 0 }}{{ $term := . | urlize }}{{ $catPage := $.Site.GetPage (printf "/categories/%s/" $term) }}<a href="{{ printf "/categories/%s/" $term | relURL }}">{{ with $catPage }}{{ .Title }}{{ else }}{{ $term }}{{ end }}</a>{{ end }}
     </div>
     <h2><a href="{{ .RelPermalink }}">{{ .LinkTitle }}</a></h2>
     <p>{{ .Description | default (.Summary | plainify | truncate 92) }}</p>
