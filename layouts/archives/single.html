@@ -13,7 +13,7 @@
     </div>
     <h1>{{ .Title }}</h1>
     {{ with .Description }}<p class="article-deck">{{ . }}</p>{{ end }}
-    {{ with .Params.tags }}<div class="tag-list tag-list--large">{{ range . }}<a href="{{ printf "/tags/%s/" (. | urlize) | relURL }}">#{{ . }}</a>{{ end }}</div>{{ end }}
+    {{ if or .Params.categories .Params.tags }}<div class="meta-pills">{{ with .Params.categories }}<div class="category-list tag-list--large">{{ range . }}<a href="{{ printf "/categories/%s/" (. | urlize) | relURL }}">#{{ . }}</a>{{ end }}</div>{{ end }}{{ with .Params.tags }}<div class="tag-list tag-list--large">{{ range . }}<a href="{{ printf "/tags/%s/" (. | urlize) | relURL }}">#{{ . }}</a>{{ end }}</div>{{ end }}</div>{{ end }}
   </header>
   <div class="article-layout">
     <div class="article-main glass">
