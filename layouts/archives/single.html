@@ -6,14 +6,14 @@
       <time datetime="{{ .Date.Format "2006-01-02" }}">发布于 {{ .Date.Format "2006 年 01 月 02 日" }}</time>
       {{ partial "lastmod-meta.html" . }}
       <span>{{ .ReadingTime }} 分钟阅读</span>
-      <span>{{ .WordCount }} 字</span>
+    {{ if or .Params.categories .Params.tags }}<div class="meta-pills">{{ with .Params.categories }}<div class="category-list tag-list--large">{{ range . }}{{ $p := $.Site.GetPage (printf "/categories/%s" (. | urlize)) }}{{ if $p }}<a href="{{ $p.RelPermalink }}">#{{ $p.LinkTitle }}</a>{{ else }}<a href="{{ printf "/categories/%s/" (. | urlize) | relURL }}">#{{ . }}</a>{{ end }}{{ end }}</div>{{ end }}{{ with .Params.tags }}<div class="tag-list tag-list--large">{{ range . }}{{ $p := $.Site.GetPage (printf "/tags/%s" (. | urlize)) }}{{ if $p }}<a href="{{ $p.RelPermalink }}">#{{ $p.LinkTitle }}</a>{{ else }}<a href="{{ printf "/tags/%s/" (. | urlize) | relURL }}">#{{ . }}</a>{{ end }}{{ end }}</div>{{ end }}</div>{{ end }}
       {{/* Page view count — busuanzi (third-party CN service for CN sites). Per-page real cross-user count. */}}
 <span class="page-views">阅读 <span id="busuanzi_value_page_pv">0</span> 次</span>
 {{ partial "busuanzi.html" . }}
     </div>
     <h1>{{ .Title }}</h1>
     {{ with .Description }}<p class="article-deck">{{ . }}</p>{{ end }}
-    {{ if or .Params.categories .Params.tags }}<div class="meta-pills">{{ with .Params.categories }}<div class="category-list tag-list--large">{{ range . }}{{ $term := . | urlize }}{{ $catPage := $.Site.GetPage (printf "/categories/%s/" $term) }}<a href="{{ printf "/categories/%s/" $term | relURL }}">{{ with $catPage }}{{ .Title }}{{ else }}{{ $term }}{{ end }}</a>{{ end }}</div>{{ end }}{{ with .Params.tags }}<div class="tag-list tag-list--large">{{ range . }}<a href="{{ printf "/tags/%s/" (. | urlize) | relURL }}">#{{ . }}</a>{{ end }}</div>{{ end }}</div>{{ end }}
+    {{ if or .Params.categories .Params.tags }}<div class="meta-pills">{{ with .Params.categories }}<div class="category-list tag-list--large">{{ range . }}{{ $term := . | urlize }}{{ $termPage := $.Site.GetPage (printf "/categories/%s" $term) }}{{ $display := "" }}{{ if $termPage }}{{ $display = $termPage.Title }}{{ else }}{{ if eq $term "webdev" }}{{ $display = "建站" }}{{ end }}{{ end }}{{ if not $display }}{{ $display = $term }}{{ end }}<a href="{{ printf "/categories/%s/" $term | relURL }}">#{{ $display }}</a>{{ end }}{{ end }}<a href="{{ printf "/categories/%s/" $term | relURL }}">{{ with $termPage }}{{ .Title }}{{ else }}{{ $term }}{{ end }}</a>{{ end }}</div>{{ end }}{{ with .Params.tags }}<div class="tag-list tag-list--large">{{ range . }}<a href="{{ printf "/tags/%s/" (. | urlize) | relURL }}">#{{ . }}</a>{{ end }}</div>{{ end }}</div>{{ end }}
   </header>
   <div class="article-layout">
     <div class="article-main glass">
