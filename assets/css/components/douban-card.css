@@ -16,7 +16,7 @@ display: flex;
 }
 
 .douban-card:hover {
-background: rgba(255, 255, 255, .075);
+background: var(--glass-bg-hover, rgba(255, 255, 255, .075));
   border-color: var(--line-strong, rgba(255, 255, 255, .16));
   transform: translateY(-1px);
 }
