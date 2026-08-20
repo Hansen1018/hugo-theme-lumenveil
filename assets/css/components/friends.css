@@ -1,0 +1,63 @@
+/* ===== Friends page ===== */
+.friends-stack { display: grid; gap: 28px; max-width: 1080px; margin: 0 auto; }
+.friends-info { padding: clamp(28px,5vw,54px); border-radius: var(--radius-xl); }
+
+/* Eyebrow + accent bar before title — match home page .section-head pattern */
+.friends-info__head { margin-bottom: 6px; }
+.friends-info__eyebrow { display: inline-block; margin-bottom: 14px; padding: 4px 10px; border: 1px solid rgba(124,92,255,.35); border-radius: 999px; background: rgba(124,92,255,.1); color: var(--accent-1); font: 11px var(--font-mono); letter-spacing: .18em; text-transform: uppercase; }
+.friends-info__title { margin: 0; font-size: clamp(22px,2.9vw,30px); font-weight: 650; letter-spacing: -.025em; color: var(--ink-1); line-height: 1.2; position: relative; padding-left: 16px; }
+.friends-info__title::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 3px; height: 72%; background: var(--accent-grad); border-radius: 2px; }
+
+.friends-info__body { font-size: 15.5px; line-height: 1.85; color: var(--ink-2); }
+.friends-info__body p { margin: 0 0 18px; }
+.friends-info__body p:last-child { margin-bottom: 0; }
+
+.friends-info-table { margin: 18px 0 24px; padding: 22px 26px; border: 1px solid var(--line); border-radius: var(--radius-md); background: rgba(255,255,255,.03); display: grid; grid-template-columns: max-content 1fr; gap: 12px 24px; }
+.friends-info-table dt { color: var(--ink-3); font-size: 13px; letter-spacing: .01em; align-self: center; }
+.friends-info-table dd { margin: 0; color: var(--ink-1); font-size: 14.5px; word-break: break-all; }
+.friends-info-table dd a { color: var(--accent-2); border-bottom: 1px dashed transparent; transition: border-color .2s ease, color .2s ease; }
+.friends-info-table dd a:hover { color: var(--accent-1); border-bottom-color: currentColor; }
+
+.friends-credit { font-size: 13px; color: var(--ink-3); margin: 8px 0 0; }
+.friends-credit a { color: var(--ink-2); border-bottom: 1px dashed var(--line-strong); transition: color .2s ease, border-color .2s ease; }
+.friends-credit a:hover { color: var(--accent-1); border-bottom-color: currentColor; }
+
+.friends-info__foot { display: flex; justify-content: flex-end; align-items: center; margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--line); }
+.friends-updated { display: inline-flex; align-items: center; gap: 8px; padding: 6px 13px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.03); font: 12px var(--font-mono); color: var(--ink-3); letter-spacing: .04em; }
+.friends-updated svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+
+/* ===== Friends grid card ===== */
+.friends-grid-card { padding: clamp(26px,4.5vw,46px); border-radius: var(--radius-xl); }
+.friends-grid-head { display: grid; grid-template-columns: auto 1fr auto; align-items: baseline; gap: 18px; margin-bottom: 28px; }
+.friends-grid-head .eyebrow { color: var(--ink-3); font: 11px var(--font-mono); letter-spacing: .17em; text-transform: uppercase; }
+.friends-grid-head h2 { margin: 0; font-size: clamp(22px,3vw,30px); letter-spacing: -.03em; line-height: 1.1; }
+.friends-grid-count { font: 12px var(--font-mono); color: var(--ink-3); padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.03); letter-spacing: .04em; }
+
+.friends-grid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 10px; }
+
+/* Friend card — pill with avatar + name, hover lifts + cyan avatar glow + violet tint */
+.friend-card { display: flex; align-items: center; gap: 11px; padding: 6px 15px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.035); color: var(--ink-2); font-size: 14px; line-height: 1.2; transition: transform .25s cubic-bezier(.22,1,.36,1), border-color .25s ease, background .25s ease, color .2s ease, box-shadow .3s ease; overflow: hidden; min-width: 0; }
+.friend-card:hover { transform: translateY(-2px); border-color: rgba(124,92,255,.5); background: linear-gradient(135deg, rgba(124,92,255,.1), rgba(34,211,238,.05)); color: var(--ink-1); box-shadow: 0 10px 24px -12px rgba(124,92,255,.45); }
+.friend-card__avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--bg-1); flex-shrink: 0; object-fit: cover; border: 1px solid var(--line); display: grid; place-items: center; font-size: 14px; font-weight: 600; color: var(--ink-2); transition: border-color .25s ease, box-shadow .25s ease; }
+.friend-card:hover .friend-card__avatar { border-color: rgba(34,211,238,.65); box-shadow: 0 0 0 2px rgba(34,211,238,.18); }
+.friend-card__avatar--placeholder { background: var(--accent-soft); color: var(--ink-1); }
+.friend-card__name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Empty state — when data/friends.yaml is empty */
+.friends-empty { margin: 0; padding: 40px 20px; border: 1px dashed var(--line-strong); border-radius: var(--radius-md); background: rgba(255,255,255,.02); text-align: center; color: var(--ink-3); font-size: 14px; line-height: 1.7; }
+.friends-empty a { color: var(--accent-2); }
+.friends-empty a:hover { color: var(--accent-1); }
+
+@media (max-width: 980px) { .friends-grid { grid-template-columns: repeat(4, minmax(0,1fr)); } }
+@media (max-width: 760px) { .friends-grid { grid-template-columns: repeat(3, minmax(0,1fr)); } .friends-info-table { grid-template-columns: 1fr; gap: 6px 0; } .friends-info-table dt { font-size: 12px; } .friends-info__title { padding-left: 12px; } }
+@media (max-width: 520px) { .friends-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } .friends-info__foot { justify-content: stretch; } .friends-updated { width: 100%; justify-content: center; } }
+
+/* ===== Friends page — comments (Artalk) ===== */
+/* Comments wrap inherits friends-stack max-width (1080px) and 28px gap. The
+   partial already includes its own theming + token bridge; we just give it
+   a section header that matches the page's eyebrow pattern. */
+.friends-comments { padding: clamp(28px,5vw,54px); border-radius: var(--radius-xl); }
+.friends-comments__head { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 18px; margin: 0 0 28px; }
+.friends-comments__head .eyebrow { color: var(--ink-3); font: 11px var(--font-mono); letter-spacing: .17em; text-transform: uppercase; }
+.friends-comments__head h2 { margin: 0; font-size: clamp(22px,3vw,30px); letter-spacing: -.03em; line-height: 1.1; }
+@media (max-width: 520px) { .friends-comments__head { gap: 12px; } }
