@@ -33,7 +33,7 @@
   {{ $sectionName := index site.Params.mainSections 0 | default "archives" }}
   {{ if $pages }}
     <div class="post-grid">
-      {{ range first 6 $pages.ByDate.Reverse }}{{ partial "post-card.html" . }}{{ end }}
+      {{ range first 7 $pages.ByDate.Reverse }}{{ partial "post-card.html" . }}{{ end }}
     </div>
     <div class="section-action">
       {{ with site.GetPage "section" $sectionName }}
