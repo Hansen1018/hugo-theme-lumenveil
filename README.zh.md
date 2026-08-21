@@ -9,9 +9,7 @@ Lumenveil（光幕）是一款面向个人博客的 Hugo 主题，以通透玻�
 在线预览：<https://blog.hansendong.top>
 
 ## 截图
-
 ### 浅色模式
-
 | 首页 | 文章列表 |
 | --- | --- |
 | ![首页：极光背景与状态徽章](docs/screenshots/home.png) | ![文章归档页：本地化标题与分页](docs/screenshots/posts.png) |
@@ -19,9 +17,7 @@ Lumenveil（光幕）是一款面向个人博客的 Hugo 主题，以通透玻�
 | 文章页 | 关于页 |
 | --- | --- |
 | ![文章页：PhotoSwipe 图集与代码复制](docs/screenshots/post.png) | ![关于页：玻璃表面与联系方式表格](docs/screenshots/about.png) |
-
 ### 深色模式
-
 | 首页 | 文章列表 |
 | --- | --- |
 | ![深色首页：极光辉光](docs/screenshots/home-dark.png) | ![深色文章归档页](docs/screenshots/posts-dark.png) |
@@ -30,7 +26,6 @@ Lumenveil（光幕）是一款面向个人博客的 Hugo 主题，以通透玻�
 | --- | --- |
 | ![深色文章页：PhotoSwipe 图集](docs/screenshots/post-dark.png) | ![深色关于页：玻璃表面](docs/screenshots/about-dark.png)
 ### 移动端
-
 | 首页 | 文章列表 |
 | --- | --- |
 | ![移动端首页（浅色）](docs/screenshots/home-mobile.png) | ![移动端文章列表（浅色）](docs/screenshots/posts-mobile.png) |
@@ -46,11 +41,11 @@ Lumenveil（光幕）是一款面向个人博客的 Hugo 主题，以通透玻�
 | 文章页（深色） | 关于页（深色） |
 | --- | --- |
 | ![移动端文章页（深色）](docs/screenshots/post-mobile-dark.png) | ![移动端关于页（深色）](docs/screenshots/about-mobile-dark.png) |
- |
-
 ## 主要功能
 
 - 首页、文章归档、分类、标签、正文、相册与 404 页面
+- **文章头同时显示分类与标签** —— 分类和标签药丸并排渲染；分类标签从 term 页 `.Title` 解析显示文字（如 slug `webdev` 显示 `建站`），实现「英文 URL slug + 中文显示」无需逐个改主题。fallback 顺序：硬编码 `webdev → 建站` → 原始 slug。移动端（`@media (max-width: 760px)`）将分类放在第 1 行、标签放第 2 行，每行 `flex: 1 1 100%`。
+- **Friends 页面零配置样式** —— 在 `content/friends/` 放下 page bundle，主题自动渲染完整样式页（信息卡片含 eyebrow 药丸 + 渐变 accent 条 + `dl` 信息表 + 5/4/3/2 列响应式 friend-card 网格 + violet→cyan 渐变 hover + 头像青色光晕 + dashed 空状态）。样式在 `assets/css/components/friends.css`。
 - 极光背景、玻璃卡片、封面图全幅展示
 - 自动跟随系统的浅色/深色模式，并记忆手动选择
 - 基于 Hugo JSON 输出的前端全文搜索
@@ -58,9 +53,11 @@ Lumenveil（光幕）是一款面向个人博客的 Hugo 主题，以通透玻�
 - 文章目录、阅读时间、字数统计、最后更新时间与通过 busuanzi partial 显示的实时跨访客阅读次数（第三方 CN 服务）
 - 页脚动态版权（`since` 至今）和 CC BY-NC-SA 4.0 许可链接
 - 代码高亮、代码复制与文章链接复制
+- **Opt-in 客户端语法高亮（`[params] highlight = 'hljs'`）** —— 设置后主题加载 highlight.js + monokai，并通过 `.hljs { background: transparent !important }` 让容器融入文章底色。`_default/_markup/render-codeblock.html` 输出原始 `<pre><code>`（无 chroma span），hljs 不会重复标记。未设置该参数时零变更 —— 不主动发 chroma 字节。
 - 由 PhotoSwipe 驱动的相册 shortcode，使用 CSS 网格布局
 - 可选的 Artalk 评论模块 —— 配置驱动的 partial，样式与文章卡片对齐（玻璃卡片、按钮--ghost 等），自动通过现有 CSS Grid 与 .article-main 列对齐，并在评论列表加载时加入逐条 stagger fade-in
-- 可选的 `cover` 封面图 — 支持 page-bundle 图片或 `static/` 静态资源，在文章列表中作为缩略图展示
+- 可选的 `cover` 封面图 — 支持 page-bundle 图片（通过 `Resources.GetMatch` 解析）或 `static/` 静态资源，在文章列表中作为缩略图展示，**并作为 `og:image` / `twitter:image` meta 标签用于社交分享**（未设置时 fallback 到 `/og.svg` —— 带前导 `/` 的路径或 page-bundle 资源会解析到真实 permalink）
+- 可选的 `cover_caption` 封面图说明 —— 设置后在封面图下方渲染深色玻璃药丸（`rgba(15,23,42,.72)` + `border: 1px solid rgba(255,255,255,.08)` + `border-radius: 999px` + `backdrop-filter: blur(8px)` + 近白文字），白底封面也能看清。默认空 → 不渲染 `<figcaption>`。
 - Open Graph、Twitter Card、Canonical 和 JSON-LD
 - 响应式导航、键盘焦点和减少动态效果支持
 - Hugo Pipes 自动压缩与资源指纹
@@ -102,11 +99,14 @@ description: "摘要，会在文章卡片和 meta 区域显示。"
 categories: ["笔记"]
 tags: ["Hugo", "写作"]
 cover: "images/hello-world.jpg"   # 可选；首先查 page-bundle 资源，找不到时 fallback 到 static/ 路径
+cover_caption: ""   # 可选；封面图下方的深色玻璃药丸说明，白底封面也能看清
 toc: true
 ---
 ```
 
-`cover` 可选。设置后会在归档列表页作为文章卡片缩略图。值先按 page-bundle 资源查找，找不到时 fallback 到 `static/` 下的路径（例如 `cover: images/foo.png` 解析为 `/images/foo.png`）。
+`cover` 可选。设置后会在归档列表页作为文章卡片缩略图，同时作为 `og:image` / `twitter:image` meta 标签用于社交分享（Twitter、Facebook、Discord、Slack 预览）。值先通过 `Resources.GetMatch` 查 page-bundle 资源，找不到时 fallback 到 `static/` 下的路径（例如 `cover: images/foo.png` 解析为 `/images/foo.png`）；无前导 `/` 的相对路径会自动补前导。未设置 `cover` 时 fallback 到 `/og.svg`。
+
+`cover_caption` 可选。设置后在封面图下方以深色玻璃药丸渲染（由 `.article-cover figcaption { text-align: center }` 居中）。留空则不渲染 `<figcaption>`。
 
 ## 相册 shortcode
 

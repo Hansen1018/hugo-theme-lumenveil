@@ -5,11 +5,8 @@ A luminous, responsive Hugo theme with glass surfaces, aurora ambience, automati
 [中文说明](README.zh.md) · [English](#english) · [Screenshots](#screenshots)
 
 ## Screenshots
-
 Live preview: <https://blog.hansendong.top>
-
 ### Light mode
-
 | Home | Articles |
 | --- | --- |
 | ![Home hero with aurora background and status chips / 首页：极光背景与状态徽章](docs/screenshots/home.png) | ![Posts archive with localized section title and pagination / 文章归档页：本地化标题与分页](docs/screenshots/posts.png) |
@@ -17,9 +14,7 @@ Live preview: <https://blog.hansendong.top>
 | Article | About |
 | --- | --- |
 | ![Single post with PhotoSwipe gallery and code copy buttons / 文章页：PhotoSwipe 图集与代码复制](docs/screenshots/post.png) | ![About page rendered with glass surfaces and contact table / 关于页：玻璃表面与联系方式表格](docs/screenshots/about.png) |
-
 ### Dark mode
-
 | Home | Articles |
 | --- | --- |
 | ![Home hero in dark mode with aurora glow / 深色首页：极光辉光](docs/screenshots/home-dark.png) | ![Posts archive in dark mode / 深色文章归档页](docs/screenshots/posts-dark.png) |
@@ -28,7 +23,6 @@ Live preview: <https://blog.hansendong.top>
 | --- | --- |
 | ![Single post in dark mode with PhotoSwipe gallery / 深色文章页：PhotoSwipe 图集](docs/screenshots/post-dark.png) | ![About page in dark mode with glass surfaces / 深色关于页：玻璃表面](docs/screenshots/about-dark.png)
 ### Mobile
-
 | Home | Articles |
 | --- | --- |
 | ![Home hero on mobile, light / 移动端首页（浅色）](docs/screenshots/home-mobile.png) | ![Posts archive on mobile, light / 移动端文章列表（浅色）](docs/screenshots/posts-mobile.png) |
@@ -44,13 +38,13 @@ Live preview: <https://blog.hansendong.top>
 | Article (dark) | About (dark) |
 | --- | --- |
 | ![Single post on mobile, dark / 移动端文章页（深色）](docs/screenshots/post-mobile-dark.png) | ![About on mobile, dark / 移动端关于页（深色）](docs/screenshots/about-mobile-dark.png) |
- |
-
 ## English
 
 ### Features
 
 - Responsive home, archive, category, tag, article, gallery, and 404 layouts
+- **Categories alongside tags in the article header** — Category and tag pills render side by side; categories resolve their display label from the term page's `.Title` (e.g. `建站` for slug `webdev`), enabling "English URL slug + Chinese display" without per-category theme edits. Falls back to a `webdev → 建站` mapping, then to the raw slug. Mobile stacks categories on row 1 and tags on row 2 via `@media (max-width: 760px)`.
+- **Friends page styling out of the box** — Drop a `content/friends/` page bundle with the expected data shape and the theme renders a fully styled page (info card with eyebrow pill + gradient accent bar + `dl` info table + 5/4/3/2 col responsive friend-card grid + violet→cyan gradient hover + cyan avatar glow ring + dashed empty state). Zero config; style lives in `assets/css/components/friends.css`.
 - Aurora background, glassmorphism surfaces, and full-bleed cover support
 - Automatic light and dark mode with a persistent manual switch
 - Client-side search powered by Hugo JSON output
@@ -58,10 +52,12 @@ Live preview: <https://blog.hansendong.top>
 - Article table of contents, reading time, word count, last modified indicator, and a real-time cross-user page view count via the busuanzi partial (third-party CN service)
 - Dynamic copyright range (from `since` to the current year) and CC BY-NC-SA 4.0 license badge in the footer
 - Syntax highlighting and one-click code or article-link copy
+- **Opt-in client-side syntax highlighting via `[params] highlight = 'hljs'`** — When set, the theme loads highlight.js with monokai and a transparent `.hljs { background: transparent !important }` rule so the container blends with the article surface. The `_default/_markup/render-codeblock.html` hook emits raw `<pre><code>` (no chroma spans) so hljs highlights cleanly without double-markup. Sites not setting the param see zero change — no chroma bytes shipped unless you opt in.
 - PhotoSwipe-powered image gallery shortcode with CSS grid + justified masonry layouts, sortable by name / date / weight prefix
 - Optional Artalk comments module — config-driven partial that mirrors the article card style (glass, button--ghost, mono uppercase header) and auto-aligns to `.article-main` via the existing CSS grid, with a per-comment stagger fade-in on list load
 - Optional article like button — centered heart CTA at the bottom of the article body, one-way semantics (no cancel after click) with bump animation, pink accent (#ff6b8a) when liked, count synced across devices via a self-hosted `/api/like/*` endpoint (like-server.py, JSON file backend) with `localStorage` fallback for per-user like state; cursor switches to `not-allowed` to signal the action is locked
-- Optional `cover` front matter per post — page-bundle image or `static/` asset, used as the archive-page thumbnail
+- Optional `cover` front matter per post — page-bundle image (resolved via `Resources.GetMatch`) or `static/` asset, used as the archive-page thumbnail **and as the `og:image` / `twitter:image` meta tag for social sharing** (falls back to `/og.svg` when unset — covers with leading `/` or page-bundle resources resolve to their real permalink)
+- Optional `cover_caption` front matter — When set, renders below the cover image inside a dark-glass pill wrapper (`rgba(15,23,42,.72)` + `border: 1px solid rgba(255,255,255,.08)` + `border-radius: 999px` + `backdrop-filter: blur(8px)` + off-white text) readable on any cover background, including white. Empty (default) → no `<figcaption>` rendered.
 - Open Graph, Twitter Card, canonical URL, and JSON-LD metadata
 - Reduced-motion support, keyboard focus states, and mobile navigation
 - Hugo Pipes minification and asset fingerprinting
@@ -144,6 +140,10 @@ enableRobotsTXT = true
   since = 2024
   mainSections = ['posts']
 
+  # Opt-in client-side syntax highlighting (highlight.js + monokai).
+  # Omit this line (or leave it as the default empty) to use Hugo's built-in Chroma instead.
+  highlight = 'hljs'   # set to 'hljs' to enable; remove or set to '' to use the default chroma
+
 [menus]
   [[menus.main]]
     name = 'Home'
@@ -194,13 +194,16 @@ description: "A short summary displayed in article cards and metadata."
 categories: ["Notes"]
 tags: ["Hugo", "Writing"]
 cover: "images/hello-world.jpg"   # optional; falls back to a static/ asset when no page-bundle image matches
+cover_caption: ""   # optional; renders inside a dark-glass pill below the cover, readable on any background
 toc: true
 ---
 ```
 
 `lastmod` is optional. When present and later than `date`, a "Last updated …" line is rendered in the article header (the template uses a localized label, so the rendered text matches the site's language).
 
-`cover` is optional. When set, it shows up as the post-card thumbnail on the archives page. The value is first looked up as a page-bundle resource, then falls back to a path under `static/` (e.g. `cover: images/foo.png` resolves to `/images/foo.png`).
+`cover` is optional. When set, it shows up as the post-card thumbnail on the archives page and as the `og:image` / `twitter:image` meta tag for social sharing (used by Twitter, Facebook, Discord, Slack previews). The value is first looked up as a page-bundle resource via `Resources.GetMatch`, then falls back to a path under `static/` (e.g. `cover: images/foo.png` resolves to `/images/foo.png`); paths without a leading `/` are auto-prefixed. Falls back to `/og.svg` when `cover` is unset.
+
+`cover_caption` is optional. When set, it renders inside a dark-glass pill below the cover image (the existing `.article-cover figcaption { text-align: center }` rule centers the pill). Leave empty to skip the `<figcaption>` entirely.
 
 ### Image gallery shortcode
 
