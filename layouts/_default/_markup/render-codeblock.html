@@ -1,0 +1,22 @@
+{{- /*
+  render-codeblock.html — opt-in hljs hook.
+
+  Activate with `[params] highlight = "hljs"` in site config. When the param
+  is NOT set, this template outputs nothing and Hugo falls back to its
+  default Chroma rendering — so existing theme users see zero behavior
+  change until they opt in.
+
+  Why a render hook instead of just disabling Chroma in head:
+    - Hugo's default fenced-code render emits <pre><code class="language-x">
+      with Chroma spans inside. hljs then scans the same nodes and adds
+      its own spans, producing double-markup where Chroma classes fight
+      hljs classes for the same text.
+    - This hook strips Chroma entirely: raw <pre><code class="language-x">
+      with the literal source. hljs picks up `language-x` on the client
+      and highlights cleanly. No JS? Code still renders as plain
+      monospace — the fallback we want.
+*/ -}}
+{{- if eq site.Params.highlight "hljs" -}}
+{{- $lang := .Type | default "text" -}}
+<pre><code class="language-{{ $lang }}">{{ .Inner }}</code></pre>
+{{- end -}}
