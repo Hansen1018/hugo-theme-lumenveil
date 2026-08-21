@@ -80,9 +80,18 @@ try {
 <meta property="og:description" content="{{ $description }}">
 <meta property="og:url" content="{{ .Permalink }}">
 <meta property="og:site_name" content="{{ site.Title }}">
-{{- $ogImage := .Params.cover | default "og.svg" -}}
-<meta property="og:image" content="{{ $ogImage | absURL }}">
-<meta name="twitter:image" content="{{ $ogImage | absURL }}">
+{{- $ogImage := "" -}}
+{{- with .Params.cover -}}
+  {{- with $.Resources.GetMatch . -}}
+    {{- $ogImage = .Permalink -}}
+  {{- else -}}
+    {{- $ogImage = . | absURL -}}
+  {{- end -}}
+{{- else -}}
+  {{- $ogImage = "og.svg" | absURL -}}
+{{- end -}}
+<meta property="og:image" content="{{ $ogImage }}">
+<meta name="twitter:image" content="{{ $ogImage }}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{{ $title }}">
 <meta name="twitter:description" content="{{ $description }}">
@@ -90,6 +99,12 @@ try {
 <meta property="article:published_time" content="{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}">
 {{ with .Lastmod }}<meta property="article:modified_time" content="{{ .Format "2006-01-02T15:04:05Z07:00" }}">{{ end }}
 {{ end }}
+{{- /* opt-in hljs via [params] highlight = "hljs": CDN hljs + monokai + auto-highlightAll. */ -}}
+{{- if eq site.Params.highlight "hljs" -}}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/monokai.min.css">
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/common.min.js" defer></script>
+<script>document.addEventListener('DOMContentLoaded',function(){if(window.hljs)hljs.highlightAll();});</script>
+{{- end -}}
 <script type="application/ld+json">
 {{ if .IsPage }}
 {"@context":"https://schema.org","@type":"BlogPosting","headline":{{ .Title | jsonify | safeJS }},"description":{{ $description | jsonify | safeJS }},"datePublished":"{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}","dateModified":"{{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" }}","author":{"@type":"Person","name":{{ site.Params.author | jsonify | safeJS }}},"mainEntityOfPage":{{ .Permalink | jsonify | safeJS }}}
