@@ -54,6 +54,8 @@ Live preview: <https://blog.hansendong.top>
 - Syntax highlighting and one-click code or article-link copy
 - **Opt-in client-side syntax highlighting via `[params] highlight = 'hljs'`** — When set, the theme loads highlight.js with monokai and a transparent `.hljs { background: transparent !important }` rule so the container blends with the article surface. The `_default/_markup/render-codeblock.html` hook emits raw `<pre><code>` (no chroma spans) so hljs highlights cleanly without double-markup. Sites not setting the param see zero change — no chroma bytes shipped unless you opt in.
 - PhotoSwipe-powered image gallery shortcode with CSS grid + justified masonry layouts, sortable by name / date / weight prefix
+- Bilibili video embed shortcode using the native BV short ID — auto-strips `share_source` / `vd_source` tracking params, accepts full URLs (BV extracted from `watch?v=` etc.), responsive 16:9 iframe via `player.bilibili.com`, optional page number and autoplay flag
+- YouTube video embed shortcode using the 11-char video ID (10–12 char legacy-compatible) — auto-strips `si` / `feature` / `pp` tracking params, accepts full URLs (ID extracted from `watch?v=`, `/shorts/`, `youtu.be/`, `/embed/`), responsive 16:9 iframe via `youtube-nocookie.com` (privacy-enhanced — no cookies until play), optional start seconds and autoplay flag
 - Optional Artalk comments module — config-driven partial that mirrors the article card style (glass, button--ghost, mono uppercase header) and auto-aligns to `.article-main` via the existing CSS grid, with a per-comment stagger fade-in on list load
 - Optional article like button — centered heart CTA at the bottom of the article body, one-way semantics (no cancel after click) with bump animation, pink accent (#ff6b8a) when liked, count synced across devices via a self-hosted `/api/like/*` endpoint (like-server.py, JSON file backend) with `localStorage` fallback for per-user like state; cursor switches to `not-allowed` to signal the action is locked
 - Optional `cover` front matter per post — page-bundle image (resolved via `Resources.GetMatch`) or `static/` asset, used as the archive-page thumbnail **and as the `og:image` / `twitter:image` meta tag for social sharing** (falls back to `/og.svg` when unset — covers with leading `/` or page-bundle resources resolve to their real permalink)
@@ -241,6 +243,56 @@ The `weight` strategy is convenient when filenames come from a camera or scanner
 #### Inline images in markdown
 
 Single images rendered via the standard `![alt](image.jpg)` markdown also join the gallery: the render hook attaches the same `data-flex-grow` / `data-flex-basis` attributes, and a small JS helper in `main.js` groups consecutive figures into a justified masonry container automatically.
+
+### Video embed shortcodes
+
+Two shortcodes for embedding Bilibili and YouTube videos. Both follow the same principles:
+
+- **Short-ID-first** — pass the platform's native short ID directly. Tracking params (`share_source`, `vd_source`, `si`, `feature`, `pp`, ...) are stripped.
+- **Full-URL-tolerant** — a complete URL also works; the ID is auto-extracted via regex.
+- **Responsive 16:9** — rounded corners, dark placeholder (no white flash before player loads), `loading="lazy"`, privacy-enhanced domains where available.
+
+#### `{{< bilibili >}}` — Bilibili
+
+Accepts the 10-char BV short ID (the `BV` prefix is required):
+
+```md
+{{< bilibili BV1xx411c7mH >}}
+{{< bilibili BV1xx411c7mH 2 >}}                  <!-- page number -->
+```
+
+Or a full URL — the BV ID is extracted, tracking params are dropped:
+
+```md
+{{< bilibili "https://www.bilibili.com/video/BV1xx411c7mH/?share_source=copy&vd_source=abc" >}}
+```
+
+Renders through `player.bilibili.com` with `autoplay=0`, `danmaku=0` (quieter for blog reading), `high_quality=1` defaults. Override with named flags:
+
+```md
+{{< bilibili BV1xx411c7mH 1 "autoplay=1" "highq=0" >}}
+```
+
+#### `{{< youtube >}}` — YouTube
+
+Accepts the 11-char video ID (or 10–12 char legacy IDs predating YouTube's 2010 standardization, for backward compatibility with older posts):
+
+```md
+{{< youtube dQw4w9WgXcQ >}}
+{{< youtube dQw4w9WgXcQ 42 >}}                  <!-- start at 42 seconds -->
+```
+
+Full URLs also work — ID is extracted from `watch?v=`, `/shorts/`, `youtu.be/`, `/embed/`:
+
+```md
+{{< youtube "https://youtu.be/dQw4w9WgXcQ?t=42" >}}
+```
+
+Renders through `youtube-nocookie.com` (no cookies set until the user actually hits play) with `rel=0` (hides unrelated recommendations after end). Override with named flags:
+
+```md
+{{< youtube dQw4w9WgXcQ 42 "autoplay=1" >}}
+```
 
 ### Run locally
 
