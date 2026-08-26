@@ -83,26 +83,16 @@ border-color: rgba(124,92,255,.75); background: rgba(124,92,255,.2); color: var(
 }
 .hljs { background: transparent !important; }
 
-/* Inline image caption (markdown `*figcaption*` rendered as <em>) — match the
-   cover-caption-pill visual treatment so inline figures feel consistent
-   with the article-cover style. Targets <em> that immediately follows a
-   figure inside a paragraph (the standard Hugo render for
-   `![alt](img)` + `*caption*`). */
-/* When a <p> contains a <figure> followed by an <em> (the standard Hugo
-   render for ![alt](img) + *caption*), the caption is the "image source"
-   label and should be visually pill-styled + centered, matching the
-   .article-cover figcaption .cover-caption-pill treatment.
-   Strategy: use :has() to opt the parent <p> into text-align:center, then
-   the <em> as inline-block sits centered inside. This is the most reliable
-   cross-browser centering for inline content; margin:auto on the em itself
-   is unreliable (inline-block ignores auto margins, and display:table has
-   its own quirks inside <p>). */
-.prose p:has(> figure + em) {
+/* Inline image caption (markdown `*caption*` after `![alt](img)`) —
+   match cover-caption-pill. Hugo renders this as standalone <figure>
+   + separate <p><em>caption</em></p> (NOT <p><figure/><em/></p>),
+   so we target the caption-only paragraph. */
+.prose p:has(> em:only-child) {
   text-align: center;
+  margin: -1em auto 2em;
 }
-.prose p > figure + em {
+.prose p > em:only-child {
   display: inline-block;
-  margin: 8px 0 28px;
   padding: 5px 14px;
   background: rgba(15, 23, 42, .72);
   border: 1px solid rgba(255, 255, 255, .08);
@@ -113,10 +103,4 @@ border-color: rgba(124,92,255,.75); background: rgba(124,92,255,.2); color: var(
   font-size: 0.82em;
   font-style: normal;
   letter-spacing: 0.02em;
-  opacity: 0.78;
-}
-.prose p > figure + em a {
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 2px;
 }
