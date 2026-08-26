@@ -82,3 +82,30 @@ border: 1px solid rgba(124,92,255,.4); background: rgba(124,92,255,.12); color: 
 border-color: rgba(124,92,255,.75); background: rgba(124,92,255,.2); color: var(--accent-1);
 }
 .hljs { background: transparent !important; }
+
+/* Inline image caption (markdown `*figcaption*` rendered as <em>) — match the
+   cover-caption-pill visual treatment so inline figures feel consistent
+   with the article-cover style. Targets <em> that immediately follows a
+   figure inside a paragraph (the standard Hugo render for
+   `![alt](img)` + `*caption*`). */
+.prose p > figure + em {
+  display: inline-block;
+  margin: 8px auto 28px;
+  padding: 5px 14px;
+  background: rgba(15, 23, 42, .72);
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: rgba(255, 255, 255, .85);
+  font-size: 0.82em;
+  font-style: normal;
+  letter-spacing: 0.02em;
+  text-align: center;
+  opacity: 0.78;
+}
+.prose p > figure + em a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
