@@ -1,6 +1,6 @@
 # Lumenveil（光幕）
 
-[![stars](https://img.shields.io/github/stars/Hansen1018/hugo-theme-lumenveil?style=flat)](https://github.com/Hansen1018/hugo-theme-lumenveil/stargazers) [![release](https://img.shields.io/github/release/Hansen1018/hugo-theme-lumenveil?style=flat)](https://github.com/Hansen1018/hugo-theme-lumenveil/releases) [![license](https://img.shields.io/github/license/Hansen1018/hugo-theme-lumenveil?style=flat)](https://github.com/Hansen1018/hugo-theme-lumenveil/blob/main/LICENSE) [![telegram](https://img.shields.io/badge/telegram-community-blue?style=flat)](https://t.me/Hansen1018)
+[![stars](https://img.shields.io/github/stars/Hansen1018/hugo-theme-lumenveil?style=flat)](https://github.com/Hansen1018/hugo-theme-lumenveil/stargazers) [![release](https://img.shields.io/github/release/Hansen1018/hugo-theme-lumenveil?style=flat)](https://github.com/Hansen1018/hugo-theme-lumenveil/releases) [![license](https://img.shields.io/github/license/Hansen1018/hugo-theme-lumenveil?style=flat)](https://github.com/Hansen1018/hugo-theme-lumenveil/blob/main/LICENSE) [![telegram](https://img.shields.io/badge/telegram-Hansen1018-blue?style=flat)](https://t.me/Hansen1018)
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/K3N525V491)
 
