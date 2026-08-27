@@ -1,5 +1,7 @@
 # Lumenveil
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/K3N525V491)
+
 A luminous, responsive Hugo theme with glass surfaces, aurora ambience, automatic light and dark modes, search, galleries, and a reading-first experience for long-form content.
 
 [中文说明](README.zh.md) · [English](#english) · [Screenshots](#screenshots)
