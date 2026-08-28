@@ -131,3 +131,17 @@ By contributing, you agree your contributions are licensed under [CC BY-NC-SA 4.
 ---
 
 Thanks for helping make Lumenveil better. 🦞
+
+
+## Repo icon & social preview
+
+These are GitHub Settings UI assets, **not auto-synced from the repo**:
+
+- **Repository icon** (header avatar): upload `assets/repo-icon.png` (1024×1024) via
+  Settings → General → "Repository icon"
+- **Social preview** (share card): upload `assets/social-preview.png` (1280×640) via
+  Settings → General → "Social preview"
+
+GitHub's REST/GraphQL API does not expose these settings, so this is a 30-second
+manual upload. The PNGs in this repo are the canonical versions — regenerate from
+`logo-mark.svg` / `og-theme.svg` if the brand changes.
