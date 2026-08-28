@@ -1,13 +1,18 @@
 from playwright.sync_api import sync_playwright
 
+import os
+BASE_URL = os.environ.get("BASE_URL", "https://blog.hansendong.top")
+# Default targets the Hansen1018 demo site; override with BASE_URL env var
+# to test a fork or staging instance. e.g. `BASE_URL=https://staging.example.com python verify.py`
+
 with sync_playwright() as p:
     browser = p.chromium.launch(args=['--no-sandbox'])
     ctx = browser.new_context(viewport={"width": 1440, "height": 900})
     page = ctx.new_page()
     # Force dark theme via localStorage (lumenveil reads this key)
-    page.goto("https://blog.hansendong.top/", wait_until="networkidle", timeout=30000)
+    page.goto(BASE_URL + "/", wait_until="networkidle", timeout=30000)
     page.evaluate("localStorage.setItem('lumenveil-theme', 'dark')")
-    page.goto("https://blog.hansendong.top/archives/2020/12/2020-retro/", wait_until="networkidle", timeout=30000)
+    page.goto(BASE_URL + "/archives/2020/12/2020-retro/", wait_until="networkidle", timeout=30000)
     page.wait_for_timeout(2500)
     page.evaluate("document.querySelector('.article-share').scrollIntoView({block:'center'})")
     page.wait_for_timeout(600)

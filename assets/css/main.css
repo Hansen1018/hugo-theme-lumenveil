@@ -1,3 +1,26 @@
+/*
+  main.css — CANONICAL REFERENCE FILE (NOT loaded by Hugo)
+
+  This file is the all-in-one view of the theme's CSS for editors who want to
+  see everything in a single file. It is NOT loaded by the theme: Hugo's
+  `$components | resources.Concat "css/main.css" | minify | fingerprint`
+  pipeline in `layouts/_partials/head.html` reads from
+  `assets/css/components/*.css` (24 explicit slices in a numbered cascade —
+  see head.html for order) and produces the real shipped stylesheet.
+
+  Edit rules:
+    1. Make changes in the relevant `assets/css/components/*.css` slice.
+    2. Mirror the change here so this canonical reference stays in sync.
+    3. Update the numbered cascade comment in head.html if you add or
+       reorder a slice.
+
+  Why keep this file at all? It's a single-file "view all CSS at once"
+  affordance — useful for full-file searches ("where is `.article-cover`
+  used?"), large refactors, and diffing theme versions.
+
+  Last mirrored from components/: 2026-08-28 (audit pass).
+*/
+
 :root {
   --bg-0: #0a0c12;
   --bg-1: #0f121a;

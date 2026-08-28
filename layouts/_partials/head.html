@@ -7,11 +7,11 @@
   Cascade order:
     1. tokens        2. reset         3. utilities      4. aurora
     5. header        6. home          7. page-hero      8. pagination
-    9. gallery-prose 10. photoswipe   11. term          12. article
-    13. friends      14. like         15. archive       16. toc
-    17. 404          18. search       19. footer        20. back-to-top
-    21. responsive   22. motion       23. theme-light   24. gallery
-    25. douban-card
+    9. gallery-prose 10. photoswipe   11. embeds        12. term
+    13. article      14. friends      15. like          16. archive
+    17. toc          18. 404          19. search        20. footer
+    21. back-to-top  22. responsive   23. motion        24. theme-light
+    25. gallery      26. douban-card
 */}}
 {{ $components := slice
     (resources.Get "css/components/tokens.css")
@@ -24,6 +24,7 @@
     (resources.Get "css/components/pagination.css")
     (resources.Get "css/components/gallery-prose.css")
     (resources.Get "css/components/photoswipe.css")
+    (resources.Get "css/components/embeds.css")
     (resources.Get "css/components/term.css")
     (resources.Get "css/components/article.css")
     (resources.Get "css/components/friends.css")
@@ -93,16 +94,21 @@ try {
 <meta property="og:image" content="{{ $ogImage }}">
 <meta name="twitter:image" content="{{ $ogImage }}">
 <meta name="twitter:card" content="summary_large_image">
+{{- with site.Params.twitter -}}
+{{- $handle := replace (replace . "https://x.com/" "") "https://twitter.com/" "" -}}
+<meta name="twitter:site" content="@{{ $handle }}">
+{{- end -}}
 <meta name="twitter:title" content="{{ $title }}">
 <meta name="twitter:description" content="{{ $description }}">
+<meta name="twitter:url" content="{{ .Permalink }}">
 {{ if .IsPage }}
 <meta property="article:published_time" content="{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}">
 {{ with .Lastmod }}<meta property="article:modified_time" content="{{ .Format "2006-01-02T15:04:05Z07:00" }}">{{ end }}
 {{ end }}
-{{- /* opt-in hljs via [params] highlight = "hljs": CDN hljs + monokai + auto-highlightAll. */ -}}
+{{- /* opt-in hljs via [params] highlight = "hljs": cdnjs full bundle (121KB, all langs incl. toml/html) + monokai + auto-highlightAll. common.min.js omitted toml/html so language-toml blocks rendered unstyled. */ -}}
 {{- if eq site.Params.highlight "hljs" -}}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/monokai.min.css">
-<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/common.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer></script>
 <script>document.addEventListener('DOMContentLoaded',function(){if(window.hljs)hljs.highlightAll();});</script>
 {{- end -}}
 <script type="application/ld+json">

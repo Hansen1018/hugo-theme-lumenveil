@@ -15,6 +15,9 @@
 */}}
 {{ with site.Params.comments }}
   {{ if eq .service "artalk" }}
+    {{- if or (not .server) (eq .server "https://your-artalk.example.com") -}}
+      {{- warnf "lumenveil: Artalk service is enabled but [params.comments].server is missing or still the placeholder ('https://your-artalk.example.com'). Comments will not load until you set the real server URL in your site's hugo.toml." -}}
+    {{- end -}}
     {{ $server := .server | default "" }}
     {{ if $server }}
       {{ $siteName := .site | default site.Title }}

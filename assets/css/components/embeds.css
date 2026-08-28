@@ -1,0 +1,31 @@
+/* ============================================================================
+   embeds.css — responsive 16:9 iframe containers
+   ----------------------------------------------------------------------------
+   Used by the `youtube` and `bili` shortcodes. Replaces inline styles that
+   were duplicated across both shortcodes (now in one place). The dark
+   background hides the iframe's white flash on slow connections; rounded
+   corners + shadow match the rest of the article surface.
+
+   Cascade slot: 11 (between photoswipe.css and term.css). Article/term
+   styles can still override if a specific embed needs different framing.
+   ========================================================================== */
+
+.embed-frame {
+  position: relative;
+  padding-bottom: 56.25%;   /* 16:9 ratio */
+  height: 0;
+  overflow: hidden;
+  max-width: 100%;
+  margin: 1.5rem 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .08);
+  background: #000;
+}
+
+.embed-frame > iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}

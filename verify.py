@@ -1,13 +1,18 @@
 from playwright.sync_api import sync_playwright
 import json
 
+import os
+BASE_URL = os.environ.get("BASE_URL", "https://blog.hansendong.top")
+# Default targets the Hansen1018 demo site; override with BASE_URL env var
+# to test a fork or staging instance. e.g. `BASE_URL=https://staging.example.com python verify.py`
+
 with sync_playwright() as p:
     b = p.chromium.launch(args=['--no-sandbox'])
 
     # === Mobile viewport test (Since 2013 should be visible) ===
     ctx_m = b.new_context(viewport={'width': 375, 'height': 667})
     pg = ctx_m.new_page()
-    pg.goto("https://blog.hansendong.top/", wait_until='networkidle', timeout=30000)
+    pg.goto(BASE_URL + "/", wait_until='networkidle', timeout=30000)
     pg.wait_for_timeout(2000)
     diag_mobile = pg.evaluate("""() => {
         const chips = [...document.querySelectorAll('.hero__chips .chip')];
@@ -29,7 +34,7 @@ with sync_playwright() as p:
     # === PC viewport test (article-share should NOT have card wrapping) ===
     ctx_p = b.new_context(viewport={'width': 1440, 'height': 900})
     pg = ctx_p.new_page()
-    pg.goto("https://blog.hansendong.top/archives/2020/12/2020-retro/", wait_until='networkidle', timeout=30000)
+    pg.goto(BASE_URL + "/archives/2020/12/2020-retro/", wait_until='networkidle', timeout=30000)
     pg.wait_for_timeout(2500)
     pg.evaluate("document.querySelector('.article-share').scrollIntoView({block:'center'})")
     pg.wait_for_timeout(700)
