@@ -120,9 +120,18 @@
   }
 
   document.querySelectorAll('.prose pre').forEach((pre) => {
-    const wrapper = pre.closest('.highlight') || pre.parentElement
-    if (!wrapper || wrapper.querySelector('.copy-code')) return
-    if (getComputedStyle(wrapper).position === 'static') wrapper.style.position = 'relative'
+    let wrapper = pre.closest('.highlight')
+    if (!wrapper) {
+      // render-codeblock.html (hljs mode) emits raw <pre><code> without a
+      // .highlight wrapper. Create one so the absolute-positioned copy
+      // button anchors to the code block instead of the whole .prose body.
+      wrapper = document.createElement('div')
+      wrapper.className = 'highlight'
+      pre.parentNode.insertBefore(wrapper, pre)
+      wrapper.appendChild(pre)
+    }
+    if (wrapper.querySelector('.copy-code')) return
+    wrapper.style.position = 'relative'
     const button = document.createElement('button')
     button.className = 'copy-code'
     button.type = 'button'
