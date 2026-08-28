@@ -62,7 +62,11 @@ Live preview: <https://blog.hansendong.top>
 - PhotoSwipe-powered image gallery shortcode with CSS grid + justified masonry layouts, sortable by name / date / weight prefix
 - Bilibili video embed shortcode using the native BV short ID — auto-strips `share_source` / `vd_source` tracking params, accepts full URLs (BV extracted from `watch?v=` etc.), responsive 16:9 iframe via `player.bilibili.com`, optional page number and autoplay flag
 - YouTube video embed shortcode using the 11-char video ID (10–12 char legacy-compatible) — auto-strips `si` / `feature` / `pp` tracking params, accepts full URLs (ID extracted from `watch?v=`, `/shorts/`, `youtu.be/`, `/embed/`), responsive 16:9 iframe via `youtube-nocookie.com` (privacy-enhanced — no cookies until play), optional start seconds and autoplay flag
-- Optional Artalk comments module — config-driven partial that mirrors the article card style (glass, button--ghost, mono uppercase header) and auto-aligns to `.article-main` via the existing CSS grid, with a per-comment stagger fade-in on list load
+- Both shortcodes render inside a `.embed-frame` container (responsive 16:9, dark backdrop, rounded corners). Override the look in your own CSS:
+  ```css
+  .embed-frame { border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,.12); }
+  ```
+- Optional Artalk comments module — config-driven partial that mirrors the article card style (glass, button--ghost, mono uppercase header) and auto-aligns to `.article-main` via the existing CSS grid, with a per-comment stagger fade-in on list load. **Note:** the demo `server` URL is a placeholder; the theme emits a build-time warning if you enable Artalk without setting your real backend.
 - Optional article like button — centered heart CTA at the bottom of the article body, one-way semantics (no cancel after click) with bump animation, pink accent (#ff6b8a) when liked, count synced across devices via a self-hosted `/api/like/*` endpoint (like-server.py, JSON file backend) with `localStorage` fallback for per-user like state; cursor switches to `not-allowed` to signal the action is locked
 - Optional `cover` front matter per post — page-bundle image (resolved via `Resources.GetMatch`) or `static/` asset, used as the archive-page thumbnail **and as the `og:image` / `twitter:image` meta tag for social sharing** (falls back to `/og.svg` when unset — covers with leading `/` or page-bundle resources resolve to their real permalink)
 - Optional `cover_caption` front matter — When set, renders below the cover image inside a dark-glass pill wrapper (`rgba(15,23,42,.72)` + `border: 1px solid rgba(255,255,255,.08)` + `border-radius: 999px` + `backdrop-filter: blur(8px)` + off-white text) readable on any cover background, including white. Empty (default) → no `<figcaption>` rendered.
@@ -389,6 +393,10 @@ The 24 components, in cascade order:
 - The theme follows the system color preference by default. A visitor's manual selection is stored locally in the browser.
 
 For the Chinese translation, see [README.zh.md](README.zh.md).
+
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md) for version notes. Detailed per-version notes live in [`.release-notes/`](./.release-notes/).
 
 ## License
 

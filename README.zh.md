@@ -61,7 +61,7 @@ Lumenveil（光幕）是一款面向个人博客的 Hugo 主题，以通透玻�
 - 代码高亮、代码复制与文章链接复制
 - **Opt-in 客户端语法高亮（`[params] highlight = 'hljs'`）** —— 设置后主题加载 highlight.js + monokai，并通过 `.hljs { background: transparent !important }` 让容器融入文章底色。`_default/_markup/render-codeblock.html` 输出原始 `<pre><code>`（无 chroma span），hljs 不会重复标记。未设置该参数时零变更 —— 不主动发 chroma 字节。
 - 由 PhotoSwipe 驱动的相册 shortcode，使用 CSS 网格布局
-- 可选的 Artalk 评论模块 —— 配置驱动的 partial，样式与文章卡片对齐（玻璃卡片、按钮--ghost 等），自动通过现有 CSS Grid 与 .article-main 列对齐，并在评论列表加载时加入逐条 stagger fade-in
+- 可选的 Artalk 评论模块 —— 配置驱动的 partial，样式与文章卡片对齐（玻璃卡片、按钮--ghost 等），自动通过现有 CSS Grid 与 .article-main 列对齐，并在评论列表加载时加入逐条 stagger fade-in。**注意：** 默认的 `server` URL 只是占位符；启用 Artalk 但没设置真实 backend 的话，主题会在构建时输出警告。
 - 可选的 `cover` 封面图 — 支持 page-bundle 图片（通过 `Resources.GetMatch` 解析）或 `static/` 静态资源，在文章列表中作为缩略图展示，**并作为 `og:image` / `twitter:image` meta 标签用于社交分享**（未设置时 fallback 到 `/og.svg` —— 带前导 `/` 的路径或 page-bundle 资源会解析到真实 permalink）
 - 可选的 `cover_caption` 封面图说明 —— 设置后在封面图下方渲染深色玻璃药丸（`rgba(15,23,42,.72)` + `border: 1px solid rgba(255,255,255,.08)` + `border-radius: 999px` + `backdrop-filter: blur(8px)` + 近白文字），白底封面也能看清。默认空 → 不渲染 `<figcaption>`。
 - Open Graph、Twitter Card、Canonical 和 JSON-LD
@@ -196,6 +196,10 @@ toc: true
 1. 新建 `assets/css/components/<name>.css`，按 BEM 命名。选好 cascade 位置（variables → reset → utilities → chrome → page-specific → overrides）。
 2. 在 `head.html` 的 slice 末尾 append，并在顶部编号注释里同步加一行。如果 `resources.Get` 路径不存在，build 会直接失败。
 3. 重新构建：`hugo server -D`。
+
+## 更新日志
+
+按版本概要见 [CHANGELOG.md](./CHANGELOG.md)。详细 release notes 在 [`.release-notes/`](./.release-notes/)。
 
 ## 许可
 
