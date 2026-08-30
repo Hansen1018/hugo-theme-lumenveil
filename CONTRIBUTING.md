@@ -145,3 +145,38 @@ These are GitHub Settings UI assets, **not auto-synced from the repo**:
 GitHub's REST/GraphQL API does not expose these settings, so this is a 30-second
 manual upload. The PNGs in this repo are the canonical versions — regenerate from
 `logo-mark.svg` / `og-theme.svg` if the brand changes.
+
+## Build artifacts
+
+- `.hugo_build.lock` is created on the first `hugo build` and is safe to delete.
+- `exampleSite/public/`, `exampleSite/resources/`, `hugo_stats.json` are all gitignored.
+
+## Commit types
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) format:
+
+| Type | Use for |
+|------|---------|
+| feat     | New feature |
+| fix      | Bug fix |
+| chore    | Tooling / config / deps (no production change) |
+| docs     | Documentation only |
+| style    | Formatting (no code change) |
+| refactor | Code change (no feature/bug change) |
+| perf     | Performance |
+| test     | Adding tests |
+| ci       | CI / build |
+| build    | Build system / dependencies |
+
+## Reproduction / smoke test
+
+Before submitting a PR:
+
+```bash
+cd exampleSite
+hugo --minify --logLevel info           # build must complete clean
+\                          # headless dark + light screenshots (requires python+playwright)
+```
+
+Visual check at multiple viewports: 1280 / 768 / 375 (desktop / tablet / mobile).
+Test both themes via the `lumenveil-theme` localStorage key.

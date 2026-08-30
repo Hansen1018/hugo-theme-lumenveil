@@ -12,7 +12,7 @@
     {{ if $cover }}
       <img src="{{ $cover }}" alt="" loading="lazy">
     {{ else }}
-      <span>{{ substr .LinkTitle 0 1 }}</span>
+      <span>{{ if .LinkTitle }}{{ substr .LinkTitle 0 1 }}{{ else }}…{{ end }}</span>
       <div class="post-card__grid"></div>
     {{ end }}
   </a>
