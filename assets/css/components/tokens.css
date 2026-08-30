@@ -29,3 +29,8 @@
   --radius-xl: 32px;
   --content: 1180px;
 }
+
+/* Breakpoint scale (sm/md/lg) */
+--bp-sm: 480px;
+--bp-md: 760px;
+--bp-lg: 980px;

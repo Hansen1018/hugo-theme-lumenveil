@@ -8,7 +8,5 @@
 .archive-count { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: rgba(255,255,255,.06); color: var(--ink-3); font: 10px var(--font-mono); }
 .section--compact + .section--compact { border-top: 1px solid var(--line); padding-top: 28px; margin-top: 20px; }
 .post-card.is-hidden, .empty-state.is-hidden { display: none; }
-.archive-empty { margin-top: 18px; text-align: center; color: var(--ink-3); font-size: 13px; }
-.archive-empty a { color: var(--accent-2); }
 html[data-theme="light"] .tag-list--archive { background: rgba(255, 255, 255, .6); }
 html[data-theme="light"] .archive-count { background: rgba(15, 23, 42, .08); color: var(--ink-2); }
