@@ -14,7 +14,7 @@ body:
         - Check the [README](https://github.com/Hansen1018/hugo-theme-lumenveil#readme)
 
   - type: dropdown
-    id: feedback-type
+    id: bug-type
     attributes:
       label: Feedback Type *
       description: What kind of bug is this?

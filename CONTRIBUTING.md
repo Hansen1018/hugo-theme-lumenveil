@@ -117,7 +117,7 @@ Examples:
 feat(hero): add aurora opacity setting
 fix(single): correct share-button data-* attrs
 docs(readme): update screenshot dimensions
-chore(deps): bump Hugo to 0.145
+chore(deps): bump Hugo to 0.146
 ```
 
 ## 🤝 Code of Conduct
@@ -133,7 +133,7 @@ By contributing, you agree your code contributions are licensed under [GPL-3.0](
 Thanks for helping make Lumenveil better. 🦞
 
 
-## Repo icon & social preview
+## 🛠 Maintainer notes: Repo icon & social preview
 
 These are GitHub Settings UI assets, **not auto-synced from the repo**:
 

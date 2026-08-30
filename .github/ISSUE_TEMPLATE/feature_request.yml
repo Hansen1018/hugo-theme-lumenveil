@@ -9,7 +9,7 @@ body:
         Thanks for suggesting a feature! Strong requests describe a **problem** (not just a solution) and show you've thought about trade-offs.
 
   - type: dropdown
-    id: feedback-type
+    id: feature-type
     attributes:
       label: Feedback Type *
       description: What kind of feature is this?

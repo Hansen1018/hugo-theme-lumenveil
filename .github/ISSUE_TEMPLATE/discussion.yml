@@ -11,7 +11,7 @@ body:
         For "how do I…" questions, check the [README](https://github.com/Hansen1018/hugo-theme-lumenveil#readme) first.
 
   - type: dropdown
-    id: feedback-type
+    id: discussion-type
     attributes:
       label: Discussion Type *
       options:

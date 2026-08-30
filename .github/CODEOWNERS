@@ -1,0 +1,6 @@
+# CODEOWNERS — auto-assign PRs to maintainer
+*                        @Hansen1018
+/layouts/                @Hansen1018
+/assets/                 @Hansen1018
+/.github/                @Hansen1018
+/exampleSite/            @Hansen1018

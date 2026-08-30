@@ -34,3 +34,10 @@
 --bp-sm: 480px;
 --bp-md: 760px;
 --bp-lg: 980px;
+
+/* Z-index scale (documented) */
+--z-base: 0;
+--z-content: 1;
+--z-floating: 50;
+--z-header: 80;
+--z-skiplink: 200;

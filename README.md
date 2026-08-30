@@ -99,7 +99,7 @@ Update the theme later with:
 git submodule update --remote --merge
 ```
 
-### Required configuration
+### Required configuration (search + taxonomy plumbing)
 
 Search requires a JSON output for the home page. Copy the following into your site's `hugo.toml` and adjust the values to match your project:
 
