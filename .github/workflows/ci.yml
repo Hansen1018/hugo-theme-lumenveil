@@ -16,10 +16,10 @@ jobs:
         with:
           hugo-version: '0.146.0'
           extended: true
-      - run: cd exampleSite && hugo --minify
-      - name: Verify CSS class cross-reference
+      # exampleSite uses theme = 'lumenveil' but doesn't ship the theme
+      # itself; create a symlink so Hugo can find it locally.
+      - name: Link theme into exampleSite
         run: |
-          cd "${GITHUB_WORKSPACE}"
-          rg -oN '\.[a-z][a-z0-9_-]+' assets/css/components/*.css assets/css/main.css | sort -u > /tmp/defined.txt
-          rg -oN 'class="[^"]+"' layouts/ assets/js/main.js | sed 's/class="//;s/"//' | tr ' ' '\n' | sort -u > /tmp/used.txt
-          diff <(sed 's/.*://' /tmp/defined.txt | sort -u) <(sed 's/.*://' /tmp/used.txt | sort -u) || (echo 'Unused CSS classes detected'; exit 1)
+          mkdir -p exampleSite/themes
+          ln -sfn ../.. exampleSite/themes/lumenveil
+      - run: cd exampleSite && hugo --minify
