@@ -1,1 +1,31 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7c5cff"/><stop offset="100%" stop-color="#22d3ee"/></linearGradient></defs><rect width="64" height="64" rx="14" fill="url(#g)"/><text x="50%" y="56%" text-anchor="middle" font-family="system-ui,sans-serif" font-size="30" font-weight="700" fill="#fff" dominant-baseline="middle">H</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Lumenveil">
+  <title>Lumenveil</title>
+  <defs>
+    <linearGradient id="vesica" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7c5cff"/>
+      <stop offset="45%" stop-color="#c4b5fd"/>
+      <stop offset="55%" stop-color="#67e8f9"/>
+      <stop offset="100%" stop-color="#22d3ee"/>
+    </linearGradient>
+    <radialGradient id="lumen" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="55%" stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="backdrop" cx="50%" cy="50%" r="65%">
+      <stop offset="0%" stop-color="#7c5cff" stop-opacity="0.32"/>
+      <stop offset="60%" stop-color="#22d3ee" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="bloom" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.5"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="#0a0c12"/>
+  <rect width="256" height="256" rx="56" fill="url(#backdrop)"/>
+  <path d="M 64 128 C 64 -11 192 -11 192 128 C 192 267 64 267 64 128 Z" fill="url(#vesica)"/>
+  <path d="M 64 128 C 64 -11 128 -11 128 128 C 128 267 64 267 64 128 Z" fill="#ffffff" opacity="0.10"/>
+  <circle cx="128" cy="128" r="50" fill="url(#lumen)" filter="url(#bloom)"/>
+  <circle cx="128" cy="128" r="6" fill="#ffffff"/>
+</svg>

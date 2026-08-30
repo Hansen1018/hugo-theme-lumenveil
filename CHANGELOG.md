@@ -1,3 +1,10 @@
+## Unreleased
+- 5c14ecc fix(js): wrap unwrapped <pre> in .highlight before attaching copy button
+- 06aeb41 docs(brand): add Lumenveil logo suite
+- 502fcdc docs(brand): add GitHub Settings asset PNGs + maintenance note
+- c30b003 chore(audit): apply code-audit fixes — refactor + docs
+- 01fc644 docs(readme): add Changelog link, .embed-frame customization, Artalk placeholder warning
+
 # Changelog
 
 Detailed release notes per version live in `.release-notes/` (tracked from this

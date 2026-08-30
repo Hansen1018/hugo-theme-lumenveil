@@ -15,7 +15,7 @@ features = [
   "client-side search powered by Hugo JSON output",
   "categories, tags, pagination, RSS, sitemap, robots.txt",
   "article table of contents, reading time, word count, last modified indicator",
-  "dynamic copyright range and CC BY-NC-SA license badge",
+  "dynamic copyright range and CC BY-NC-ND license badge",
   "syntax highlighting, one-click code or article-link copy",
   "PhotoSwipe-powered image gallery shortcode with CSS grid",
   "Open Graph, Twitter Card, canonical URL, JSON-LD metadata",

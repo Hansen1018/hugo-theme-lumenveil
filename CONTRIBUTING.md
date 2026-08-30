@@ -137,9 +137,9 @@ Thanks for helping make Lumenveil better. 🦞
 
 These are GitHub Settings UI assets, **not auto-synced from the repo**:
 
-- **Repository icon** (header avatar): upload `assets/repo-icon.png` (1024×1024) via
+- **Repository icon** (header avatar): upload `.github/assets/repo-icon.png` (1024×1024) via
   Settings → General → "Repository icon"
-- **Social preview** (share card): upload `assets/social-preview.png` (1280×640) via
+- **Social preview** (share card): upload `.github/assets/social-preview.png` (1280×640) via
   Settings → General → "Social preview"
 
 GitHub's REST/GraphQL API does not expose these settings, so this is a 30-second

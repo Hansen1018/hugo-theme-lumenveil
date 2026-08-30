@@ -3,7 +3,7 @@ title: "About"
 slug: "about"
 draft: false
 description: "About this demo site and the Lumenveil theme."
-layout: 'page'
+type: 'page'
 toc: false
 ---
 
