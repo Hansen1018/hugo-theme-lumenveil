@@ -1,0 +1,91 @@
+# .coderabbit.yaml — CodeRabbit AI code review configuration
+# Docs: https://docs.coderabbit.ai/
+#
+# Free tier covers public repos on GitHub. After installing the GitHub App
+# from https://github.com/apps/coderabbitai and granting access to this repo,
+# CodeRabbit will auto-review every PR against main and surface:
+#   - duplicated / dead CSS classes
+#   - accessibility gaps (a11y) in templates
+#   - Hugo template anti-patterns (unmatched blocks, double-escaped html)
+#   - missing alt / loading / decoding on <img>
+#   - inline event handlers (XSS surface)
+#   - secrets / tokens in commit ranges
+#   - GitHub Actions workflow lint (actionlint)
+
+language: en
+
+reviews:
+  # "chill" = friendly tone + nit suggestions. The audit-driven Medium/Low
+  # fixes already shipped, so we don't want CodeRabbit to demand rewrites
+  # for stylistic-only issues. Switch to "assertive" if you want it to block.
+  profile: chill
+  request_changes_workflow: false  # never auto-block PRs on style nits
+  high_level_summary: true         # one-paragraph PR summary at top of review
+  review_status: true              # status check (✅ / 🟡 / ❌)
+  collapse_walkthrough: false      # keep file-by-file walkthrough visible
+  abort_on_transient_error: false  # keep reviewing even if a tool flakes
+  auto_review:
+    enabled: true
+    drafts: false                  # wait for PR to leave Draft state
+    ignore_title_keywords:
+      - "WIP"
+      - "DRAFT"
+      - "skip-review"
+    base_branches:
+      - main
+  tools:
+    # Tools that match the stack (HTML / CSS / JS / YAML / GitHub Actions)
+    markdownlint:
+      enabled: true
+    yamllint:
+      enabled: true
+    gitleaks:
+      enabled: true                # secret / token detection
+    actionlint:
+      enabled: true                # GitHub Actions workflow lint
+    ast-grep:
+      enabled: true                # structural code search (catches anti-patterns)
+    github-checks:
+      enabled: true
+      min_position: 5
+    languagetool:
+      enabled: true
+      level: default
+    # Tools that don't apply to a Hugo theme (no Go / PHP / Ruby / Swift)
+    ruff:
+      enabled: false
+    eslint:
+      enabled: false
+    biome:
+      enabled: false
+    golangci-lint:
+      enabled: false
+    phpstan:
+      enabled: false
+    phpcs:
+      enabled: false
+    swiftlint:
+      enabled: false
+    detekt:
+      enabled: false
+    rubocop:
+      enabled: false
+    flake8:
+      enabled: false
+    buf:
+      enabled: false
+    shellcheck:
+      enabled: false               # no shell scripts in CI
+    hadolint:
+      enabled: false               # no Dockerfile in this repo
+    checkov:
+      enabled: false               # no Terraform / IaC
+
+chat:
+  auto_reply: true                 # answer review comments inline
+
+knowledge_base:
+  learnings:
+    scope: global                  # CodeRabbit remembers per-repo conventions
+  issues:
+    scope: global
