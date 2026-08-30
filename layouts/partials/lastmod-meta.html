@@ -7,5 +7,5 @@
     CST+8 (Asia/Shanghai). If the site ever spans timezones, replace this with a lookup.
 */}}
 {{ if and .Lastmod (ge .Lastmod .Date) }}
-<time datetime="{{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" }}">更新于 {{ .Lastmod.Format "2006 年 01 月 02 日 15:04" }} (UTC+8)</time>
+<time datetime="{{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" }}">更新于 {{ .Lastmod.Format "2006 年 01 月 02 日 15:04" }}</time>
 {{ end }}
