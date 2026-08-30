@@ -37,7 +37,9 @@
   updateHeader()
   window.addEventListener('scroll', updateHeader, { passive: true })
 
-  menuToggle?.addEventListener('click', () => {
+  document.addEventListener('keydown', (e) => { if (e.key === "Escape" && menu?.classList.contains("is-open")) { menu.classList.remove("is-open"); menuToggle.setAttribute("aria-expanded", "false"); menuToggle.focus(); } });
+
+menuToggle?.addEventListener('click', () => {
     const open = menu?.classList.toggle('is-open') ?? false
     menuToggle.setAttribute('aria-expanded', String(open))
   })

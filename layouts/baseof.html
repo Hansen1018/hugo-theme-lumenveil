@@ -19,7 +19,7 @@
     </main>
     {{ partial "footer.html" . }}
   </div>
-  <dialog class="search-dialog" id="search-dialog" data-index="{{ "index.json" | relURL }}" aria-labelledby="search-title">
+  <dialog class="search-dialog" id="search-dialog" data-index="{{ "index.json" | relURL }}" aria-labelledby="search-title" aria-modal="true">
     <div class="search-dialog__head">
       <div>
         <span class="eyebrow">Search</span>

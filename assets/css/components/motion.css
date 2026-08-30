@@ -1,4 +1,4 @@
-@keyframes pulse-pagination {} /* noop */
+/* noop */
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

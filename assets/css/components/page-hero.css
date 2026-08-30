@@ -10,4 +10,4 @@
 .empty-state strong { display: block; margin-bottom: 8px; color: var(--ink-1); font-size: 20px; }
 .empty-state p { margin: 0 0 18px; }
 .empty-state code { display: inline-block; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,.06); color: var(--accent-2); font-family: var(--font-mono); }
-.pagination { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; margin-top: 40px; padding: 14px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.03); color: var(--ink-3); font-size: 12px; text-align: center; }
+

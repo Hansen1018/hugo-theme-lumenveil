@@ -14,6 +14,12 @@
   --accent-2: #22d3ee;
   --accent-3: #f472b6;
   --accent-grad: linear-gradient(135deg, #7c5cff 0%, #22d3ee 100%);
+
+  /* Semantic accents */
+  --status-online: #22c55e;
+  --status-online-glow: rgba(34, 197, 94, 0.5);
+  --like-pink: #ff6b8a;
+  --like-pink-hot: #ff5277;
   --accent-soft: linear-gradient(135deg, rgba(124, 92, 255, 0.18), rgba(34, 211, 238, 0.18));
   --font-sans: "Geist", "HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
