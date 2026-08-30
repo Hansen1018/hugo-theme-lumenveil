@@ -49,7 +49,7 @@ body:
     attributes:
       label: Hugo Version *
       options:
-        - Latest stable (>= 0.145)
+        - Latest stable (>= 0.146)
         - 0.121.x
         - 0.110.x or earlier
         - Extended version

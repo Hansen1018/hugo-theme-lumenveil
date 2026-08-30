@@ -1,8 +1,8 @@
 {{/*
-  Shortcode: bili
-  Usage:    {{< bili BV1xx411c7mH >}}
-            {{< bili BV1xx411c7mH 2 >}}            (page)
-            {{< bili BV1xx411c7mH 2 "autoplay=1" >}} (page + named)
+  Shortcode: bilibili
+  Usage:    {{< bilibili BV1xx411c7mH >}}
+            {{< bilibili BV1xx411c7mH 2 >}}            (page)
+            {{< bilibili BV1xx411c7mH 2 "autoplay=1" >}} (page + named)
 
   Embeds a Bilibili video using its BV short ID (10-char, starts with "BV").
   Only the short ID is forwarded to player.bilibili.com — tracking params
@@ -11,7 +11,7 @@
 */}}
 {{- $bvid := .Get 0 | default "" -}}
 {{- if not $bvid -}}
-  {{- errorf "bili shortcode: missing BV ID (usage: {{< bili BV1xx411c7mH >}})" -}}
+  {{- errorf "bilibili shortcode: missing BV ID (usage: {{< bilibili BV1xx411c7mH >}})" -}}
 {{- end -}}
 {{- $p    := .Get 1 | default "1" -}}
 {{- $auto := default "0" ($.Get "autoplay") -}}

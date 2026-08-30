@@ -2,6 +2,7 @@ html[data-theme="light"] {
   color-scheme: light;
   --bg-0: #f4f6fb;
   --bg-1: #ffffff;
+  --bg-2: rgba(8, 12, 24, 0.04);
   --ink-1: rgba(17, 24, 39, .96);
   --ink-2: rgba(30, 41, 59, .74);
   --ink-3: rgba(51, 65, 85, .56);

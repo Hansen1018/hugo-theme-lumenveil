@@ -2,7 +2,7 @@
 <article class="article fade-up">
   <header class="article-header">
     <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><a href="{{ "/archives/" | relURL }}">記事</a><span>/</span><span>{{ .Title }}</span></div>
-    {{ if eq .Section "archives" }}<div class="post-meta"><time datetime="{{ .Date.Format "2006-01-02" }}">发表于 {{ .Date.Format "2006 年 01 月 02 日" }}</time>{{ partial "lastmod-meta.html" . }}<span>{{ .ReadingTime }} 分阅读</span><span>{{ .WordCount }} 字</span></div>{{ end }}
+    {{ if eq .Section (index site.Params.mainSections 0 | default "archives") }}<div class="post-meta"><time datetime="{{ .Date.Format "2006-01-02" }}">发表于 {{ .Date.Format "2006 年 01 月 02 日" }}</time>{{ partial "lastmod-meta.html" . }}<span>{{ .ReadingTime }} 分阅读</span><span>{{ .WordCount }} 字</span></div>{{ end }}
     <h1>{{ .Title }}</h1>
     {{ with .Description }}<p class="article-deck">{{ . }}</p>{{ end }}
   </header>

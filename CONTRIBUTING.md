@@ -126,7 +126,7 @@ Be kind. Disagree on ideas, not on people. No harassment, no spam, no personal a
 
 ## 📜 License
 
-By contributing, you agree your contributions are licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) — the same license as the theme.
+By contributing, you agree your code contributions are licensed under [GPL-3.0](LICENSE) — the same license as the theme. Written content (post bodies, docs, code comments) you contribute may be released separately under CC BY-NC-SA 4.0 by the project as appropriate.
 
 ---
 

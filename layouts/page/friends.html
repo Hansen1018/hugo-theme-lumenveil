@@ -1,0 +1,51 @@
+{{ define "main" }}
+<section class="section is-visible">
+  <header class="section__head">
+    <div class="section__meta">
+      <span class="section__index">00</span>
+      <span class="section__eyebrow">Links</span>
+    </div>
+    <h2 class="section__title">Friends</h2>
+    <span class="section__rule" aria-hidden="true"></span>
+  </header>
+  <div class="section__body">
+    <div class="friends-stack">
+      <header class="friends-info glass">
+        <div class="friends-info__head">
+          <span class="friends-info__eyebrow">About</span>
+          <h3 class="friends-info__title">People I read, learn from, or just vibe with</h3>
+        </div>
+        <div class="friends-info__body">
+          <p>Below: a few of my favorite human beings on the open web. If you want to be listed here, drop me a line.</p>
+        </div>
+        {{ with .Params.last_updated }}<p class="friends-updated">Last updated: {{ . }}</p>{{ end }}
+        <dl class="friends-info-table">
+          <dt>Total</dt><dd>{{ len .Params.friends | default 0 }}</dd>
+          <dt>Style</dt><dd>Auto-generated from page front matter</dd>
+        </dl>
+        <p class="friends-credit">Theme: <a href="https://github.com/Hansen1018/hugo-theme-lumenveil">Lumenveil</a></p>
+      </header>
+      {{ $friends := .Params.friends | default slice }}
+      {{ if eq (len $friends) 0 }}
+        <div class="friends-empty">
+          <span class="friends-empty__head">No friends yet</span>
+          <span>Add a <code>friends: []</code> array to this page's front matter.</span>
+        </div>
+      {{ else }}
+        <ul class="friends-grid">
+          {{ range $i, $f := $friends }}
+            <li class="friends-grid-card">
+              <a class="friend-card" href="{{ $f.url }}" target="_blank" rel="noopener noreferrer">
+                <span class="friend-card__avatar{{ if not $f.avatar }} friend-card__avatar--placeholder{{ end }}">
+                  {{ with $f.avatar }}<img src="{{ . | relURL }}" alt="{{ $f.name }}" loading="lazy">{{ end }}
+                </span>
+                <span class="friend-card__name">{{ $f.name }}</span>
+              </a>
+            </li>
+          {{ end }}
+        </ul>
+      {{ end }}
+    </div>
+  </div>
+</section>
+{{ end }}

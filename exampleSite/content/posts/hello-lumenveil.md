@@ -7,7 +7,7 @@ description: "A short walkthrough of the Lumenveil theme's main building blocks.
 categories: ["Notes"]
 tags: ["Hugo", "Lumenveil", "Demo"]
 toc: true
-cover: "images/cover.jpg"
+# cover dropped (images/cover.jpg not shipped) — see REVIEW.md Critical #8
 ---
 
 This is the canonical example post for the Lumenveil theme. It exercises every front-matter field the theme cares about — date, lastmod, categories, tags, table of contents, and an optional `cover` thumbnail.
@@ -35,7 +35,7 @@ Links open in a new tab when they point off-site. **Bold**, *italic*, and `inlin
 Drop images into a directory and use the gallery shortcode:
 
 ```md
-{{< gallery "gallery/sample" >}}
+{{< gallery "gallery/sample" >}}  # gallery/sample not shipped — see REVIEW.md Critical #9
 ```
 
 A single image also works as a regular Markdown image.

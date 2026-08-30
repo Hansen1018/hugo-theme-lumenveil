@@ -2,6 +2,11 @@ baseURL = 'https://example.com/'
 title = 'Lumenveil Example'
 theme = 'lumenveil'
 
+[module]
+  [module.imports]
+    path = 'github.com/Hansen1018/hugo-theme-lumenveil'
+    disable = false
+
 # Required output formats for search + taxonomy pages
 [outputs]
   home = ['HTML', 'RSS', 'JSON']
