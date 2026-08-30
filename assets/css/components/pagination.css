@@ -10,7 +10,7 @@
   transition: background .2s ease, border-color .2s ease, color .2s ease, transform .2s ease;
 }
 .pagination-item:hover { border-color: var(--line-strong); color: var(--ink-1); transform: translateY(-1px); }
-.pagination-item:not(.is-active):hover { background: var(--bg-2); }
+.pagination-item:not(.is-active):not(.is-disabled):hover { background: var(--bg-2); }
 .pagination-item.is-active { background: var(--accent-1); border-color: var(--accent-1); color: #fff; font-weight: 600; cursor: default; }
 .pagination-item.is-active:hover { background: var(--accent-1); border-color: var(--accent-1); color: #fff; transform: none; }
 .pagination-item.is-disabled { opacity: .35; pointer-events: none; cursor: default; }
