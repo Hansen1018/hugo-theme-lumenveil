@@ -213,6 +213,19 @@ menuToggle?.addEventListener('click', () => {
     })
   }
 
+  const scrollProgress = document.querySelector('[data-scroll-progress]')
+  if (scrollProgress) {
+    const progressBar = scrollProgress.querySelector('.scroll-progress__bar')
+    const updateProgress = () => {
+      const scrollable = document.documentElement.scrollHeight - window.innerHeight
+      const progress = scrollable > 0 ? Math.min(100, (window.scrollY / scrollable) * 100) : 0
+      if (progressBar) progressBar.style.width = progress + '%'
+    }
+    updateProgress()
+    window.addEventListener('scroll', updateProgress, { passive: true })
+    window.addEventListener('resize', updateProgress, { passive: true })
+  }
+
   const archive = document.querySelector('[data-archive]')
   if (archive) {
     const grid = document.querySelector('[data-post-grid]')
