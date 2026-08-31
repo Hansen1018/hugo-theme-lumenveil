@@ -32,4 +32,4 @@ features = [
   since         = 2024
   comments      = false
   highlight     = 'chroma'
-  pagerSize     = 8
+  pagerSize     = 7

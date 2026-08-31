@@ -110,7 +110,7 @@ hasCJKLanguage = true
 enableRobotsTXT = true
 
 [pagination]
-  pagerSize = 8
+  pagerSize = 7
 
 [taxonomies]
   category = 'categories'

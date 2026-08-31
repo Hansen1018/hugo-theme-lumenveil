@@ -21,7 +21,7 @@ theme = 'lumenveil'
   notAlternative = true
 
 [pagination]
-  pagerSize = 5
+  pagerSize = 7
 
 [taxonomies]
   category = 'categories'
