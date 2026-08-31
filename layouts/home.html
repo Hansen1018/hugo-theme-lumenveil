@@ -58,6 +58,10 @@
     <a class="explore-panel glass" href="{{ "tags/" | relURL }}">
       <span class="eyebrow">Tags</span><strong>{{ len site.Taxonomies.tags }}</strong><h3>内容标签</h3><p>从更细的关键词进入，发现不同文章之间隐藏的联系。</p><span class="read-link">查看标签 →</span>
     </a>
+    <div class="about-panel glass">
+      <span class="eyebrow">About</span><h3>保持好奇，持续输出</h3><p>{{ site.Params.description }}</p>
+      <div class="about-panel__links">{{ with site.Params.github }}<a href="{{ . }}" target="_blank" rel="noopener noreferrer">GitHub</a>{{ end }}{{ with site.Params.email }}<a href="mailto:{{ . }}">联系我</a>{{ end }}</div>
+    </div>
   </div>
 </section>
 {{ end }}

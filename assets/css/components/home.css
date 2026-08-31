@@ -90,9 +90,11 @@
 .explore-panel:nth-child(2)::after { background: var(--accent-2); }
 .explore-panel:hover::after { transform: scale(1.25); }
 .explore-panel > strong { display: block; margin: 24px 0 2px; font-size: 58px; letter-spacing: -.06em; }
-
-
-
+.explore-panel, .about-panel { position: relative; min-height: 280px; padding: 30px; overflow: hidden; border-radius: var(--radius-lg); }
+.explore-panel h3, .about-panel h3 { margin: 0 0 12px; font-size: 24px; letter-spacing: -.025em; }
+.explore-panel p, .about-panel p { max-width: 48ch; margin: 0 0 26px; color: var(--ink-2); font-size: 14px; line-height: 1.75; }
+.about-panel { grid-column: span 2; display: grid; grid-template-columns: 1fr 1.3fr; align-items: center; gap: 24px; min-height: 220px; }
+.about-panel .eyebrow { grid-column: 1/-1; }
 
 .about-panel h3 { font-size: clamp(26px,4vw,42px); }
 .about-panel__links { display: flex; gap: 8px; }
