@@ -66,7 +66,11 @@
   .post-card__visual { aspect-ratio: 16/8; }
   .post-card:first-child h2 { font-size: 24px; }
   .post-card__body > p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .explore-grid { grid-template-columns: 1fr; }
+  .explore-grid { grid-template-columns: 1fr; gap: 14px; }
+  .explore-panel { min-height: 0; padding: 22px 20px; }
+  .explore-panel > strong { font-size: 46px; margin: 14px 0 4px; letter-spacing: -.04em; }
+  .explore-panel h3 { font-size: 20px; margin: 0 0 10px; }
+  .explore-panel p { font-size: 13px; line-height: 1.65; margin: 0 0 18px; }
   .about-panel { grid-column: auto; grid-template-columns: 1fr; }
   .about-panel .eyebrow { grid-column: auto; }
   .term-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
