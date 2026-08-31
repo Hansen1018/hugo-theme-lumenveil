@@ -340,11 +340,12 @@ yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year
       if (labelNode) labelNode.textContent = year ? `Year ${year}` : 'All Articles'
       if (emptyNode) emptyNode.hidden = visible !== 0 || !year
       if (pagination) {
-        if (year) {
-          buildClientPagination(visible)
-        } else {
-          restoreServerPagination()
-        }
+        /* Hansen 2026-09-01 fix: always rebuild pagination to match the
+           visible card count. restoreServerPagination() served a stale
+           nav after a "全部" click from a year-filtered state (grid showed
+           18 cards but nav still showed 2 pages from the year-filtered
+           server render). */
+        buildClientPagination(visible)
       }
     }
     archive.querySelector('[data-archive-all]')?.addEventListener('click', (event) => {
@@ -367,7 +368,18 @@ yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year
       if (date) card.dataset.year = (date.getAttribute('datetime') || '').slice(0, 4)
     })
     captureServerPagination()
-    update(new URLSearchParams(window.location.search).get('year') || '')
+    /* Hansen 2026-09-01 fix: only invoke update() when the URL has ?year=.
+       On initial page load with no year filter, leaving update() alone
+       keeps the server-rendered paginated grid (e.g. 7 cards + 3-page
+       nav) intact instead of unconditionally replacing it with the full
+       18-card archive. */
+    const initialYear = new URLSearchParams(window.location.search).get('year')
+    if (initialYear) {
+      update(initialYear)
+    } else {
+      yearPills.forEach((pill) => pill.classList.toggle('is-active', false))
+      if (allPill) allPill.classList.add('is-active')
+    }
   }
 })()
 
