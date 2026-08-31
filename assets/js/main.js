@@ -330,7 +330,28 @@ menuToggle?.addEventListener('click', () => {
       })
       if (grid) {
         grid.innerHTML = ''
-        matches.forEach((card) => grid.appendChild(card.cloneNode(true)))
+        /* CodeRabbit PR #12 actionable (line 378): slice matches by current
+           page so /archives/?year=X&page=N shows only the active page's
+           cards, not every matching card from #archive-all-cards. */
+        const url = new URL(window.location.href)
+        const requestedPage = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10) || 1)
+        const pageSize = perPage
+        /* CodeRabbit PR #12 round 2 (line 343, Minor): clamp stale out-of-range
+           ?page= to totalPages so the grid isn't blank. Also sync the URL
+           via history.replaceState so a refresh doesn't repeat the clamp. */
+        const totalPages = Math.max(1, Math.ceil(matches.length / pageSize))
+        const currentPage = Math.min(requestedPage, totalPages)
+        if (currentPage !== requestedPage) {
+          url.searchParams.set('page', String(currentPage))
+          window.history.replaceState(null, '', url)
+        }
+        /* Only slice when a year filter is active. The "all" view shows every
+           matching card at once and uses buildClientPagination(visible) for
+           nav, so slicing it would show only perPage cards (regression). */
+        const pageMatches = year
+          ? matches.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+          : matches
+        pageMatches.forEach((card) => grid.appendChild(card.cloneNode(true)))
       }
       const visible = year ? (yearCounts.get(year) || 0) : allCount
 yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year === year))
@@ -340,19 +361,24 @@ yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year
       if (labelNode) labelNode.textContent = year ? `Year ${year}` : 'All Articles'
       if (emptyNode) emptyNode.hidden = visible !== 0 || !year
       if (pagination) {
-        if (year) {
-          buildClientPagination(visible)
-        } else {
-          restoreServerPagination()
-        }
+        /* Hansen 2026-09-01 fix: always rebuild pagination to match the
+           visible card count. restoreServerPagination() served a stale
+           nav after a "全部" click from a year-filtered state (grid showed
+           18 cards but nav still showed 2 pages from the year-filtered
+           server render). */
+        buildClientPagination(visible)
       }
     }
-    archive.querySelector('[data-archive-all]')?.addEventListener('click', (event) => {
-      event.preventDefault()
-      const url = new URL(window.location.href)
-      url.searchParams.delete('year')
-      window.history.replaceState(null, '', url)
-      update('')
+    archive.querySelector('[data-archive-all]')?.addEventListener('click', () => {
+      /* Hansen 2026-09-01: don't intercept the "全部" click.
+         The link's href is a clean path (/archives/ or /posts/, no query),
+         so the browser's natural navigation loads the server-paginated
+         view (7 cards + 3-page server nav). Client-side handling is only
+         needed for year-filtered views (Hugo can't paginate by ?year=).
+         Previously update('') flattened all 16 cards into one grid and
+         built nav with ?page=N hrefs that the server ignores — clicking
+         page 2 reloaded /archives/ as page 1 (7 cards), making pagination
+         look broken. */
     })
     pills.forEach((pill) => pill.addEventListener('click', (event) => {
       event.preventDefault()
@@ -367,7 +393,18 @@ yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year
       if (date) card.dataset.year = (date.getAttribute('datetime') || '').slice(0, 4)
     })
     captureServerPagination()
-    update(new URLSearchParams(window.location.search).get('year') || '')
+    /* Hansen 2026-09-01 fix: only invoke update() when the URL has ?year=.
+       On initial page load with no year filter, leaving update() alone
+       keeps the server-rendered paginated grid (e.g. 7 cards + 3-page
+       nav) intact instead of unconditionally replacing it with the full
+       18-card archive. */
+    const initialYear = new URLSearchParams(window.location.search).get('year')
+    if (initialYear) {
+      update(initialYear)
+    } else {
+      yearPills.forEach((pill) => pill.classList.toggle('is-active', false))
+      if (allPill) allPill.classList.add('is-active')
+    }
   }
 })()
 
