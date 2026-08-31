@@ -45,3 +45,8 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+/* ===== Mobile hide (CodeRabbit B3): <768px the control is redundant — thumb-reach + native scroll ===== */
+@media (max-width: 767px) {
+  .back-to-top { display: none; }
+}

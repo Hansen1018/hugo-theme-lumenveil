@@ -235,6 +235,10 @@ menuToggle?.addEventListener('click', () => {
     const allPill = archive.querySelector('[data-archive-all]')
     const pills = archive.querySelectorAll('[data-year]')
     const cards = grid ? Array.from(grid.children) : []
+    const allArchiveTemplate = document.getElementById('archive-all-cards')
+    const allArchiveCards = allArchiveTemplate
+      ? Array.from(allArchiveTemplate.content.querySelectorAll('article.post-card'))
+      : []
     const pagination = document.querySelector('.pagination')
     const perPage = parseInt(grid?.dataset.perPage || '8', 10) || 8
     const yearCounts = new Map()
@@ -300,21 +304,34 @@ menuToggle?.addEventListener('click', () => {
       pagination.appendChild(next)
       pagination.dataset.client = '1'
     }
-    const restoreServerPagination = () => {
+    let serverPaginationCache = ''
+    const captureServerPagination = () => {
       if (!pagination) return
-      const tpl = pagination.querySelector('[data-pagination-template]')
-      if (tpl) {
-        pagination.innerHTML = tpl.innerHTML
-        pagination.dataset.client = '0'
+      let tpl = pagination.querySelector('[data-pagination-template]')
+      if (!tpl) {
+        tpl = document.createElement('template')
+        tpl.setAttribute('data-pagination-template', '')
+        tpl.innerHTML = pagination.innerHTML
+        pagination.appendChild(tpl)
       }
+      serverPaginationCache = tpl.innerHTML
+    }
+    const restoreServerPagination = () => {
+      if (!pagination || !serverPaginationCache) return
+      pagination.innerHTML = serverPaginationCache
+      pagination.dataset.client = '0'
     }
     const yearPills = Array.from(pills)
     const update = (year) => {
-      cards.forEach((card) => {
+      const sourceCards = allArchiveCards.length > 0 ? allArchiveCards : cards
+      const matches = sourceCards.filter((card) => {
         const cardYear = card.dataset.year || ''
-        const match = !year || cardYear === year
-        card.classList.toggle('is-hidden', !match)
+        return !year || cardYear === year
       })
+      if (grid) {
+        grid.innerHTML = ''
+        matches.forEach((card) => grid.appendChild(card.cloneNode(true)))
+      }
       const visible = year ? (yearCounts.get(year) || 0) : allCount
 yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year === year))
       const allPill = archive.querySelector('[data-archive-all]')
@@ -349,12 +366,7 @@ yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year
       const date = card.querySelector('time[datetime]')
       if (date) card.dataset.year = (date.getAttribute('datetime') || '').slice(0, 4)
     })
-    if (pagination && !pagination.querySelector('[data-pagination-template]')) {
-      const tpl = document.createElement('template')
-      tpl.setAttribute('data-pagination-template', '')
-      tpl.innerHTML = pagination.innerHTML
-      pagination.appendChild(tpl)
-    }
+    captureServerPagination()
     update(new URLSearchParams(window.location.search).get('year') || '')
   }
 })()
