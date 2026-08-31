@@ -90,6 +90,9 @@
 .explore-panel:nth-child(2)::after { background: var(--accent-2); }
 .explore-panel:hover::after { transform: scale(1.25); }
 .explore-panel > strong { display: block; margin: 24px 0 2px; font-size: 58px; letter-spacing: -.06em; }
+.explore-panel { min-height: 280px; padding: 30px; border-radius: var(--radius-lg); }
+.explore-panel h3 { margin: 0 0 12px; font-size: 24px; letter-spacing: -.025em; }
+.explore-panel p { max-width: 48ch; margin: 0 0 26px; color: var(--ink-2); font-size: 14px; line-height: 1.75; }
 
 
 
