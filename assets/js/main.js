@@ -272,41 +272,114 @@ menuToggle?.addEventListener('click', () => {
         pagination.dataset.client = '0'
       }
     }
+    const archiveAllTemplate = document.getElementById('archive-all-cards')
+    const allArchiveCards = archiveAllTemplate
+      ? Array.from(archiveAllTemplate.content.querySelectorAll('article.post-card'))
+      : []
+    const defaultCardsBackup = grid ? Array.from(grid.children).map((c) => c.cloneNode(true)) : []
+    let clientPage = 1
     const yearPills = Array.from(pills)
+    const renderClientPagination = (totalPages, page, year) => {
+      if (!pagination) return
+      if (totalPages <= 1) {
+        pagination.innerHTML = ''
+        pagination.hidden = true
+        pagination.dataset.client = '0'
+        return
+      }
+      pagination.hidden = false
+      pagination.dataset.client = '1'
+      const buildHref = (n) => {
+        const u = new URLSearchParams()
+        if (year) u.set('year', year)
+        if (n > 1) u.set('page', String(n))
+        const s = u.toString()
+        return s ? `?${s}` : window.location.pathname
+      }
+      const prev = page > 1
+        ? `<a href="${buildHref(page - 1)}" rel="prev" class="pagination-item">\u2190 \u4e0a\u4e00\u9875</a>`
+        : `<span class="pagination-item is-disabled" aria-disabled="true">\u2190 \u4e0a\u4e00\u9875</span>`
+      const links = Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => {
+        if (n === page) return `<span class="pagination-item is-active" aria-current="page">${n}</span>`
+        return `<a href="${buildHref(n)}" class="pagination-item">${n}</a>`
+      }).join('')
+      const next = page < totalPages
+        ? `<a href="${buildHref(page + 1)}" rel="next" class="pagination-item">\u4e0b\u4e00\u9875 \u2192</a>`
+        : `<span class="pagination-item is-disabled" aria-disabled="true">\u4e0b\u4e00\u9875 \u2192</span>`
+      pagination.innerHTML = `${prev}<span class="pagination-pages">${links}</span>${next}`
+    }
     const update = (year) => {
-      cards.forEach((card) => {
-        const cardYear = card.dataset.year || ''
-        const match = !year || cardYear === year
-        card.classList.toggle('is-hidden', !match)
-      })
+      if (archiveAllTemplate) {
+        // archive section: cross-page filter + client-side pagination by perPage
+        const source = year ? allArchiveCards.filter((c) => c.dataset.year === year) : allArchiveCards
+        const totalPages = Math.max(1, Math.ceil(source.length / perPage))
+        const initialClientPage = clientPage
+        if (clientPage > totalPages) clientPage = totalPages
+        if (clientPage < 1) clientPage = 1
+        if (clientPage !== initialClientPage) {
+          const u = new URLSearchParams()
+          if (year) u.set('year', year)
+          if (clientPage > 1) u.set('page', String(clientPage))
+          const s = u.toString()
+          window.history.replaceState(null, '', s ? `?${s}` : window.location.pathname)
+        }
+        const start = (clientPage - 1) * perPage
+        const pageCards = source.slice(start, start + perPage)
+        grid.innerHTML = ''
+        pageCards.forEach((card) => grid.appendChild(card.cloneNode(true)))
+        renderClientPagination(totalPages, clientPage, year)
+      } else {
+        // other sections: original toggle logic (no grid re-render, just hide/show)
+        if (pagination) {
+          pagination.hidden = false
+          pagination.dataset.client = '0'
+          const tpl = pagination.querySelector('[data-pagination-template]')
+          if (tpl) pagination.innerHTML = tpl.innerHTML
+        }
+        cards.forEach((card) => {
+          const cardYear = card.dataset.year || ''
+          const match = !year || cardYear === year
+          card.classList.toggle('is-hidden', !match)
+        })
+      }
       const visible = year ? (yearCounts.get(year) || 0) : allCount
-yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year === year))
+      yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year === year))
       const allPill = archive.querySelector('[data-archive-all]')
       if (allPill) allPill.classList.toggle('is-active', !year)
       if (titleNode) titleNode.textContent = year ? `${year} 年文章` : '全部文章'
       if (labelNode) labelNode.textContent = year ? `Year ${year}` : 'All Articles'
       if (emptyNode) emptyNode.hidden = visible !== 0 || !year
-      if (pagination) {
-        if (year) {
-          buildClientPagination(visible)
-        } else {
-          restoreServerPagination()
-        }
-      }
     }
+    pagination?.addEventListener('click', (event) => {
+      if (!pagination || pagination.dataset.client !== '1') return
+      const link = event.target.closest('a.pagination-item')
+      if (!link) return
+      event.preventDefault()
+      const url = new URL(link.href, window.location.href)
+      const p = parseInt(url.searchParams.get('page') || '1', 10)
+      if (!Number.isFinite(p) || p < 1) return
+      clientPage = p
+      const yearParam = url.searchParams.get('year') || ''
+      window.history.replaceState(null, '', link.getAttribute('href'))
+      update(yearParam)
+    })
     archive.querySelector('[data-archive-all]')?.addEventListener('click', (event) => {
       event.preventDefault()
       const url = new URL(window.location.href)
       url.searchParams.delete('year')
-      window.history.replaceState(null, '', url)
-      update('')
+      url.searchParams.delete('page')
+      window.history.replaceState(null, '', url.pathname)
+      clientPage = 1
+      update("")
     })
     pills.forEach((pill) => pill.addEventListener('click', (event) => {
       event.preventDefault()
       const year = pill.dataset.year
       const url = new URL(window.location.href)
       url.searchParams.set('year', year)
-      window.history.replaceState(null, '', url)
+      url.searchParams.delete('page')
+      window.history.replaceState(null, '', url.pathname + url.search)
+      clientPage = 1
       update(year)
     }))
     cards.forEach((card) => {
@@ -318,6 +391,23 @@ yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year
       tpl.setAttribute('data-pagination-template', '')
       tpl.innerHTML = pagination.innerHTML
       pagination.appendChild(tpl)
+    }
+    if (archiveAllTemplate) {
+      const params = new URLSearchParams(window.location.search)
+      const rawPageParam = params.get('page')
+      // Strict positive-integer validation. parseInt('2foo', 10) === 2, so the
+      // previous !isFinite / < 1 cleanup never fired on partial garbage like
+      // '2foo' or '-1'; the URL kept the malformed value and clientPage jumped
+      // to a bogus page. Require the raw value match /^[1-9]\d*$/ before
+      // trusting it; otherwise route it through the existing cleanup.
+      const isValidPage = typeof rawPageParam === 'string' && /^[1-9]\d*$/.test(rawPageParam)
+      const parsedPage = isValidPage ? parseInt(rawPageParam, 10) : NaN
+      if (rawPageParam !== null && !isValidPage) {
+        params.delete('page')
+        const s = params.toString()
+        window.history.replaceState(null, '', s ? `?${s}` : window.location.pathname)
+      }
+      clientPage = isValidPage ? parsedPage : 1
     }
     update(new URLSearchParams(window.location.search).get('year') || '')
   }
