@@ -33,9 +33,6 @@
     </aside>
     {{ end }}{{ end }}
   </div>
-  {{ if and .PrevInSection .NextInSection }}<nav class="post-nav" aria-label="文章导航">
-    <a href="{{ .PrevInSection.RelPermalink }}"><span>上一篇</span><strong>{{ .PrevInSection.LinkTitle }}</strong></a>
-    <a href="{{ .NextInSection.RelPermalink }}" class="post-nav__next"><span>下一篇</span><strong>{{ .NextInSection.LinkTitle }}</strong></a>
-  </nav>{{ end }}
+  <nav class="post-nav" aria-label="文章导航">{{ with .PrevInSection }}<a href="{{ .RelPermalink }}"><span>上一篇</span><strong>{{ .LinkTitle }}</strong></a>{{ else }}<span></span>{{ end }}{{ with .NextInSection }}<a href="{{ .RelPermalink }}" class="post-nav__next"><span>下一篇</span><strong>{{ .LinkTitle }}</strong></a>{{ end }}</nav>
 </article>
 {{ end }}
