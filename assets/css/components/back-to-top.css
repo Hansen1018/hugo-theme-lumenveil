@@ -6,8 +6,8 @@
   z-index: 50;
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: clamp(40px, 4vw, 52px);
+  height: clamp(40px, 4vw, 52px);
   padding: 0;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
@@ -44,4 +44,9 @@
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+/* ===== Mobile hide (CodeRabbit B3): <768px the control is redundant — thumb-reach + native scroll ===== */
+@media (max-width: 767px) {
+  .back-to-top { display: none; }
 }

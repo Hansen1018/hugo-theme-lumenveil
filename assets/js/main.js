@@ -59,8 +59,8 @@ menuToggle?.addEventListener('click', () => {
 
   const revealNodes = document.querySelectorAll('[data-reveal]')
   if ('IntersectionObserver' in window) {
+    const scrollPill = document.querySelector('.hero__scroll')
     const revealObserver = new IntersectionObserver((entries) => {
-      const scrollPill = document.querySelector('.hero__scroll')
       entries.forEach((entry) => {
         entry.target.classList.toggle('is-visible', entry.isIntersecting)
         // Fade out the hero scroll hint as the "Latest Writing" section
@@ -200,7 +200,7 @@ menuToggle?.addEventListener('click', () => {
   const backToTop = document.querySelector('[data-back-to-top]')
   if (backToTop) {
     const toggleVisible = () => {
-      if (window.scrollY > 300) {
+      if (window.scrollY > 100) {
         backToTop.classList.add('is-visible')
       } else {
         backToTop.classList.remove('is-visible')
@@ -213,6 +213,19 @@ menuToggle?.addEventListener('click', () => {
     })
   }
 
+  const scrollProgress = document.querySelector('[data-scroll-progress]')
+  if (scrollProgress) {
+    const progressBar = scrollProgress.querySelector('.scroll-progress__bar')
+    const updateProgress = () => {
+      const scrollable = document.documentElement.scrollHeight - window.innerHeight
+      const progress = scrollable > 0 ? Math.min(100, (window.scrollY / scrollable) * 100) : 0
+      if (progressBar) progressBar.style.width = progress + '%'
+    }
+    updateProgress()
+    window.addEventListener('scroll', updateProgress, { passive: true })
+    window.addEventListener('resize', updateProgress, { passive: true })
+  }
+
   const archive = document.querySelector('[data-archive]')
   if (archive) {
     const grid = document.querySelector('[data-post-grid]')
@@ -222,6 +235,10 @@ menuToggle?.addEventListener('click', () => {
     const allPill = archive.querySelector('[data-archive-all]')
     const pills = archive.querySelectorAll('[data-year]')
     const cards = grid ? Array.from(grid.children) : []
+    const allArchiveTemplate = document.getElementById('archive-all-cards')
+    const allArchiveCards = allArchiveTemplate
+      ? Array.from(allArchiveTemplate.content.querySelectorAll('article.post-card'))
+      : []
     const pagination = document.querySelector('.pagination')
     const perPage = parseInt(grid?.dataset.perPage || '8', 10) || 8
     const yearCounts = new Map()
@@ -287,151 +304,69 @@ menuToggle?.addEventListener('click', () => {
       pagination.appendChild(next)
       pagination.dataset.client = '1'
     }
+    let serverPaginationCache = ''
+    const captureServerPagination = () => {
+      if (!pagination) return
+      let tpl = pagination.querySelector('[data-pagination-template]')
+      if (!tpl) {
+        tpl = document.createElement('template')
+        tpl.setAttribute('data-pagination-template', '')
+        tpl.innerHTML = pagination.innerHTML
+        pagination.appendChild(tpl)
+      }
+      serverPaginationCache = tpl.innerHTML
+    }
     const restoreServerPagination = () => {
-      if (!pagination) return
-      const tpl = pagination.querySelector('[data-pagination-template]')
-      if (tpl) {
-        pagination.innerHTML = tpl.innerHTML
-        pagination.dataset.client = '0'
-      }
+      if (!pagination || !serverPaginationCache) return
+      pagination.innerHTML = serverPaginationCache
+      pagination.dataset.client = '0'
     }
-    const archiveAllTemplate = document.getElementById('archive-all-cards')
-    const allArchiveCards = archiveAllTemplate
-      ? Array.from(archiveAllTemplate.content.querySelectorAll('article.post-card'))
-      : []
-    const defaultCardsBackup = grid ? Array.from(grid.children).map((c) => c.cloneNode(true)) : []
-    let clientPage = 1
     const yearPills = Array.from(pills)
-    const renderClientPagination = (totalPages, page, year) => {
-      if (!pagination) return
-      if (totalPages <= 1) {
-        pagination.innerHTML = ''
-        pagination.hidden = true
-        pagination.dataset.client = '0'
-        return
-      }
-      pagination.hidden = false
-      pagination.dataset.client = '1'
-      const buildHref = (n) => {
-        const u = new URLSearchParams()
-        if (year) u.set('year', year)
-        if (n > 1) u.set('page', String(n))
-        const s = u.toString()
-        return s ? `?${s}` : window.location.pathname
-      }
-      const prev = page > 1
-        ? `<a href="${buildHref(page - 1)}" rel="prev" class="pagination-item">\u2190 \u4e0a\u4e00\u9875</a>`
-        : `<span class="pagination-item is-disabled" aria-disabled="true">\u2190 \u4e0a\u4e00\u9875</span>`
-      const links = Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => {
-        if (n === page) return `<span class="pagination-item is-active" aria-current="page">${n}</span>`
-        return `<a href="${buildHref(n)}" class="pagination-item">${n}</a>`
-      }).join('')
-      const next = page < totalPages
-        ? `<a href="${buildHref(page + 1)}" rel="next" class="pagination-item">\u4e0b\u4e00\u9875 \u2192</a>`
-        : `<span class="pagination-item is-disabled" aria-disabled="true">\u4e0b\u4e00\u9875 \u2192</span>`
-      pagination.innerHTML = `${prev}<span class="pagination-pages">${links}</span>${next}`
-    }
     const update = (year) => {
-      if (archiveAllTemplate) {
-        // archive section: cross-page filter + client-side pagination by perPage
-        const source = year ? allArchiveCards.filter((c) => c.dataset.year === year) : allArchiveCards
-        const totalPages = Math.max(1, Math.ceil(source.length / perPage))
-        const initialClientPage = clientPage
-        if (clientPage > totalPages) clientPage = totalPages
-        if (clientPage < 1) clientPage = 1
-        if (clientPage !== initialClientPage) {
-          const u = new URLSearchParams()
-          if (year) u.set('year', year)
-          if (clientPage > 1) u.set('page', String(clientPage))
-          const s = u.toString()
-          window.history.replaceState(null, '', s ? `?${s}` : window.location.pathname)
-        }
-        const start = (clientPage - 1) * perPage
-        const pageCards = source.slice(start, start + perPage)
+      const sourceCards = allArchiveCards.length > 0 ? allArchiveCards : cards
+      const matches = sourceCards.filter((card) => {
+        const cardYear = card.dataset.year || ''
+        return !year || cardYear === year
+      })
+      if (grid) {
         grid.innerHTML = ''
-        pageCards.forEach((card) => grid.appendChild(card.cloneNode(true)))
-        renderClientPagination(totalPages, clientPage, year)
-      } else {
-        // other sections: original toggle logic (no grid re-render, just hide/show)
-        if (pagination) {
-          pagination.hidden = false
-          pagination.dataset.client = '0'
-          const tpl = pagination.querySelector('[data-pagination-template]')
-          if (tpl) pagination.innerHTML = tpl.innerHTML
-        }
-        cards.forEach((card) => {
-          const cardYear = card.dataset.year || ''
-          const match = !year || cardYear === year
-          card.classList.toggle('is-hidden', !match)
-        })
+        matches.forEach((card) => grid.appendChild(card.cloneNode(true)))
       }
       const visible = year ? (yearCounts.get(year) || 0) : allCount
-      yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year === year))
+yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year === year))
       const allPill = archive.querySelector('[data-archive-all]')
       if (allPill) allPill.classList.toggle('is-active', !year)
       if (titleNode) titleNode.textContent = year ? `${year} 年文章` : '全部文章'
       if (labelNode) labelNode.textContent = year ? `Year ${year}` : 'All Articles'
       if (emptyNode) emptyNode.hidden = visible !== 0 || !year
+      if (pagination) {
+        if (year) {
+          buildClientPagination(visible)
+        } else {
+          restoreServerPagination()
+        }
+      }
     }
-    pagination?.addEventListener('click', (event) => {
-      if (!pagination || pagination.dataset.client !== '1') return
-      const link = event.target.closest('a.pagination-item')
-      if (!link) return
-      event.preventDefault()
-      const url = new URL(link.href, window.location.href)
-      const p = parseInt(url.searchParams.get('page') || '1', 10)
-      if (!Number.isFinite(p) || p < 1) return
-      clientPage = p
-      const yearParam = url.searchParams.get('year') || ''
-      window.history.replaceState(null, '', link.getAttribute('href'))
-      update(yearParam)
-    })
     archive.querySelector('[data-archive-all]')?.addEventListener('click', (event) => {
       event.preventDefault()
       const url = new URL(window.location.href)
       url.searchParams.delete('year')
-      url.searchParams.delete('page')
-      window.history.replaceState(null, '', url.pathname)
-      clientPage = 1
-      update("")
+      window.history.replaceState(null, '', url)
+      update('')
     })
     pills.forEach((pill) => pill.addEventListener('click', (event) => {
       event.preventDefault()
       const year = pill.dataset.year
       const url = new URL(window.location.href)
       url.searchParams.set('year', year)
-      url.searchParams.delete('page')
-      window.history.replaceState(null, '', url.pathname + url.search)
-      clientPage = 1
+      window.history.replaceState(null, '', url)
       update(year)
     }))
     cards.forEach((card) => {
       const date = card.querySelector('time[datetime]')
       if (date) card.dataset.year = (date.getAttribute('datetime') || '').slice(0, 4)
     })
-    if (pagination && !pagination.querySelector('[data-pagination-template]')) {
-      const tpl = document.createElement('template')
-      tpl.setAttribute('data-pagination-template', '')
-      tpl.innerHTML = pagination.innerHTML
-      pagination.appendChild(tpl)
-    }
-    if (archiveAllTemplate) {
-      const params = new URLSearchParams(window.location.search)
-      const rawPageParam = params.get('page')
-      // Strict positive-integer validation. parseInt('2foo', 10) === 2, so the
-      // previous !isFinite / < 1 cleanup never fired on partial garbage like
-      // '2foo' or '-1'; the URL kept the malformed value and clientPage jumped
-      // to a bogus page. Require the raw value match /^[1-9]\d*$/ before
-      // trusting it; otherwise route it through the existing cleanup.
-      const isValidPage = typeof rawPageParam === 'string' && /^[1-9]\d*$/.test(rawPageParam)
-      const parsedPage = isValidPage ? parseInt(rawPageParam, 10) : NaN
-      if (rawPageParam !== null && !isValidPage) {
-        params.delete('page')
-        const s = params.toString()
-        window.history.replaceState(null, '', s ? `?${s}` : window.location.pathname)
-      }
-      clientPage = isValidPage ? parsedPage : 1
-    }
+    captureServerPagination()
     update(new URLSearchParams(window.location.search).get('year') || '')
   }
 })()

@@ -19,12 +19,12 @@
 .hero__role { margin: 26px 0 0; color: var(--ink-2); font-size: clamp(16px,2vw,20px); animation-delay: .3s; }
 .hero__tagline { max-width: 520px; margin: 12px auto 0; color: var(--ink-3); font-size: 15px; line-height: 1.75; animation-delay: .38s; }
 .hero__cta { display: flex; gap: 12px; margin-top: 34px; animation-delay: .46s; }
-.button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 11px 21px; border: 1px solid transparent; border-radius: 999px; font-size: 14px; font-weight: 550; cursor: pointer; transition: transform .25s ease,background .25s ease,border-color .25s ease,box-shadow .25s ease; }
+.button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 11px 21px; border: 1px solid transparent; border-radius: 999px; font-size: 14px; font-weight: 550; cursor: pointer; box-sizing: border-box; transition: transform .25s ease,background .25s ease,border-color .25s ease,box-shadow .25s ease; }
 .button--primary { background: var(--accent-grad); color: #fff; box-shadow: 0 12px 30px -12px rgba(124,92,255,.7),inset 0 1px 0 rgba(255,255,255,.2); }
 .button--ghost { border-color: var(--line); background: rgba(255,255,255,.04); color: var(--ink-1); }
 .button:hover { transform: translateY(-2px); }
 .button--ghost:hover { border-color: var(--line-strong); background: rgba(255,255,255,.08); }
-.hero__scroll { position: absolute; bottom: 28px; left: 50%; display: grid; place-items: start center; width: 22px; height: 38px; padding-top: 6px; border: 1px solid var(--line-strong); border-radius: 999px; transform: translateX(-50%); }
+.hero__scroll { position: absolute; bottom: calc(28px + 7cm); left: 50%; display: grid; place-items: start center; width: 22px; height: 38px; padding-top: 6px; border: 1px solid var(--line-strong); border-radius: 999px; transform: translateX(-50%); }
 .hero__scroll span { width: 2px; height: 8px; border-radius: 2px; background: var(--ink-2); animation: scroll-line 1.8s ease-in-out infinite; }
 .hero__scroll {
   /* Synchronised with the "Latest Writing" section's fade-in:
