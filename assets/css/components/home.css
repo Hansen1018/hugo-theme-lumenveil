@@ -24,7 +24,7 @@
 .button--ghost { border-color: var(--line); background: rgba(255,255,255,.04); color: var(--ink-1); }
 .button:hover { transform: translateY(-2px); }
 .button--ghost:hover { border-color: var(--line-strong); background: rgba(255,255,255,.08); }
-.hero__scroll { position: absolute; bottom: calc(28px + 10cm); left: 50%; display: grid; place-items: start center; width: 22px; height: 38px; padding-top: 6px; border: 1px solid var(--line-strong); border-radius: 999px; transform: translateX(-50%); }
+.hero__scroll { position: absolute; bottom: calc(28px + 5cm); left: 50%; display: grid; place-items: start center; width: 22px; height: 38px; padding-top: 6px; border: 1px solid var(--line-strong); border-radius: 999px; transform: translateX(-50%); }
 .hero__scroll span { width: 2px; height: 8px; border-radius: 2px; background: var(--ink-2); animation: scroll-line 1.8s ease-in-out infinite; }
 .hero__scroll {
   /* Synchronised with the "Latest Writing" section's fade-in:
