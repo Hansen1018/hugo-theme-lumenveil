@@ -330,7 +330,19 @@ menuToggle?.addEventListener('click', () => {
       })
       if (grid) {
         grid.innerHTML = ''
-        matches.forEach((card) => grid.appendChild(card.cloneNode(true)))
+        /* CodeRabbit PR #12 actionable (line 378): slice matches by current
+           page so /archives/?year=X&page=N shows only the active page's
+           cards, not every matching card from #archive-all-cards. */
+        const url = new URL(window.location.href)
+        const currentPage = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10) || 1)
+        const pageSize = perPage
+        /* Only slice when a year filter is active. The "all" view shows every
+        // matching card at once and uses buildClientPagination(visible) for
+        // nav, so slicing it would show only perPage cards (regression). */
+        const pageMatches = year
+          ? matches.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+          : matches
+        pageMatches.forEach((card) => grid.appendChild(card.cloneNode(true)))
       }
       const visible = year ? (yearCounts.get(year) || 0) : allCount
 yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year === year))
@@ -352,6 +364,7 @@ yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year
       event.preventDefault()
       const url = new URL(window.location.href)
       url.searchParams.delete('year')
+      url.searchParams.delete('page')
       window.history.replaceState(null, '', url)
       update('')
     })
