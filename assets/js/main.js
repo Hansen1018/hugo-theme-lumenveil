@@ -199,8 +199,15 @@ menuToggle?.addEventListener('click', () => {
 
   const backToTop = document.querySelector('[data-back-to-top]')
   if (backToTop) {
-    // Always visible on desktop (right-vertical-center, per hansen-web SideNav pattern);
-    // no threshold gating. Mobile hides via @media.
+    const toggleVisible = () => {
+      if (window.scrollY > 100) {
+        backToTop.classList.add('is-visible')
+      } else {
+        backToTop.classList.remove('is-visible')
+      }
+    }
+    toggleVisible()
+    window.addEventListener('scroll', toggleVisible, { passive: true })
     backToTop.addEventListener('click', () => {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     })
