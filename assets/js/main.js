@@ -60,9 +60,32 @@ menuToggle?.addEventListener('click', () => {
   const revealNodes = document.querySelectorAll('[data-reveal]')
   if ('IntersectionObserver' in window) {
     const revealObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => entry.target.classList.toggle('is-visible', entry.isIntersecting))
+      const scrollPill = document.querySelector('.hero__scroll')
+      entries.forEach((entry) => {
+        entry.target.classList.toggle('is-visible', entry.isIntersecting)
+        // Fade out the hero scroll hint as the "Latest Writing" section
+        // starts to fade in — synchronised with the section's own
+        // opacity .7s cubic-bezier(.22,1,.36,1) transition.
+        if (scrollPill && entry.target.id === 'latest') {
+          scrollPill.classList.toggle('is-faded', entry.isIntersecting)
+        }
+      })
     }, { threshold: 0.08, rootMargin: '0px 0px -8% 0px' })
     revealNodes.forEach((node) => revealObserver.observe(node))
+
+    // Bidirectional sync for the scroll pill: fade-out tracks #latest, but
+    // fade-back-in tracks the hero itself — when the user scrolls back to the
+    // top and the hero re-enters view, make sure the pill comes back. Without
+    // this, the pill stays .is-faded once #latest has ever crossed the
+    // rootMargin -8% threshold (the section is still partially visible at
+    // scroll y=0 with that config, so .is-faded never gets toggled off).
+    const heroNode = document.querySelector('.hero')
+    if (heroNode && scrollPill) {
+      const heroObserver = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) scrollPill.classList.remove('is-faded')
+      }, { threshold: 0 })
+      heroObserver.observe(heroNode)
+    }
   } else {
     revealNodes.forEach((node) => node.classList.add('is-visible'))
   }

@@ -15,9 +15,49 @@
   .site-header.is-scrolled { padding: 9px 16px; }
   .main-nav { left: 16px; right: 16px; }
   .header-actions > a.icon-button { display: none; }
-  .hero { padding-inline: 18px; }
-  .hero__avatar { width: 88px; height: 88px; }
-  .hero__title { font-size: clamp(48px,14vw,72px); }
+  /* Hero on mobile: drop min-height:100dvh + place-items:center so the first
+     screen fits without a ~160px empty band above the avatar, and tighten
+     padding so the second CTA (“搜索文章”) stays inside the viewport. */
+  .hero {
+    min-height: auto;
+    /* v10: padding-top 120 → 144. v9's 50px header→avatar gap still
+       felt tight; pushing to 144 gives ~82px breathing room. Hero grows
+       to ~676px — still well inside the 915px viewport, and the CTA→pill
+       22px gap is preserved (content shifts by the same delta as pill). */
+    padding: 144px 18px 80px;
+    place-items: start center;
+  }
+  /* Scroll hint: restore on mobile and seat it close to the hero's bottom
+     edge so it's clearly separated from the second CTA. With the inline-flex
+     → flex blockification this pill ends up box-sizing: content-box too,
+     so its rendered height is 38(content) + 6(padding-top) + 2(border) = 46px,
+     not 38. Override the default `bottom: 28px` to 8px, and with padding-bottom
+     80px that puts the pill at y≈542–588 — a clean 22px gap below the
+     second CTA (which ends at y≈520). */
+  /* Override only `bottom` (default 28px → 8px). Do NOT touch `display` —
+     the original .hero__scroll { display: grid } from home.css is what
+     blockifies the inner <span> so its width:2px/height:8px rule applies.
+     v6 accidentally wrote `display: block` here, which demoted the span
+     back to inline and collapsed the bouncing line to 0×0. */
+  .hero__scroll {
+    bottom: 8px;
+  }
+  .hero__avatar { width: 84px; height: 84px; margin-bottom: 22px; }
+  .hero__title { font-size: clamp(40px,11vw,60px); }
+  .hero__role { margin-top: 22px; }
+  .hero__tagline {
+    /* Tagline text "Be yourself; ... - Oscar Wilde" measures ~420px at 15px,
+       which overflows the 380px inner box. body has overflow-x:hidden, so
+       the centered text gets its first and last characters clipped.
+       text-wrap:balance wraps onto a second line; width:100% + max-width:100%
+       (CodeRabbit finding) caps the box to the inner so a longer params.tagline
+       on 320/360px viewports won't overflow horizontally. */
+    font-size: 13px;
+    text-wrap: balance;
+    width: 100%;
+    max-width: 100%;
+  }
+  .hero__cta { margin-top: 26px; gap: 10px; }
   .section, .page-hero, .article, .site-footer { width: min(calc(100% - 32px),var(--content)); }
   .section-head { grid-template-columns: 1fr; gap: 9px; margin-bottom: 28px; }
   .section-rule { display: none; }
@@ -46,6 +86,25 @@
   /* .hero__chips .chip:last-child { display: none; } -- removed: was hiding the "Since YYYY" chip on mobile */
   .hero__cta { width: 100%; flex-direction: column; }
   .hero__cta .button { width: 100%; }
+  .hero { padding: 136px 16px 76px; }
+  .hero__avatar { width: 76px; height: 76px; margin-bottom: 18px; }
+  .hero__title { font-size: clamp(36px,10vw,52px); }
+  .hero__tagline { font-size: 12px; }
+  .hero__cta .button {
+    /* Inline-flex → flex blockified the primary CTA but its computed
+       box-sizing ends up content-box on mobile despite the universal
+       `*, *::before, *::after { box-sizing: border-box }` reset. With
+       content-box, width:100% (=380) + 36px padding + 2px border = 418px,
+       overflowing the inner box by 38px on the right and getting clipped
+       by body's overflow-x:hidden — which is also why the centered
+       tagline's leading "B" was being chopped off. Force border-box and
+       cap to parent width. */
+    box-sizing: border-box;
+    max-width: 100%;
+    min-height: 40px;
+    padding: 9px 18px;
+    font-size: 13px;
+  }
   .post-card__body { padding: 14px 16px; }
   .post-card__visual { aspect-ratio: 16/7; }
   .post-card h2 { margin: 10px 0 6px; font-size: 18px; line-height: 1.3; }
