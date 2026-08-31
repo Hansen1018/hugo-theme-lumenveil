@@ -26,6 +26,19 @@
 .button--ghost:hover { border-color: var(--line-strong); background: rgba(255,255,255,.08); }
 .hero__scroll { position: absolute; bottom: 28px; left: 50%; display: grid; place-items: start center; width: 22px; height: 38px; padding-top: 6px; border: 1px solid var(--line-strong); border-radius: 999px; transform: translateX(-50%); }
 .hero__scroll span { width: 2px; height: 8px; border-radius: 2px; background: var(--ink-2); animation: scroll-line 1.8s ease-in-out infinite; }
+.hero__scroll {
+  /* Synchronised with the "Latest Writing" section's fade-in:
+     main.js toggles .is-faded on this element when #latest intersects the
+     viewport, so the pill disappears in lock-step with the section appearing.
+     Same .7s curve and easing as .section { transition: ... } so the two
+     animations line up. */
+  opacity: 1;
+  transition: opacity .7s cubic-bezier(.22,1,.36,1);
+}
+.hero__scroll.is-faded {
+  opacity: 0;
+  pointer-events: none;
+}
 .fade-up { animation: fade-up .7s cubic-bezier(.22,1,.36,1) both; }
 @keyframes fade-up { from { opacity: 0; transform: translate3d(0,14px,0); } }
 @keyframes spin { to { transform: rotate(360deg); } }
