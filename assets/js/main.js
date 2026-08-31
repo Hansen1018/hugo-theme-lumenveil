@@ -395,13 +395,19 @@ menuToggle?.addEventListener('click', () => {
     if (archiveAllTemplate) {
       const params = new URLSearchParams(window.location.search)
       const rawPageParam = params.get('page')
-      const parsedPage = parseInt(rawPageParam || '1', 10)
-      if (rawPageParam !== null && (!Number.isFinite(parsedPage) || parsedPage < 1)) {
+      // Strict positive-integer validation. parseInt('2foo', 10) === 2, so the
+      // previous !isFinite / < 1 cleanup never fired on partial garbage like
+      // '2foo' or '-1'; the URL kept the malformed value and clientPage jumped
+      // to a bogus page. Require the raw value match /^[1-9]\d*$/ before
+      // trusting it; otherwise route it through the existing cleanup.
+      const isValidPage = typeof rawPageParam === 'string' && /^[1-9]\d*$/.test(rawPageParam)
+      const parsedPage = isValidPage ? parseInt(rawPageParam, 10) : NaN
+      if (rawPageParam !== null && !isValidPage) {
         params.delete('page')
         const s = params.toString()
         window.history.replaceState(null, '', s ? `?${s}` : window.location.pathname)
       }
-      clientPage = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1
+      clientPage = isValidPage ? parsedPage : 1
     }
     update(new URLSearchParams(window.location.search).get('year') || '')
   }
