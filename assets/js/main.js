@@ -334,11 +334,20 @@ menuToggle?.addEventListener('click', () => {
            page so /archives/?year=X&page=N shows only the active page's
            cards, not every matching card from #archive-all-cards. */
         const url = new URL(window.location.href)
-        const currentPage = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10) || 1)
+        const requestedPage = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10) || 1)
         const pageSize = perPage
+        /* CodeRabbit PR #12 round 2 (line 343, Minor): clamp stale out-of-range
+           ?page= to totalPages so the grid isn't blank. Also sync the URL
+           via history.replaceState so a refresh doesn't repeat the clamp. */
+        const totalPages = Math.max(1, Math.ceil(matches.length / pageSize))
+        const currentPage = Math.min(requestedPage, totalPages)
+        if (currentPage !== requestedPage) {
+          url.searchParams.set('page', String(currentPage))
+          window.history.replaceState(null, '', url)
+        }
         /* Only slice when a year filter is active. The "all" view shows every
-        // matching card at once and uses buildClientPagination(visible) for
-        // nav, so slicing it would show only perPage cards (regression). */
+           matching card at once and uses buildClientPagination(visible) for
+           nav, so slicing it would show only perPage cards (regression). */
         const pageMatches = year
           ? matches.slice((currentPage - 1) * pageSize, currentPage * pageSize)
           : matches
