@@ -21,5 +21,6 @@
     </aside>
     {{ end }}{{ end }}
   </div>
+  <nav class="post-nav" aria-label="記事ナビゲーション">{{ with .PrevInSection }}<a href="{{ .RelPermalink }}"><span>前の記事</span><strong>{{ .LinkTitle }}</strong></a>{{ else }}<span></span>{{ end }}{{ with .NextInSection }}<a href="{{ .RelPermalink }}" class="post-nav__next"><span>次の記事</span><strong>{{ .LinkTitle }}</strong></a>{{ end }}</nav>
 </article>
 {{ end }}
