@@ -369,13 +369,16 @@ yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year
         buildClientPagination(visible)
       }
     }
-    archive.querySelector('[data-archive-all]')?.addEventListener('click', (event) => {
-      event.preventDefault()
-      const url = new URL(window.location.href)
-      url.searchParams.delete('year')
-      url.searchParams.delete('page')
-      window.history.replaceState(null, '', url)
-      update('')
+    archive.querySelector('[data-archive-all]')?.addEventListener('click', () => {
+      /* Hansen 2026-09-01: don't intercept the "全部" click.
+         The link's href is a clean path (/archives/ or /posts/, no query),
+         so the browser's natural navigation loads the server-paginated
+         view (7 cards + 3-page server nav). Client-side handling is only
+         needed for year-filtered views (Hugo can't paginate by ?year=).
+         Previously update('') flattened all 16 cards into one grid and
+         built nav with ?page=N hrefs that the server ignores — clicking
+         page 2 reloaded /archives/ as page 1 (7 cards), making pagination
+         look broken. */
     })
     pills.forEach((pill) => pill.addEventListener('click', (event) => {
       event.preventDefault()
