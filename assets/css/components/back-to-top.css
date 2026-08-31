@@ -1,36 +1,40 @@
-/* ===== Back-to-top button — fixed, glass, fades in past 300px scroll ===== */
+/* ===== Back-to-top — right-vertical-center, always visible, with hover tooltip ===== */
+/* Positioned like hansen-web's SideNav: right side, vertically centered.
+   Acts as the persistent "scroll-up target" the mouse can always see. */
 .back-to-top {
   position: fixed;
-  right: clamp(20px, 3vw, 32px);
-  bottom: clamp(20px, 3vw, 32px);
+  top: 50%;
+  right: clamp(16px, 2.4vw, 28px);
   z-index: 50;
   display: grid;
   place-items: center;
-  width: clamp(40px, 4vw, 52px);
-  height: clamp(40px, 4vw, 52px);
+  width: clamp(40px, 3.6vw, 48px);
+  height: clamp(40px, 3.6vw, 48px);
   padding: 0;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
-  background: var(--glass-bg, rgba(255,255,255,.045));
+  background: rgba(255, 255, 255, .06);
   color: var(--ink-1, rgba(255,255,255,.96));
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
-  box-shadow: 0 12px 30px -12px rgba(0,0,0,.45);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  box-shadow:
+    0 8px 24px -8px rgba(0, 0, 0, .5),
+    0 0 0 1px rgba(255, 255, 255, .04) inset;
   cursor: pointer;
-  opacity: 0;
-  transform: translateY(8px);
-  pointer-events: none;
-  transition: opacity .25s ease, transform .25s ease, background .25s ease, color .25s ease, border-color .25s ease;
-}
-.back-to-top.is-visible {
   opacity: 1;
-  transform: translateY(0);
   pointer-events: auto;
+  transform: translateY(-50%);
+  transition: transform .25s ease, background .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease;
 }
+/* Hover: lift + accent color + stronger glow (matches hansen-web dot activation pattern) */
 .back-to-top:hover {
   background: var(--accent-2, #22d3ee);
   color: var(--bg-0, #0a0c12);
   border-color: transparent;
+  transform: translateY(-50%) scale(1.08);
+  box-shadow:
+    0 12px 32px -8px rgba(34, 211, 238, .55),
+    0 0 0 4px rgba(34, 211, 238, .12);
 }
 .back-to-top:focus-visible {
   outline: 2px solid var(--accent-2, #22d3ee);
@@ -44,4 +48,33 @@
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+/* Tooltip "回到顶部" — slides in on hover, like hansen-web's sidenav label */
+.back-to-top::before {
+  content: "回到顶部";
+  position: absolute;
+  right: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%) translateX(6px);
+  padding: 5px 10px;
+  font: 11px var(--font-mono);
+  letter-spacing: .06em;
+  color: var(--ink-1, rgba(255,255,255,.96));
+  background: rgba(20, 22, 30, .88);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease, transform .2s ease;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.back-to-top:hover::before {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+/* Mobile: hide (native browser affordance + thumb-reach comfort) */
+@media (max-width: 768px) {
+  .back-to-top { display: none; }
 }
