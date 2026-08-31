@@ -44,9 +44,12 @@
 {{ end }}
 <section class="section section--compact" data-reveal>
   <header class="section-head"><div><span class="section-index">01</span><span class="eyebrow" data-archive-label>{{ if $year }}Year {{ $year }}{{ else }}All Articles{{ end }}</span></div><h2 data-archive-title>{{ if $year }}{{ $year }} 年文章{{ else }}全部文章{{ end }}</h2><div class="section-rule"></div></header>
-  {{ $paginator := .Paginate $list }}
+  {{/* Archives / posts list: 7 articles per page by default.
+       Consumers can override via [params] pagerSize = N in their site config. */}}
+  {{ $pageSize := .Site.Params.pagerSize | default 7 }}
+  {{ $paginator := .Paginate $list $pageSize }}
   {{ if $paginator.Pages }}
-    <div class="post-grid" data-post-grid data-per-page="{{ .Site.Params.pagerSize | default 8 }}">{{ range $paginator.Pages }}{{ partial "post-card.html" . }}{{ end }}</div>
+    <div class="post-grid" data-post-grid data-per-page="{{ $pageSize }}">{{ range $paginator.Pages }}{{ partial "post-card.html" . }}{{ end }}</div>
     {{ partial "pagination.html" (dict "Paginator" $paginator "Year" $year) }}
     {{ if and $isList (eq .Section "archives") }}<template id="archive-all-cards">{{ range $allList }}{{ partial "post-card.html" . }}{{ end }}</template>{{ end }}
   {{ else }}
