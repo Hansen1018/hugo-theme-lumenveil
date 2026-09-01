@@ -1,0 +1,75 @@
+# OpenCodeReview — AI PR Review
+# Source: https://github.com/alibaba/open-code-review (Apache-2.0)
+#
+# Local config required: ZERO. Write code → push → open PR → OCR reviews.
+#
+# ============================================================================
+# REQUIRED REPO SECRETS — set in Settings → Secrets and variables → Actions
+# ============================================================================
+# Pick ONE provider and fill all four. Examples below.
+#
+# DeepSeek (cheapest, OpenAI-compatible — recommended default)
+#   OCR_LLM_URL           = https://api.deepseek.com/v1/chat/completions
+#   OCR_LLM_MODEL         = deepseek-chat
+#   OCR_LLM_USE_ANTHROPIC = false
+#   OCR_LLM_AUTH_TOKEN    = sk-...   (from https://platform.deepseek.com)
+#
+# Qwen / DashScope (compatible mode)
+#   OCR_LLM_URL           = https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+#   OCR_LLM_MODEL         = qwen3-coder-plus
+#   OCR_LLM_USE_ANTHROPIC = false
+#   OCR_LLM_AUTH_TOKEN    = sk-...   (from 阿里云百炼控制台)
+#
+# Anthropic Claude (Messages protocol)
+#   OCR_LLM_URL           = https://api.anthropic.com
+#   OCR_LLM_MODEL         = claude-sonnet-4-5
+#   OCR_LLM_USE_ANTHROPIC = true
+#   OCR_LLM_AUTH_TOKEN    = sk-ant-...
+#
+# ⚠️  Do NOT paste API keys into this file, issues, or commits.
+# Secrets are encrypted by GitHub and injected at runtime only.
+# ============================================================================
+
+name: OpenCodeReview PR Review
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+# Cancel in-progress runs when a new commit lands on the same PR.
+concurrency:
+  group: ocr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  ocr-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: OpenCodeReview
+        uses: alibaba/open-code-review@v1.11.2
+        with:
+          llm_url:           ${{ secrets.OCR_LLM_URL }}
+          llm_auth_token:    ${{ secrets.OCR_LLM_AUTH_TOKEN }}
+          llm_model:         ${{ secrets.OCR_LLM_MODEL }}
+          llm_use_anthropic: ${{ secrets.OCR_LLM_USE_ANTHROPIC }}
+          github_token:      ${{ secrets.GITHUB_TOKEN }}
+
+          # One sticky summary comment per PR, updated in place on each push.
+          sticky_summary: 'true'
+
+          # Don't repost inline comments that overlap a previous bot comment
+          # on the same lines (IoU threshold 0.6).
+          incremental: 'true'
+
+          # Disable reasoning/thinking for cheaper DeepSeek / faster reviews.
+          # Remove this line if your model needs thinking blocks.
+          llm_extra_body: '{"thinking": {"type": "disabled"}}'
+
+          # English matches the project's existing tone.
+          # Change to 'Chinese' for 中文 review comments.
+          language: 'English'
