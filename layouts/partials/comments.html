@@ -361,11 +361,21 @@
           function showFallback(reason) {
             var host = document.getElementById('Comments');
             if (!host) return;
+            // Idempotent: once fallback is shown, don't replace it again.
+            // The late-retry setTimeout below is the only path that clears it.
+            if (host.dataset.fallbackShown === '1') return;
+            host.dataset.fallbackShown = '1';
             host.innerHTML =
               '<div class="artalk-fallback" role="status">' +
                 '<p>💬 评论加载失败 (' + reason + ')</p>' +
-                '<p class="artalk-fallback__hint">最常见原因：站点 Content-Security-Policy 未放行 <code>{{ $server }}</code>（script-src / connect-src）。</p>' +
+                '<p class="artalk-fallback__hint">最常见原因：站点 Content-Security-Policy 未放行 <code>' + {{ $server | jsonify }} + '</code>（script-src / connect-src）。</p>' +
               '</div>';
+            // Late retry: Artalk.js might just be slow (slow network, CDN
+            // hiccup) rather than blocked. If it loads within 3s, tryInit()
+            // replaces the fallback message with the real comment UI.
+            setTimeout(function() {
+              if (typeof window.Artalk !== 'undefined') tryInit();
+            }, 3000);
           }
           function staggerComments() {
             var reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -388,13 +398,21 @@
             // so we still need the timeout watchdog below.
             function tryInit() {
               if (typeof window.Artalk !== 'undefined') {
+                var hostEl = document.getElementById('Comments');
+                if (hostEl && hostEl.dataset.fallbackShown === '1') {
+                  // Fallback was shown earlier; Artalk.js finally arrived.
+                  // Artalk.init() replaces #Comments content with real UI;
+                  // just clear the marker so the fallback doesn't replay.
+                  delete hostEl.dataset.fallbackShown;
+                  hostEl.innerHTML = '';
+                }
                 try {
                   window.Artalk.init({
                     el: '#Comments',
-                    pageKey: "{{ $.Permalink }}",
-                    pageTitle: "{{ $.Title }}",
-                    server: "{{ $server }}",
-                    site: "{{ $siteName }}"
+                    pageKey: {{ $.Permalink | jsonify }},
+                    pageTitle: {{ $.Title | jsonify }},
+                    server: {{ $server | jsonify }},
+                    site: {{ $siteName | jsonify }}
                   });
                   if (typeof window.Artalk.on === 'function') {
                     window.Artalk.on('list-loaded', staggerComments);
