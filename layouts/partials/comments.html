@@ -409,10 +409,10 @@
                 try {
                   window.Artalk.init({
                     el: '#Comments',
-                    pageKey: {{ $.Permalink | jsonify }},
-                    pageTitle: {{ $.Title | jsonify }},
-                    server: {{ $server | jsonify }},
-                    site: {{ $siteName | jsonify }}
+                    pageKey: {{ $.Permalink | jsonify | safeJS }},
+                    pageTitle: {{ $.Title | jsonify | safeJS }},
+                    server: {{ $server | jsonify | safeJS }},
+                    siteName: {{ $siteName | jsonify | safeJS }}
                   });
                   if (typeof window.Artalk.on === 'function') {
                     window.Artalk.on('list-loaded', staggerComments);

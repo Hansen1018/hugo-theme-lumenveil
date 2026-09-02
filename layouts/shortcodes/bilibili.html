@@ -19,11 +19,9 @@
 <div class="embed-frame">
   <iframe
     src="https://player.bilibili.com/player.html?bvid={{ $bvid }}&p={{ $p }}&autoplay={{ $auto }}&high_quality={{ $hq }}&danmaku=0"
-    
-    
-    framespacing="0"
-    allowfullscreen="true"
+    referrerpolicy="strict-origin-when-cross-origin"
     allow="autoplay; fullscreen; clipboard-write"
+    allowfullscreen
     loading="lazy"
     title="Bilibili {{ $bvid }}">
   </iframe>
