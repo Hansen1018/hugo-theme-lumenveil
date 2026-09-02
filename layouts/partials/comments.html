@@ -311,52 +311,138 @@
           padding:                    28px 0 !important;
           text-align:                 center !important;
         }
+
+        /* ===== Fallback when Artalk.js failed to load =====
+           Shown when CSP blocks the script, the Artalk server is
+           unreachable, or Artalk.init throws. Replaces the otherwise
+           empty #Comments div with an actionable message so visitors
+           aren't left wondering if comments are broken or just empty. */
+        .artalk-fallback {
+          color:                      var(--ink-2, rgba(255,255,255,.72)) !important;
+          font:                       14px/1.6 var(--font-sans, system-ui, sans-serif) !important;
+          padding:                    24px 22px !important;
+          border:                     1px dashed var(--line, rgba(255,255,255,.16)) !important;
+          border-radius:              var(--radius-lg, 24px) !important;
+          background:                 rgba(255,255,255,.025) !important;
+          text-align:                 left !important;
+        }
+        .artalk-fallback p { margin: 0 !important; }
+        .artalk-fallback p + p { margin-top: 8px !important; }
+        .artalk-fallback__hint {
+          color:                      var(--ink-3, rgba(255,255,255,.48)) !important;
+          font-size:                  13px !important;
+        }
+        .artalk-fallback code {
+          font-family:                var(--font-mono, ui-monospace) !important;
+          font-size:                  12px !important;
+          padding:                    1px 6px !important;
+          border-radius:              4px !important;
+          background:                 rgba(255,255,255,.06) !important;
+          color:                      var(--accent-2, #22d3ee) !important;
+        }
+        html[data-theme=light] .artalk-fallback {
+          background:                 rgba(15,23,42,.025) !important;
+          border-color:               rgba(15,23,42,.12) !important;
+        }
+        html[data-theme=light] .artalk-fallback code {
+          background:                 rgba(15,23,42,.06) !important;
+        }
       </style>
       <div id="Comments"></div>
       <script>
-        document.addEventListener('DOMContentLoaded', function() {
-          Artalk.init({
-            el: '#Comments',
-            pageKey: "{{ $.Permalink }}",
-            pageTitle: "{{ $.Title }}",
-            server: "{{ $server }}",
-            site: "{{ $siteName }}"
-          })
-
-          // Stagger fade-in for each individual comment item.
-          // Artalk hydrates the list asynchronously after init, so hook
-          // into its events rather than running on DOMContentLoaded.
-          // Each .atk-comment-wrap gets the global .fade-up keyframe
-          // (0.7s, cubic-bezier(.22,1,.36,1), 14px translate) with a
-          // 70ms cascade. The dataset flag prevents re-animating on
-          // list re-renders (sort, page changes).
-          var reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        // Resilient Artalk loader — survives missing/blocked Artalk.js
+        // (CSP, offline, ad-blocker, etc.). Three outcomes:
+        //   1) Artalk loaded → call Artalk.init + stagger animation
+        //   2) Artalk loaded but init threw → show fallback message
+        //   3) Artalk never loaded within 4s → show fallback message
+        // The fallback uses an inline message rather than empty space
+        // so visitors aren't left wondering if the section is broken.
+        (function() {
+          function showFallback(reason) {
+            var host = document.getElementById('Comments');
+            if (!host) return;
+            // Idempotent: once fallback is shown, don't replace it again.
+            // The late-retry setTimeout below is the only path that clears it.
+            if (host.dataset.fallbackShown === '1') return;
+            host.dataset.fallbackShown = '1';
+            host.innerHTML =
+              '<div class="artalk-fallback" role="status">' +
+                '<p>💬 评论加载失败 (' + reason + ')</p>' +
+                '<p class="artalk-fallback__hint">最常见原因：站点 Content-Security-Policy 未放行 <code>' + {{ $server | jsonify }} + '</code>（script-src / connect-src）。</p>' +
+              '</div>';
+            // Late retry: Artalk.js might just be slow (slow network, CDN
+            // hiccup) rather than blocked. If it loads within 3s, tryInit()
+            // replaces the fallback message with the real comment UI.
+            setTimeout(function() {
+              if (typeof window.Artalk !== 'undefined') tryInit();
+            }, 3000);
+          }
           function staggerComments() {
+            var reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
             var items = document.querySelectorAll('#Comments .atk-comment-wrap');
             items.forEach(function(item, i) {
               if (item.dataset.staggered) return;
               item.dataset.staggered = '1';
-              // CSS only shortens animation-duration under reduced-motion;
-              // the inline animation-delay isn't covered, so for users
-              // with reduced-motion we skip the cascade entirely
-              // (first item becomes visible immediately, no .fade-up).
-              if (!reduceMotion) {
+              if (reduceMotion) {
+                item.classList.add('is-visible');
+              } else {
                 item.style.animationDelay = (i * 70) + 'ms';
                 item.classList.add('fade-up');
-              } else {
-                item.classList.add('is-visible');
               }
             });
           }
-          if (Artalk && typeof Artalk.on === 'function') {
-            Artalk.on('list-loaded', staggerComments);
-            Artalk.on('comments-refresh', staggerComments);
-          } else {
-            // Fallback: if the Artalk instance API isn't available,
-            // wait one tick and query whatever Artalk has rendered.
-            setTimeout(staggerComments, 300);
-          }
-        })
+          document.addEventListener('DOMContentLoaded', function() {
+            // Give the deferred Artalk.js a chance to define window.Artalk.
+            // The <script> tag uses defer, so it executes before DOMContentLoaded
+            // fires — but in CSP-blocked environments it never loads at all,
+            // so we still need the timeout watchdog below.
+            function tryInit() {
+              if (typeof window.Artalk !== 'undefined') {
+                var hostEl = document.getElementById('Comments');
+                if (hostEl && hostEl.dataset.fallbackShown === '1') {
+                  // Fallback was shown earlier; Artalk.js finally arrived.
+                  // Artalk.init() replaces #Comments content with real UI;
+                  // just clear the marker so the fallback doesn't replay.
+                  delete hostEl.dataset.fallbackShown;
+                  hostEl.innerHTML = '';
+                }
+                try {
+                  window.Artalk.init({
+                    el: '#Comments',
+                    pageKey: {{ $.Permalink | jsonify }},
+                    pageTitle: {{ $.Title | jsonify }},
+                    server: {{ $server | jsonify }},
+                    site: {{ $siteName | jsonify }}
+                  });
+                  if (typeof window.Artalk.on === 'function') {
+                    window.Artalk.on('list-loaded', staggerComments);
+                    window.Artalk.on('comments-refresh', staggerComments);
+                  } else {
+                    setTimeout(staggerComments, 300);
+                  }
+                } catch (err) {
+                  console.warn('[lumenveil] Artalk.init failed:', err);
+                  showFallback('init error');
+                }
+                return true;
+              }
+              return false;
+            }
+            if (!tryInit()) {
+              // Watchdog: poll for Artalk presence for up to 4s, then give up
+              var waited = 0;
+              var iv = setInterval(function() {
+                waited += 200;
+                if (tryInit() || waited >= 4000) {
+                  clearInterval(iv);
+                  if (waited >= 4000 && typeof window.Artalk === 'undefined') {
+                    showFallback('script blocked or unreachable');
+                  }
+                }
+              }, 200);
+            }
+          });
+        })();
       </script>
     {{ end }}
   {{ end }}

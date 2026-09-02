@@ -10,6 +10,7 @@
     <div class="article-main glass">
       {{ partial "cover.html" . }}
       <div class="prose">{{ .Content }}</div>
+      <div class="article-comments">{{ partial "comments.html" . }}</div>
     </div>
     {{ if .TableOfContents }}{{ if ne .Params.toc false }}
     <aside class="toc">
