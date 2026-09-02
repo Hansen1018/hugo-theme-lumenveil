@@ -54,6 +54,15 @@ theme = 'lumenveil'
   mainSections = ['posts']
   highlight = 'hljs'
 
+  # Comments — enable the Artalk demo wiring so exampleSite can demonstrate
+  # the resilient loader. The server URL is a placeholder; CSP will block the
+  # cross-origin script in the Playwright probe, which exercises the
+  # .artalk-fallback path. Replace with a real Artalk backend in production.
+  [params.comments]
+    service = 'artalk'
+    server = 'https://your-artalk.example.com'
+    site = 'Lumenveil Demo'
+
 [menus]
   [[menus.main]]
     name = 'Home'
