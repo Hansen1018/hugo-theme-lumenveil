@@ -20,7 +20,10 @@
     {{- end -}}
     {{ $server := .server | default "" }}
     {{ if $server }}
-      {{ $siteName := .site | default site.Title }}
+      {{- $siteName := .site | default site.Title -}}
+      {{- $siteName = replace $siteName "’" "'" -}}
+      {{- $siteName = replace $siteName "‘" "'" -}}
+      {{- $siteName = replace $siteName "′" "'" -}}
       <link href="{{ $server }}/dist/Artalk.css" rel="stylesheet" />
       <script src="{{ $server }}/dist/Artalk.js" defer></script>
       <style>
