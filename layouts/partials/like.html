@@ -91,10 +91,13 @@
   btn.addEventListener('click', function () {
     if (btn.classList.contains('is-liked')) return;
 
-    posted = true;
     setLikedState(true);
     var prevCount = parseInt(countEl.textContent || '0', 10);
-    setCount(prevCount + 1);
+    // Optimistic update must bypass the guard (fromClick=true).
+    setCount(prevCount + 1, true);
+    // Only set posted=true AFTER the optimistic update so the guard
+    // doesn't accidentally block this same call.
+    posted = true;
     btn.classList.add('bump');
     setTimeout(function () { btn.classList.remove('bump'); }, 600);
     try { localStorage.setItem(LOCAL_KEY, '1'); } catch (e) {}
