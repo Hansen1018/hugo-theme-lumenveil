@@ -6,9 +6,6 @@
      .like-btn             — heart icon + count, click handler (one-way: liked
                              cannot be unliked)
      .action-btn--support  — coffee icon, anchors to /about/#支持我
-   Base layout (border, radius, color, transition) lives on .action-btn.
-   Like-specific behaviour (.is-liked, .bump, .like-count) lives on .like-btn.
-   Support-specific cyan hover lives on .action-btn--support.
    Theme: dark default + html[data-theme=light] overrides. Both tuned for
    the .article-main.glass container — backgrounds use --glass-bg so they
    blend with the glass card surface; backdrop-filter adds subtle blur.
@@ -88,18 +85,17 @@ html[data-theme=light] .action-btn--support:hover {
   stroke-linecap: round;
   transition: fill .25s ease, stroke .25s ease;
 }
-.like-btn[aria-pressed="true"] .like-count { font-weight: 600; }
 
 /* Liked state — pink, non-interactive. Title attribute signals one-way. */
 .like-btn.is-liked {
   cursor: not-allowed;
   color: #ff6b8a;
-  border-color: rgba(255, 107, 138, .35);
-  background: rgba(255, 107, 138, .08);
+  border-color: rgba(255, 107, 138, .4);
+  background: rgba(255, 107, 138, .1);
 }
 .like-btn.is-liked .like-icon path { fill: currentColor; stroke: currentColor; }
 .like-btn.is-liked:hover {
-  background: rgba(255, 107, 138, .12);
+  background: rgba(255, 107, 138, .14);
   color: #ff5277;
   transform: none;
 }
