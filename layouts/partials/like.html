@@ -41,14 +41,18 @@
   var btn = document.querySelector('.like-btn');
   if (!btn) return;
   var pageKey = window.location.pathname;
-  var LOCAL_KEY = 'lumenveil-like-' + btn.dataset.key;
+  var LOCAL_KEY = '***' + btn.dataset.key;
   var countEl = btn.querySelector('.like-count');
   var labelEl = btn.querySelector('.like-label');
   var isLiked = localStorage.getItem(LOCAL_KEY) === '1';
-  // Race-guard: track whether we've fired a POST so the initial GET
-  // (which may resolve AFTER the user clicks) cannot clobber the
-  // optimistic count or revert a click that already succeeded.
-  var posted = false;
+  // POST-aware race guard:
+  //   null  = no click yet — initial GET allowed to update count
+  //   false = POST failed and was reverted — future GETs may update again
+  //   true  = POST in flight OR succeeded — all GET responses ignored
+  // Previously this was a boolean `posted = true/false` and the guard was
+  // `posted && !is-liked`, which incorrectly allowed the late initial GET to
+  // clobber the post-click count once `.is-liked` was set.
+  var posted = null;
 
   function setLikedState(liked) {
     btn.classList.toggle('is-liked', liked);
@@ -62,21 +66,27 @@
   setLikedState(isLiked);
 
   function setCount(count) {
-    // Never overwrite the optimistic count with a stale GET response.
-    if (posted && !btn.classList.contains('is-liked')) return;
+    // Block any GET update once a POST has been initiated — a GET can never
+    // have a fresher count than the POST that already won the race. Only
+    // `posted === null` (no click ever fired) or `posted === false` (POST
+    // failed and reverted) leaves the door open for a fresh GET.
+    if (posted === true) return;
     countEl.textContent = count;
     try { localStorage.setItem(LOCAL_KEY + ':count', count); } catch (e) {}
   }
 
-  fetch('/api/like/count?key=' + encodeURIComponent(pageKey))
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
-      if (data && typeof data.count === 'number') setCount(data.count);
-    })
-    .catch(function () {
-      var localCount = parseInt(localStorage.getItem(LOCAL_KEY + ':count') || '0', 10);
-      setCount(localCount);
-    });
+  function fetchInitialCount() {
+    fetch('/api/like/count?key=*** + encodeURIComponent(pageKey))
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data && typeof data.count === 'number') setCount(data.count);
+      })
+      .catch(function () {
+        var localCount = parseInt(localStorage.getItem(LOCAL_KEY + ':count') || '0', 10);
+        setCount(localCount);
+      });
+  }
+  fetchInitialCount();
 
   btn.addEventListener('click', function () {
     if (btn.classList.contains('is-liked')) return;
@@ -89,13 +99,15 @@
     setTimeout(function () { btn.classList.remove('bump'); }, 600);
     try { localStorage.setItem(LOCAL_KEY, '1'); } catch (e) {}
 
-    fetch('/api/like/up?key=' + encodeURIComponent(pageKey), { method: 'POST' })
+    fetch('/api/like/up?key=*** + encodeURIComponent(pageKey), { method: 'POST' })
       .then(function (r) { return r.json(); })
       .then(function (data) {
         if (data && typeof data.count === 'number') setCount(data.count);
       })
       .catch(function () {
-        // Network/server error — revert.
+        // Network/server error — revert. Reset posted back to false so a
+        // future GET can recover the actual count, in case the POST did
+        // partially land server-side.
         posted = false;
         setLikedState(false);
         setCount(prevCount);
