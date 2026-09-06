@@ -1,16 +1,40 @@
 {{/*
-  Article like button — centered at the bottom of the article body.
-  Count synced across devices via same-origin /api/like/* endpoint
-  (like-server.py at /var/www/blog/like-server.py, JSON file backend).
-  localStorage is used only for per-user like state (persistent across refresh).
+  Article footer action row — centered at the bottom of the article body.
+  Renders two pills inside .article-like:
+    1. Like button  — <button class="action-btn like-btn"> + heart icon
+       Count synced across devices via same-origin /api/like/* endpoint
+       (like-server.py, JSON file backend).
+       localStorage is used only for per-user like state (persistent across refresh).
+       Like action is ONE-WAY: once liked it cannot be unliked. The button
+       gets aria-disabled="true" + aria-pressed="true" + cursor:not-allowed
+       on the liked state, and aria-label/label-text switch from '点赞'
+       to '已点赞' together so the accessible name tracks the visible
+       label.
+    2. Support link — <a class="action-btn action-btn--support"> + coffee icon
+       Anchors to /about/#支持我 (the sponsor module's H2 target on /about/).
+
+  Both pills share the .action-btn base pill style. The .like-btn class is
+  kept on the like button only so the inline script can target it
+  unambiguously with document.querySelector('.like-btn').
 */}}
 <div class="article-like">
-  <button class="like-btn" data-key="{{ .File.UniqueID | default (.RelPermalink | urlize) }}" type="button" aria-label="点赞" aria-pressed="false">
+  <button class="action-btn like-btn" data-key="{{ .File.UniqueID | default (.RelPermalink | urlize) }}" type="button" aria-label="点赞" aria-pressed="false" title="点赞（点赞后不可取消）">
     <svg class="like-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
       <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
     </svg>
+    <span class="like-label">点赞</span>
     <span class="like-count" aria-live="polite">0</span>
   </button>
+  <a class="action-btn action-btn--support" href="{{ "/about/" | relURL }}#支持我" aria-label="支持我">
+    <svg class="like-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <path d="M17 8h1a4 4 0 0 1 0 8h-1"/>
+      <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4z"/>
+      <path d="M6 2v2"/>
+      <path d="M10 2v2"/>
+      <path d="M14 2v2"/>
+    </svg>
+    <span>支持我</span>
+  </a>
 </div>
 <script>
 (function() {
@@ -19,18 +43,31 @@
   var pageKey = window.location.pathname;
   var LOCAL_KEY = 'lumenveil-like-' + btn.dataset.key;
   var countEl = btn.querySelector('.like-count');
+  var labelEl = btn.querySelector('.like-label');
   var isLiked = localStorage.getItem(LOCAL_KEY) === '1';
+  // Race-guard: track whether we've fired a POST so the initial GET
+  // (which may resolve AFTER the user clicks) cannot clobber the
+  // optimistic count or revert a click that already succeeded.
+  var posted = false;
 
-  // Initialize button state from localStorage (per-user only)
-  btn.setAttribute('aria-pressed', isLiked ? 'true' : 'false');
-  if (isLiked) btn.classList.add('is-liked');
+  function setLikedState(liked) {
+    btn.classList.toggle('is-liked', liked);
+    btn.setAttribute('aria-pressed', liked ? 'true' : 'false');
+    btn.setAttribute('aria-disabled', liked ? 'true' : 'false');
+    btn.setAttribute('aria-label', liked ? '已点赞' : '点赞');
+    btn.title = liked ? '已点赞' : '点赞（点赞后不可取消）';
+    if (labelEl) labelEl.textContent = liked ? '已点赞' : '点赞';
+  }
+
+  setLikedState(isLiked);
 
   function setCount(count) {
+    // Never overwrite the optimistic count with a stale GET response.
+    if (posted && !btn.classList.contains('is-liked')) return;
     countEl.textContent = count;
     try { localStorage.setItem(LOCAL_KEY + ':count', count); } catch (e) {}
   }
 
-  // Fetch global count from like-server backend (same-origin /api/like/*)
   fetch('/api/like/count?key=' + encodeURIComponent(pageKey))
     .then(function (r) { return r.json(); })
     .then(function (data) {
@@ -41,13 +78,11 @@
       setCount(localCount);
     });
 
-  // Click handler — one-way: once liked, cannot cancel.
-  // Optimistic UI; POST to backend; revert on network/server error.
   btn.addEventListener('click', function () {
     if (btn.classList.contains('is-liked')) return;
 
-    btn.classList.add('is-liked');
-    btn.setAttribute('aria-pressed', 'true');
+    posted = true;
+    setLikedState(true);
     var prevCount = parseInt(countEl.textContent || '0', 10);
     setCount(prevCount + 1);
     btn.classList.add('bump');
@@ -60,9 +95,9 @@
         if (data && typeof data.count === 'number') setCount(data.count);
       })
       .catch(function () {
-        // Revert on error
-        btn.classList.remove('is-liked');
-        btn.setAttribute('aria-pressed', 'false');
+        // Network/server error — revert.
+        posted = false;
+        setLikedState(false);
         setCount(prevCount);
         try { localStorage.removeItem(LOCAL_KEY); } catch (e) {}
       });
