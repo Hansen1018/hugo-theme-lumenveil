@@ -3,41 +3,138 @@
    ----------------------------------------------------------------------------
    .article-like is the flex row container at the bottom of every post.
    It hosts two pills that share the .action-btn base class:
-     .like-btn             — heart icon + count, click handler
+     .like-btn             — heart icon + count, click handler (one-way: liked
+                             cannot be unliked)
      .action-btn--support  — coffee icon, anchors to /about/#支持我
    Base layout (border, radius, color, transition) lives on .action-btn.
    Like-specific behaviour (.is-liked, .bump, .like-count) lives on .like-btn.
    Support-specific cyan hover lives on .action-btn--support.
+   Theme: dark default + html[data-theme=light] overrides. Both tuned for
+   the .article-main.glass container — backgrounds use --glass-bg so they
+   blend with the glass card surface; backdrop-filter adds subtle blur.
    ============================================================================ */
 
 .article-like { display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap; margin: 24px 0 16px; padding: 0 16px; }
 
-/* Shared pill button — both like and support inherit this. */
-.action-btn { display: inline-flex; align-items: center; gap: 7px; padding: 7px 15px; border: 1px solid var(--line,rgba(255,255,255,.08)); border-radius: 999px; background: rgba(255,255,255,.04); color: var(--ink-2,rgba(255,255,255,.72)); cursor: pointer; font: 550 12px/1 var(--font-sans,system-ui,sans-serif); letter-spacing: 0; transition: background .25s ease, border-color .25s ease, color .25s ease, transform .25s ease; user-select: none; -webkit-tap-highlight-color: transparent; }
-.action-btn:hover { background: rgba(255,255,255,.08); border-color: var(--line-strong,rgba(255,255,255,.16)); color: var(--ink-1,rgba(255,255,255,.96)); transform: translateY(-1px); }
+/* Shared pill button — both like and support inherit this.
+   Dark default: glass tint over the article card; visible but understated. */
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 15px;
+  border: 1px solid var(--line, rgba(255, 255, 255, .12));
+  border-radius: 999px;
+  background: var(--glass-bg, rgba(255, 255, 255, .045));
+  color: var(--ink-2, rgba(255, 255, 255, .78));
+  cursor: pointer;
+  font: 550 12px/1 var(--font-sans, system-ui, sans-serif);
+  letter-spacing: 0;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition:
+    background .25s ease,
+    border-color .25s ease,
+    color .25s ease,
+    transform .25s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.action-btn:hover {
+  background: var(--glass-bg-hover, rgba(255, 255, 255, .085));
+  border-color: var(--line-strong, rgba(255, 255, 255, .22));
+  color: var(--ink-1, rgba(255, 255, 255, .96));
+  transform: translateY(-1px);
+}
 .action-btn:active { transform: translateY(0) scale(.98); }
-html[data-theme=light] .action-btn { background: rgba(15,23,42,.04); border-color: rgba(15,23,42,.08); color: rgba(15,23,42,.66); }
-html[data-theme=light] .action-btn:hover { background: rgba(15,23,42,.06); border-color: rgba(15,23,42,.16); color: rgba(15,23,42,.92); }
+.action-btn:focus-visible {
+  outline: 2px solid var(--accent-2, #22d3ee);
+  outline-offset: 2px;
+}
 
-/* Support-link modifier — cyan accent, anchors to /about/#支持我 */
+/* Light theme: dark-on-light glass tint */
+html[data-theme=light] .action-btn {
+  background: rgba(15, 23, 42, .04);
+  border-color: rgba(15, 23, 42, .12);
+  color: rgba(15, 23, 42, .7);
+}
+html[data-theme=light] .action-btn:hover {
+  background: rgba(15, 23, 42, .07);
+  border-color: rgba(15, 23, 42, .2);
+  color: rgba(15, 23, 42, .92);
+}
+
+/* Support-link modifier — cyan accent on hover, anchors to /about/#支持我 */
 .action-btn--support { text-decoration: none; cursor: pointer; }
-.action-btn--support:hover { color: var(--accent-2, #22d3ee); border-color: var(--accent-2, #22d3ee); background: rgba(34,211,238,.08); }
-.action-btn--support:focus-visible { outline: 2px solid var(--accent-2, #22d3ee); outline-offset: 2px; }
-html[data-theme=light] .action-btn--support:hover { color: var(--accent-2, #22d3ee); border-color: var(--accent-2, #22d3ee); background: rgba(34,211,238,.1); }
+.action-btn--support:hover {
+  color: var(--accent-2, #22d3ee);
+  border-color: var(--accent-2, #22d3ee);
+  background: rgba(34, 211, 238, .12);
+}
+html[data-theme=light] .action-btn--support:hover {
+  color: var(--accent-2, #22d3ee);
+  border-color: var(--accent-2, #22d3ee);
+  background: rgba(34, 211, 238, .14);
+}
 
-/* Like-specific bits — only the actual <button> keeps .like-btn */
-.like-btn .like-icon { display: inline-flex; flex: 0 0 auto; transition: transform .35s cubic-bezier(.22,1,.36,1); }
-.like-btn .like-icon path { fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; transition: fill .25s ease, stroke .25s ease; }
-.like-btn.is-liked { cursor: not-allowed; color: #ff6b8a; border-color: rgba(255,107,138,.3); background: rgba(255,107,138,.06); }
+/* Like-specific bits — only the actual <button> keeps .like-btn.
+   .is-liked is the permanent "already liked" state (one-way, no un-like). */
+.like-btn .like-icon { display: inline-flex; flex: 0 0 auto; transition: transform .35s cubic-bezier(.22, 1, .36, 1); }
+.like-btn .like-icon path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  transition: fill .25s ease, stroke .25s ease;
+}
+.like-btn[aria-pressed="true"] .like-count { font-weight: 600; }
+
+/* Liked state — pink, non-interactive. Title attribute signals one-way. */
+.like-btn.is-liked {
+  cursor: not-allowed;
+  color: #ff6b8a;
+  border-color: rgba(255, 107, 138, .35);
+  background: rgba(255, 107, 138, .08);
+}
 .like-btn.is-liked .like-icon path { fill: currentColor; stroke: currentColor; }
-.like-btn.is-liked:hover { background: rgba(255,107,138,.1); color: #ff5277; }
+.like-btn.is-liked:hover {
+  background: rgba(255, 107, 138, .12);
+  color: #ff5277;
+  transform: none;
+}
 .like-btn.is-liked .like-icon { transform: scale(1.1); }
-.like-btn.bump .like-icon { animation: like-bump .55s cubic-bezier(.22,1,.36,1); }
-@keyframes like-bump { 0% { transform: scale(1); } 35% { transform: scale(1.45); } 60% { transform: scale(.92); } 100% { transform: scale(1.1); } }
+.like-btn.bump .like-icon { animation: like-bump .55s cubic-bezier(.22, 1, .36, 1); }
+@keyframes like-bump {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.45); }
+  60% { transform: scale(.92); }
+  100% { transform: scale(1.1); }
+}
 .like-btn .like-count { font-variant-numeric: tabular-nums; min-width: 1ch; text-align: center; }
 
-@media (prefers-reduced-motion: reduce) { .action-btn, .action-btn *, .action-btn *::before, .action-btn *::after, .like-btn, .like-btn *, .like-btn *::before, .like-btn *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+@media (prefers-reduced-motion: reduce) {
+  .action-btn, .action-btn *, .action-btn *::before, .action-btn *::after,
+  .like-btn, .like-btn *, .like-btn *::before, .like-btn *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
 
-.article-share > span { display: inline-flex; align-items: center; min-height: 30px; font-size: 15px; font-weight: 500; letter-spacing: -0.005em; line-height: 1; }
+.article-share > span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -.005em;
+  line-height: 1;
+}
 .article-share > .button { min-height: 30px; padding: 7px 16px; font-size: 14px; }
-.article-comments { position: relative; z-index: 1; margin-top: 8px; padding-top: 24px; border-top: 1px solid var(--line); }
+.article-comments {
+  position: relative;
+  z-index: 1;
+  margin-top: 8px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
