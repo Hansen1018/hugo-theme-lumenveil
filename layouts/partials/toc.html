@@ -1,0 +1,24 @@
+{{- /*
+  Article table-of-contents sidebar.
+
+  Renders only when BOTH conditions hold:
+    1. `.TableOfContents` is non-empty — i.e. the page actually has H2/H3
+       headings (Hugo populates this from rendered `.Content`).
+    2. Front matter does NOT set `toc: false` — explicit opt-out per page.
+
+  Heading text is intentionally the short "目录" (not "文章目录"): the
+  surrounding `<aside class="toc">` already places the heading inside a
+  table-of-contents context, so the "文章" prefix was redundant (see #19).
+
+  No CSS / JS dependency on the inner markup — selectors target `.toc`,
+  `.toc__inner`, `.eyebrow`, and `h2` generically.
+*/ -}}
+{{ if .TableOfContents }}{{ if ne .Params.toc false }}
+<aside class="toc">
+  <div class="toc__inner">
+    <span class="eyebrow">On this page</span>
+    <h2>目录</h2>
+    {{ .TableOfContents }}
+  </div>
+</aside>
+{{ end }}{{ end }}
