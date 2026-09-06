@@ -11,20 +11,43 @@
   Defaults expect QR images at:
     /images/sponsor/wechat.png
     /images/sponsor/alipay.png
-  Drop your own QR PNGs into static/images/sponsor/ to override.
+  Drop your own QR PNGs into static/images/sponsor/ to override. If the
+  default file is absent, the panel falls back to a "尚未配置" hint
+  instead of a broken <img>.
 
   Optional:
-    wechat   - path to WeChat Pay QR image
-    alipay   - path to Alipay QR image
-    kofi     - Ko-fi username OR full URL; empty = panel still shows
+    wechat   - path to WeChat Pay QR image (overrides default if set)
+    alipay   - path to Alipay QR image (overrides default if set)
+    kofi     - Ko-fi username OR full URL; empty = panel still shows hint
     subtitle - bottom subtitle text (default: "每一份鼓励都是持续创作的动力 💗")
+
+  Accessibility: native radio inputs are the focusable/keyboard controls.
+  Labels are visual UI only — no misleading role="tab" semantics that
+  would conflict with the radio group's native behavior.
 */ -}}
 
 {{- $idSuffix := .Ordinal -}}
-{{- $wechat   := .Get "wechat"   | default "/images/sponsor/wechat.png" -}}
-{{- $alipay   := .Get "alipay"   | default "/images/sponsor/alipay.png" -}}
-{{- $kofiRaw  := .Get "kofi"     -}}
-{{- $subtitle := .Get "subtitle" | default "每一份鼓励都是持续创作的动力 💗" -}}
+{{- $wechatParam := .Get "wechat" -}}
+{{- $alipayParam := .Get "alipay" -}}
+{{- $kofiRaw     := .Get "kofi" -}}
+{{- $subtitle    := .Get "subtitle" | default "每一份鼓励都是持续创作的动力 💗" -}}
+
+{{- $wechatFallback := "/images/sponsor/wechat.png" -}}
+{{- $alipayFallback := "/images/sponsor/alipay.png" -}}
+
+{{- $wechatSrc := "" -}}
+{{- if $wechatParam -}}
+  {{- $wechatSrc = $wechatParam -}}
+{{- else if resources.Get (strings.TrimPrefix "/" $wechatFallback) -}}
+  {{- $wechatSrc = $wechatFallback -}}
+{{- end -}}
+
+{{- $alipaySrc := "" -}}
+{{- if $alipayParam -}}
+  {{- $alipaySrc = $alipayParam -}}
+{{- else if resources.Get (strings.TrimPrefix "/" $alipayFallback) -}}
+  {{- $alipaySrc = $alipayFallback -}}
+{{- end -}}
 
 {{- $kofiURL := "" -}}
 {{- if $kofiRaw -}}
@@ -44,8 +67,8 @@
   <input class="sponsor__radio sponsor__radio--alipay" type="radio" name="sponsor-{{ $idSuffix }}" id="{{ $aID }}">
   <input class="sponsor__radio sponsor__radio--kofi"   type="radio" name="sponsor-{{ $idSuffix }}" id="{{ $kID }}">
 
-  <div class="sponsor__tabs" role="tablist" aria-label="支付方式">
-    <label class="sponsor__tab sponsor__tab--wechat" for="{{ $wID }}" role="tab">
+  <div class="sponsor__tabs" aria-label="支付方式">
+    <label class="sponsor__tab sponsor__tab--wechat" for="{{ $wID }}">
       <svg class="sponsor__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/>
         <circle cx="9" cy="10" r=".75" fill="currentColor"/>
@@ -54,14 +77,14 @@
       </svg>
       <span>微信支付</span>
     </label>
-    <label class="sponsor__tab sponsor__tab--alipay" for="{{ $aID }}" role="tab">
+    <label class="sponsor__tab sponsor__tab--alipay" for="{{ $aID }}">
       <svg class="sponsor__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <rect x="3" y="3" width="18" height="18" rx="3"/>
         <path d="M8 17l4-9 4 9M9.6 13.2h4.8"/>
       </svg>
       <span>支付宝</span>
     </label>
-    <label class="sponsor__tab sponsor__tab--kofi" for="{{ $kID }}" role="tab">
+    <label class="sponsor__tab sponsor__tab--kofi" for="{{ $kID }}">
       <svg class="sponsor__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M17 8h1a4 4 0 0 1 0 8h-1"/>
         <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V8z"/>
@@ -74,21 +97,29 @@
   </div>
 
   <div class="sponsor__body">
-    <div class="sponsor__panel" data-panel="wechat" role="tabpanel" aria-labelledby="{{ $wID }}">
+    <div class="sponsor__panel" data-panel="wechat">
+      {{- if $wechatSrc }}
       <div class="sponsor__qr">
-        <img src="{{ $wechat }}" alt="微信支付二维码" loading="lazy" decoding="async" width="200" height="200">
+        <img src="{{ $wechatSrc }}" alt="微信支付二维码" loading="lazy" decoding="async" width="200" height="200">
       </div>
       <p class="sponsor__hint">使用微信扫一扫支持</p>
+      {{- else }}
+      <p class="sponsor__hint">微信二维码尚未配置</p>
+      {{- end }}
     </div>
 
-    <div class="sponsor__panel" data-panel="alipay" role="tabpanel" aria-labelledby="{{ $aID }}">
+    <div class="sponsor__panel" data-panel="alipay">
+      {{- if $alipaySrc }}
       <div class="sponsor__qr">
-        <img src="{{ $alipay }}" alt="支付宝二维码" loading="lazy" decoding="async" width="200" height="200">
+        <img src="{{ $alipaySrc }}" alt="支付宝二维码" loading="lazy" decoding="async" width="200" height="200">
       </div>
       <p class="sponsor__hint">使用支付宝扫一扫支持</p>
+      {{- else }}
+      <p class="sponsor__hint">支付宝二维码尚未配置</p>
+      {{- end }}
     </div>
 
-    <div class="sponsor__panel" data-panel="kofi" role="tabpanel" aria-labelledby="{{ $kID }}">
+    <div class="sponsor__panel" data-panel="kofi">
       {{- if $kofiURL }}
       <a class="sponsor__kofi" href="{{ $kofiURL }}" target="_blank" rel="noopener noreferrer">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
