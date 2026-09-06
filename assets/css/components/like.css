@@ -77,7 +77,7 @@ html[data-theme=light] .action-btn--support:hover {
   background: rgba(34, 211, 238, .14);
 }
 
-/* Like-specific bits — only the actual <button> keeps .like-btn.
+/* Like-specific bits — only the actual button keeps .like-btn.
    .is-liked is the permanent "already liked" state (one-way, no un-like). */
 .like-btn .like-icon { display: inline-flex; flex: 0 0 auto; transition: transform .35s cubic-bezier(.22, 1, .36, 1); }
 .like-btn .like-icon path {
