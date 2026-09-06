@@ -39,9 +39,9 @@
   {{- end -}}
 {{- end -}}
 
-{{- $wID := printf "sponsor-%s-wechat" $idSuffix -}}
-{{- $aID := printf "sponsor-%s-alipay" $idSuffix -}}
-{{- $kID := printf "sponsor-%s-kofi"   $idSuffix -}}
+{{- $wID := printf "sponsor-%d-wechat" $idSuffix -}}
+{{- $aID := printf "sponsor-%d-alipay" $idSuffix -}}
+{{- $kID := printf "sponsor-%d-kofi"   $idSuffix -}}
 
 <div class="sponsor" role="group" aria-label="赞助">
   <input class="sponsor__radio sponsor__radio--wechat" type="radio" name="sponsor-{{ $idSuffix }}" id="{{ $wID }}" checked>
