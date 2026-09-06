@@ -11,14 +11,12 @@
   Defaults expect QR images at:
     /images/sponsor/wechat.png
     /images/sponsor/alipay.png
-  Drop your own QR PNGs into static/images/sponsor/ to override. If the
-  default file is absent, the panel falls back to a "尚未配置" hint
-  instead of a broken <img>.
+  Drop your own QR PNGs into static/images/sponsor/ to override.
 
   Optional:
-    wechat   - path to WeChat Pay QR image (overrides default if set)
-    alipay   - path to Alipay QR image (overrides default if set)
-    kofi     - Ko-fi username OR full URL; empty = panel still shows hint
+    wechat   - path to WeChat Pay QR image (overrides default)
+    alipay   - path to Alipay QR image (overrides default)
+    kofi     - Ko-fi username OR full URL; empty = panel shows hint
     subtitle - bottom subtitle text (default: "每一份鼓励都是持续创作的动力 💗")
 
   Accessibility: native radio inputs are the focusable/keyboard controls.
@@ -27,27 +25,10 @@
 */ -}}
 
 {{- $idSuffix := .Ordinal -}}
-{{- $wechatParam := .Get "wechat" -}}
-{{- $alipayParam := .Get "alipay" -}}
-{{- $kofiRaw     := .Get "kofi" -}}
-{{- $subtitle    := .Get "subtitle" | default "每一份鼓励都是持续创作的动力 💗" -}}
-
-{{- $wechatFallback := "/images/sponsor/wechat.png" -}}
-{{- $alipayFallback := "/images/sponsor/alipay.png" -}}
-
-{{- $wechatSrc := "" -}}
-{{- if $wechatParam -}}
-  {{- $wechatSrc = $wechatParam -}}
-{{- else if resources.Get (strings.TrimPrefix "/" $wechatFallback) -}}
-  {{- $wechatSrc = $wechatFallback -}}
-{{- end -}}
-
-{{- $alipaySrc := "" -}}
-{{- if $alipayParam -}}
-  {{- $alipaySrc = $alipayParam -}}
-{{- else if resources.Get (strings.TrimPrefix "/" $alipayFallback) -}}
-  {{- $alipaySrc = $alipayFallback -}}
-{{- end -}}
+{{- $wechatSrc := .Get "wechat" | default "/images/sponsor/wechat.png" -}}
+{{- $alipaySrc := .Get "alipay" | default "/images/sponsor/alipay.png" -}}
+{{- $kofiRaw   := .Get "kofi" -}}
+{{- $subtitle  := .Get "subtitle" | default "每一份鼓励都是持续创作的动力 💗" -}}
 
 {{- $kofiURL := "" -}}
 {{- if $kofiRaw -}}
@@ -98,25 +79,17 @@
 
   <div class="sponsor__body">
     <div class="sponsor__panel" data-panel="wechat">
-      {{- if $wechatSrc }}
       <div class="sponsor__qr">
         <img src="{{ $wechatSrc }}" alt="微信支付二维码" loading="lazy" decoding="async" width="200" height="200">
       </div>
       <p class="sponsor__hint">使用微信扫一扫支持</p>
-      {{- else }}
-      <p class="sponsor__hint">微信二维码尚未配置</p>
-      {{- end }}
     </div>
 
     <div class="sponsor__panel" data-panel="alipay">
-      {{- if $alipaySrc }}
       <div class="sponsor__qr">
         <img src="{{ $alipaySrc }}" alt="支付宝二维码" loading="lazy" decoding="async" width="200" height="200">
       </div>
       <p class="sponsor__hint">使用支付宝扫一扫支持</p>
-      {{- else }}
-      <p class="sponsor__hint">支付宝二维码尚未配置</p>
-      {{- end }}
     </div>
 
     <div class="sponsor__panel" data-panel="kofi">
