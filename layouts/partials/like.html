@@ -113,7 +113,11 @@
     fetch('/api/like/up?key=' + encodeURIComponent(pageKey), { method: 'POST' })
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        if (data && typeof data.count === 'number') setCount(data.count);
+        // fromClick=true — POST success confirms the authoritative server count
+        // and must bypass the guard (otherwise the UI stays pinned at the local
+        // optimistic value until reload, missing any concurrent likes from
+        // other devices).
+        if (data && typeof data.count === 'number') setCount(data.count, true);
       })
       .catch(function () {
         // Network/server error — revert.
