@@ -12,15 +12,7 @@
       <div class="prose">{{ .Content }}</div>
       <div class="article-comments">{{ partial "comments.html" . }}</div>
     </div>
-    {{ if .TableOfContents }}{{ if ne .Params.toc false }}
-    <aside class="toc">
-      <div class="toc__inner">
-        <span class="eyebrow">On this page</span>
-        <h2>目录</h2>
-        {{ .TableOfContents }}
-      </div>
-    </aside>
-    {{ end }}{{ end }}
+    {{ partial "toc.html" . }}
   </div>
   <nav class="post-nav" aria-label="記事ナビゲーション">{{ with .PrevInSection }}<a href="{{ .RelPermalink }}"><span>前の記事</span><strong>{{ .LinkTitle }}</strong></a>{{ else }}<span></span>{{ end }}{{ with .NextInSection }}<a href="{{ .RelPermalink }}" class="post-nav__next"><span>次の記事</span><strong>{{ .LinkTitle }}</strong></a>{{ end }}</nav>
 </article>
