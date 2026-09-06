@@ -6,7 +6,10 @@
        (like-server.py at /var/www/blog/like-server.py, JSON file backend).
        localStorage is used only for per-user like state (persistent across refresh).
        Like action is ONE-WAY: once liked it cannot be unliked. The button
-       gets aria-pressed="true" + cursor:not-allowed on the liked state.
+       gets aria-disabled="true" + aria-pressed="true" + cursor:not-allowed
+       on the liked state, and aria-label/label-text switch from '点赞'
+       to '已点赞' together so the accessible name tracks the visible
+       label.
     2. Support link — <a class="action-btn action-btn--support"> + coffee icon
        Anchors to /about/#支持我 (the sponsor module's H2 target on /about/).
 
@@ -38,56 +41,66 @@
   var btn = document.querySelector('.like-btn');
   if (!btn) return;
   var pageKey = window.location.pathname;
-  var LOCAL_KEY = 'lumenveil-like-' + btn.dataset.key;
+  var LOCAL_KEY = '***' + btn.dataset.key;
   var countEl = btn.querySelector('.like-count');
   var labelEl = btn.querySelector('.like-label');
   var isLiked = localStorage.getItem(LOCAL_KEY) === '1';
+  // Race-guard: track whether we've fired a POST so the initial GET
+  // (which may resolve AFTER the user clicks) cannot clobber the
+  // optimistic count or revert a click that already succeeded.
+  var posted = false;
 
-  btn.setAttribute('aria-pressed', isLiked ? 'true' : 'false');
-  if (isLiked) {
-    btn.classList.add('is-liked');
-    btn.title = '已点赞';
-    if (labelEl) labelEl.textContent = '已点赞';
+  function setLikedState(liked) {
+    btn.classList.toggle('is-liked', liked);
+    btn.setAttribute('aria-pressed', liked ? 'true' : 'false');
+    btn.setAttribute('aria-disabled', liked ? 'true' : 'false');
+    btn.setAttribute('aria-label', liked ? '已点赞' : '点赞');
+    btn.title = liked ? '已点赞' : '点赞（点赞后不可取消）';
+    if (labelEl) labelEl.textContent = liked ? '已点赞' : '点赞';
   }
 
+  setLikedState(isLiked);
+
   function setCount(count) {
+    // Never overwrite the optimistic count with a stale GET response.
+    if (posted && !btn.classList.contains('is-liked')) return;
     countEl.textContent = count;
     try { localStorage.setItem(LOCAL_KEY + ':count', count); } catch (e) {}
   }
 
-  fetch('/api/like/count?key=' + encodeURIComponent(pageKey))
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
-      if (data && typeof data.count === 'number') setCount(data.count);
-    })
-    .catch(function () {
-      var localCount = parseInt(localStorage.getItem(LOCAL_KEY + ':count') || '0', 10);
-      setCount(localCount);
-    });
+  function fetchInitialCount() {
+    fetch('/api/like/count?key=*** + encodeURIComponent(pageKey))
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data && typeof data.count === 'number') setCount(data.count);
+      })
+      .catch(function () {
+        var localCount = parseInt(localStorage.getItem(LOCAL_KEY + ':count') || '0', 10);
+        setCount(localCount);
+      });
+  }
+  fetchInitialCount();
 
   btn.addEventListener('click', function () {
     if (btn.classList.contains('is-liked')) return;
 
-    btn.classList.add('is-liked');
-    btn.setAttribute('aria-pressed', 'true');
-    btn.title = '已点赞';
-    if (labelEl) labelEl.textContent = '已点赞';
+    posted = true;
+    setLikedState(true);
     var prevCount = parseInt(countEl.textContent || '0', 10);
     setCount(prevCount + 1);
     btn.classList.add('bump');
     setTimeout(function () { btn.classList.remove('bump'); }, 600);
     try { localStorage.setItem(LOCAL_KEY, '1'); } catch (e) {}
 
-    fetch('/api/like/up?key=' + encodeURIComponent(pageKey), { method: 'POST' })
+    fetch('/api/like/up?key=*** + encodeURIComponent(pageKey), { method: 'POST' })
       .then(function (r) { return r.json(); })
       .then(function (data) {
         if (data && typeof data.count === 'number') setCount(data.count);
       })
       .catch(function () {
-        btn.classList.remove('is-liked');
-        btn.setAttribute('aria-pressed', 'false');
-        btn.title = '点赞（点赞后不可取消）';
-        if (labelEl) labelEl.textContent = '点赞';
+        // Network/server error — revert.
+        posted = false;
+        setLikedState(false);
         setCount(prevCount);
         try { localStorage.removeItem(LOCAL_KEY); } catch (e) {}
       });
