@@ -3,7 +3,7 @@
   Renders two pills inside .article-like:
     1. Like button  — <button class="action-btn like-btn"> + heart icon
        Count synced across devices via same-origin /api/like/* endpoint
-       (like-server.py at <blog-deploy-path>/like-server.py, JSON file backend).
+       (like-server.py, JSON file backend).
        localStorage is used only for per-user like state (persistent across refresh).
        Like action is ONE-WAY: once liked it cannot be unliked. The button
        gets aria-disabled="true" + aria-pressed="true" + cursor:not-allowed
