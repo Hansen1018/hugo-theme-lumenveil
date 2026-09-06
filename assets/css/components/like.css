@@ -76,8 +76,8 @@ html[data-theme=light] .action-btn--support:hover {
 
 /* Like-specific bits — only the actual button keeps .like-btn.
    .is-liked is the permanent "already liked" state (one-way, no un-like). */
-.like-btn .like-icon { display: inline-flex; flex: 0 0 auto; transition: transform .35s cubic-bezier(.22, 1, .36, 1); }
-.like-btn .like-icon path {
+.action-btn .like-icon { display: inline-flex; flex: 0 0 auto; transition: transform .35s cubic-bezier(.22, 1, .36, 1); }
+.action-btn .like-icon path {
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
@@ -93,14 +93,14 @@ html[data-theme=light] .action-btn--support:hover {
   border-color: rgba(255, 107, 138, .4);
   background: rgba(255, 107, 138, .1);
 }
-.like-btn.is-liked .like-icon path { fill: currentColor; stroke: currentColor; }
+.action-btn.is-liked .like-icon path { fill: currentColor; stroke: currentColor; }
 .like-btn.is-liked:hover {
   background: rgba(255, 107, 138, .14);
   color: #ff5277;
   transform: none;
 }
-.like-btn.is-liked .like-icon { transform: scale(1.1); }
-.like-btn.bump .like-icon { animation: like-bump .55s cubic-bezier(.22, 1, .36, 1); }
+.action-btn.is-liked .like-icon { transform: scale(1.1); }
+.action-btn.bump .like-icon { animation: like-bump .55s cubic-bezier(.22, 1, .36, 1); }
 @keyframes like-bump {
   0% { transform: scale(1); }
   35% { transform: scale(1.45); }
