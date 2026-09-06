@@ -3,7 +3,7 @@
   Renders two pills inside .article-like:
     1. Like button  — <button class="action-btn like-btn"> + heart icon
        Count synced across devices via same-origin /api/like/* endpoint
-       (like-server.py at /var/www/blog/like-server.py, JSON file backend).
+       (like-server.py at <blog-deploy-path>/like-server.py, JSON file backend).
        localStorage is used only for per-user like state (persistent across refresh).
        Like action is ONE-WAY: once liked it cannot be unliked. The button
        gets aria-disabled="true" + aria-pressed="true" + cursor:not-allowed
@@ -41,7 +41,7 @@
   var btn = document.querySelector('.like-btn');
   if (!btn) return;
   var pageKey = window.location.pathname;
-  var LOCAL_KEY = '***' + btn.dataset.key;
+  var LOCAL_KEY = 'lumenveil-like-' + btn.dataset.key;
   var countEl = btn.querySelector('.like-count');
   var labelEl = btn.querySelector('.like-label');
   var isLiked = localStorage.getItem(LOCAL_KEY) === '1';
@@ -69,7 +69,7 @@
   }
 
   function fetchInitialCount() {
-    fetch('/api/like/count?key=*** + encodeURIComponent(pageKey))
+    fetch('/api/like/count?key=' + encodeURIComponent(pageKey))
       .then(function (r) { return r.json(); })
       .then(function (data) {
         if (data && typeof data.count === 'number') setCount(data.count);
@@ -92,7 +92,7 @@
     setTimeout(function () { btn.classList.remove('bump'); }, 600);
     try { localStorage.setItem(LOCAL_KEY, '1'); } catch (e) {}
 
-    fetch('/api/like/up?key=*** + encodeURIComponent(pageKey), { method: 'POST' })
+    fetch('/api/like/up?key=' + encodeURIComponent(pageKey), { method: 'POST' })
       .then(function (r) { return r.json(); })
       .then(function (data) {
         if (data && typeof data.count === 'number') setCount(data.count);
