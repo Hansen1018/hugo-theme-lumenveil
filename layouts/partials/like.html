@@ -48,7 +48,19 @@
   // Race-guard: track whether we've fired a POST so the initial GET
   // (which may resolve AFTER the user clicks) cannot clobber the
   // optimistic count or revert a click that already succeeded.
-  var posted = false;
+  // Three-state race guard:
+  //   null  = no click yet — initial GET allowed to update count
+  //   false = POST failed and was reverted — future GETs may update again
+  //   true  = POST in flight OR succeeded — all GET responses blocked
+  //
+  // A GET can never have a fresher count than the POST that already won
+  // the race, so once posted=true we reject all further count updates
+  // until either page reload (posted resets) or the POST fails (posted=false).
+  //
+  // Previous guard used a boolean with the condition 'posted && !is-liked',
+  // which incorrectly let the late initial GET clobber the post-click
+  // optimistic count once .is-liked had been set (OCR thread ftyQu).
+  var posted = null;
 
   function setLikedState(liked) {
     btn.classList.toggle('is-liked', liked);
@@ -61,9 +73,15 @@
 
   setLikedState(isLiked);
 
-  function setCount(count) {
-    // Never overwrite the optimistic count with a stale GET response.
-    if (posted && !btn.classList.contains('is-liked')) return;
+  // setCount(value, fromClick?)
+  //   fromClick=true  → bypass guard (click-triggered optimistic update)
+  //   fromClick=false → respect guard (GET-sourced update)
+  // Click-triggered updates fire BEFORE posted=true is set, so the
+  // 'posted === true' guard would normally let them through. The explicit
+  // fromClick flag is defensive: even if click-handler ordering is
+  // ever inverted, the optimistic update still wins.
+  function setCount(count, fromClick) {
+    if (!fromClick && posted === true) return;
     countEl.textContent = count;
     try { localStorage.setItem(LOCAL_KEY + ':count', count); } catch (e) {}
   }
