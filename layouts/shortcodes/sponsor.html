@@ -1,0 +1,108 @@
+{{- /*
+  Shortcode: sponsor
+  Usage:    {{< sponsor >}}
+            {{< sponsor wechat="/img/sponsor/wechat.png" alipay="/img/sponsor/alipay.png" kofi="username" >}}
+            {{< sponsor kofi="https://ko-fi.com/username" subtitle="自定义副标题 💗" >}}
+
+  Renders a 3-tab sponsorship card (微信支付 / 支付宝 / Ko-fi) styled to
+  match the blog's dark glass aesthetic. Tab switching is pure CSS
+  (radio :checked + sibling combinator) — no JS required.
+
+  Defaults expect QR images at:
+    /images/sponsor/wechat.png
+    /images/sponsor/alipay.png
+  Drop your own QR PNGs into static/images/sponsor/ to override.
+
+  Optional:
+    wechat   - path to WeChat Pay QR image
+    alipay   - path to Alipay QR image
+    kofi     - Ko-fi username OR full URL; empty = panel still shows
+    subtitle - bottom subtitle text (default: "每一份鼓励都是持续创作的动力 💗")
+*/ -}}
+
+{{- $idSuffix := .Ordinal -}}
+{{- $wechat   := .Get "wechat"   | default "/images/sponsor/wechat.png" -}}
+{{- $alipay   := .Get "alipay"   | default "/images/sponsor/alipay.png" -}}
+{{- $kofiRaw  := .Get "kofi"     -}}
+{{- $subtitle := .Get "subtitle" | default "每一份鼓励都是持续创作的动力 💗" -}}
+
+{{- $kofiURL := "" -}}
+{{- if $kofiRaw -}}
+  {{- if strings.HasPrefix $kofiRaw "http" -}}
+    {{- $kofiURL = $kofiRaw -}}
+  {{- else -}}
+    {{- $kofiURL = printf "https://ko-fi.com/%s" $kofiRaw -}}
+  {{- end -}}
+{{- end -}}
+
+{{- $wID := printf "sponsor-%s-wechat" $idSuffix -}}
+{{- $aID := printf "sponsor-%s-alipay" $idSuffix -}}
+{{- $kID := printf "sponsor-%s-kofi"   $idSuffix -}}
+
+<div class="sponsor" role="group" aria-label="赞助">
+  <input class="sponsor__radio sponsor__radio--wechat" type="radio" name="sponsor-{{ $idSuffix }}" id="{{ $wID }}" checked>
+  <input class="sponsor__radio sponsor__radio--alipay" type="radio" name="sponsor-{{ $idSuffix }}" id="{{ $aID }}">
+  <input class="sponsor__radio sponsor__radio--kofi"   type="radio" name="sponsor-{{ $idSuffix }}" id="{{ $kID }}">
+
+  <div class="sponsor__tabs" role="tablist" aria-label="支付方式">
+    <label class="sponsor__tab sponsor__tab--wechat" for="{{ $wID }}" role="tab">
+      <svg class="sponsor__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/>
+        <circle cx="9" cy="10" r=".75" fill="currentColor"/>
+        <circle cx="15" cy="10" r=".75" fill="currentColor"/>
+        <path d="M8.5 13c.6.9 1.7 1.6 2.7 1.6.7 0 1.4-.3 2-.8"/>
+      </svg>
+      <span>微信支付</span>
+    </label>
+    <label class="sponsor__tab sponsor__tab--alipay" for="{{ $aID }}" role="tab">
+      <svg class="sponsor__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="3" width="18" height="18" rx="3"/>
+        <path d="M8 17l4-9 4 9M9.6 13.2h4.8"/>
+      </svg>
+      <span>支付宝</span>
+    </label>
+    <label class="sponsor__tab sponsor__tab--kofi" for="{{ $kID }}" role="tab">
+      <svg class="sponsor__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M17 8h1a4 4 0 0 1 0 8h-1"/>
+        <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V8z"/>
+        <line x1="6" y1="2" x2="6" y2="4"/>
+        <line x1="10" y1="2" x2="10" y2="4"/>
+        <line x1="14" y1="2" x2="14" y2="4"/>
+      </svg>
+      <span>Ko-fi</span>
+    </label>
+  </div>
+
+  <div class="sponsor__body">
+    <div class="sponsor__panel" data-panel="wechat" role="tabpanel" aria-labelledby="{{ $wID }}">
+      <div class="sponsor__qr">
+        <img src="{{ $wechat }}" alt="微信支付二维码" loading="lazy" decoding="async" width="200" height="200">
+      </div>
+      <p class="sponsor__hint">使用微信扫一扫支持</p>
+    </div>
+
+    <div class="sponsor__panel" data-panel="alipay" role="tabpanel" aria-labelledby="{{ $aID }}">
+      <div class="sponsor__qr">
+        <img src="{{ $alipay }}" alt="支付宝二维码" loading="lazy" decoding="async" width="200" height="200">
+      </div>
+      <p class="sponsor__hint">使用支付宝扫一扫支持</p>
+    </div>
+
+    <div class="sponsor__panel" data-panel="kofi" role="tabpanel" aria-labelledby="{{ $kID }}">
+      {{- if $kofiURL }}
+      <a class="sponsor__kofi" href="{{ $kofiURL }}" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M17 8h1a4 4 0 0 1 0 8h-1"/>
+          <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V8z"/>
+        </svg>
+        <span>在 Ko-fi 上支持我</span>
+      </a>
+      {{- else }}
+      <p class="sponsor__hint">Ko-fi 链接尚未配置</p>
+      {{- end }}
+      <p class="sponsor__hint">海外读者请用 Ko-fi 支持</p>
+    </div>
+  </div>
+
+  <p class="sponsor__foot">{{ $subtitle }}</p>
+</div>

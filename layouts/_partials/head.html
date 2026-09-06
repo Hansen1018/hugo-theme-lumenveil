@@ -11,7 +11,7 @@
     13. article      14. friends      15. like          16. archive
     17. toc          18. 404          19. search        20. footer
     21. back-to-top  22. responsive   23. motion        24. theme-light
-    25. gallery      26. douban-card
+    25. gallery      26. douban-card   27. sponsor
 */}}
 {{ $components := slice
     (resources.Get "css/components/tokens.css")
@@ -41,6 +41,7 @@
     (resources.Get "css/components/theme-light.css")
     (resources.Get "css/components/gallery.css")
     (resources.Get "css/components/douban-card.css")
+    (resources.Get "css/components/sponsor.css")
 }}
 {{ $main := $components | resources.Concat "css/main.css" | minify | fingerprint }}
 {{ $stylesheets := slice

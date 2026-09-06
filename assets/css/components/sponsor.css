@@ -1,0 +1,243 @@
+/* ============================================================================
+   sponsor.css — donation card (微信支付 / 支付宝 / Ko-fi)
+   ----------------------------------------------------------------------------
+   Three-tab sponsorship card matching the blog's dark glass aesthetic. Tab
+   switching is pure CSS (radio :checked + sibling combinator) — no JS required.
+
+   Cascade slot: 27 (after douban-card).
+   ============================================================================ */
+
+.sponsor {
+  position: relative;
+  margin: 2.4em auto;
+  padding: clamp(18px, 3vw, 28px);
+  max-width: 380px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.008)),
+    var(--bg-1);
+  box-shadow:
+    0 30px 60px -30px rgba(0, 0, 0, .55),
+    inset 0 1px 0 rgba(255, 255, 255, .04);
+}
+
+/* Hide radios but keep them focusable for keyboard a11y */
+.sponsor__radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Tab strip */
+.sponsor__tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .025);
+}
+
+.sponsor__tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  color: var(--ink-2);
+  font-size: 13px;
+  letter-spacing: .01em;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color .2s ease, background .2s ease, opacity .2s ease;
+  opacity: .82;
+}
+
+.sponsor__tab:hover { color: var(--ink-1); opacity: 1; }
+
+.sponsor__icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  transition: transform .25s cubic-bezier(.22, 1, .36, 1);
+}
+
+/* Brand colors on each tab's icon */
+.sponsor__tab--wechat .sponsor__icon { color: #09bb07; }
+.sponsor__tab--alipay .sponsor__icon { color: #1677ff; }
+.sponsor__tab--kofi   .sponsor__icon { color: #ff5e5b; }
+
+/* Body */
+.sponsor__body {
+  margin-top: 22px;
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sponsor__panel {
+  display: none;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+  animation: sponsor-fade .28s cubic-bezier(.22, 1, .36, 1);
+}
+
+@keyframes sponsor-fade {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Show active panel */
+.sponsor__radio--wechat:checked ~ .sponsor__body .sponsor__panel[data-panel="wechat"],
+.sponsor__radio--alipay:checked ~ .sponsor__body .sponsor__panel[data-panel="alipay"],
+.sponsor__radio--kofi:checked   ~ .sponsor__body .sponsor__panel[data-panel="kofi"] {
+  display: flex;
+}
+
+/* Active tab highlight */
+.sponsor__radio--wechat:checked ~ .sponsor__tabs .sponsor__tab[for$="-wechat"],
+.sponsor__radio--alipay:checked ~ .sponsor__tabs .sponsor__tab[for$="-alipay"],
+.sponsor__radio--kofi:checked   ~ .sponsor__tabs .sponsor__tab[for$="-kofi"] {
+  color: var(--ink-1);
+  background: rgba(34, 211, 238, .12);
+  box-shadow: inset 0 0 0 1px rgba(34, 211, 238, .35);
+  opacity: 1;
+}
+
+.sponsor__radio--wechat:checked ~ .sponsor__tabs .sponsor__tab[for$="-wechat"] .sponsor__icon,
+.sponsor__radio--alipay:checked ~ .sponsor__tabs .sponsor__tab[for$="-alipay"] .sponsor__icon,
+.sponsor__radio--kofi:checked   ~ .sponsor__tabs .sponsor__tab[for$="-kofi"]   .sponsor__icon {
+  transform: scale(1.1);
+}
+
+/* Focus ring for keyboard users (matches the active tab via [for$="…"]) */
+.sponsor__radio--wechat:focus-visible ~ .sponsor__tabs .sponsor__tab[for$="-wechat"],
+.sponsor__radio--alipay:focus-visible ~ .sponsor__tabs .sponsor__tab[for$="-alipay"],
+.sponsor__radio--kofi:focus-visible   ~ .sponsor__tabs .sponsor__tab[for$="-kofi"] {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}
+
+/* QR code panel */
+.sponsor__qr {
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: #ffffff;
+  box-shadow:
+    0 16px 36px -16px rgba(0, 0, 0, .55),
+    0 0 0 1px rgba(255, 255, 255, .04);
+}
+
+.sponsor__qr img {
+  display: block;
+  width: 200px;
+  height: 200px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.sponsor__hint {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-3);
+  line-height: 1.5;
+}
+
+/* Ko-fi panel */
+.sponsor__kofi {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 13px 24px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ff5e5b 0%, #ff8a4c 100%);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  text-decoration: none;
+  transition: transform .2s ease, box-shadow .25s ease, filter .2s ease;
+  box-shadow: 0 12px 28px -10px rgba(255, 94, 91, .55);
+}
+
+.sponsor__kofi:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px -10px rgba(255, 94, 91, .7);
+  filter: brightness(1.05);
+}
+
+.sponsor__kofi svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Foot text */
+.sponsor__foot {
+  margin: 18px 0 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.55;
+}
+
+/* ---- Light theme overrides ---- */
+html[data-theme=light] .sponsor {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .82), rgba(255, 255, 255, .62)),
+    #f8fafc;
+  border-color: rgba(15, 23, 42, .1);
+  box-shadow:
+    0 30px 60px -30px rgba(15, 23, 42, .18),
+    inset 0 1px 0 rgba(255, 255, 255, .8);
+}
+
+html[data-theme=light] .sponsor__tabs {
+  background: rgba(15, 23, 42, .04);
+  border-color: rgba(15, 23, 42, .08);
+}
+
+html[data-theme=light] .sponsor__tab { color: rgba(15, 23, 42, .66); }
+html[data-theme=light] .sponsor__tab:hover { color: rgba(15, 23, 42, .92); }
+
+html[data-theme=light] .sponsor__radio--wechat:checked ~ .sponsor__tabs .sponsor__tab[for$="-wechat"],
+html[data-theme=light] .sponsor__radio--alipay:checked ~ .sponsor__tabs .sponsor__tab[for$="-alipay"],
+html[data-theme=light] .sponsor__radio--kofi:checked   ~ .sponsor__tabs .sponsor__tab[for$="-kofi"] {
+  color: rgba(15, 23, 42, .96);
+  background: rgba(34, 211, 238, .12);
+  box-shadow: inset 0 0 0 1px rgba(34, 211, 238, .4);
+}
+
+html[data-theme=light] .sponsor__hint { color: rgba(15, 23, 42, .6); }
+html[data-theme=light] .sponsor__foot { color: rgba(15, 23, 42, .66); }
+
+/* ---- Responsive ---- */
+@media (max-width: 520px) {
+  .sponsor { padding: 16px; max-width: 100%; }
+  .sponsor__qr img { width: 180px; height: 180px; }
+  .sponsor__tab { font-size: 12px; padding: 6px 6px; gap: 4px; }
+  .sponsor__tab span { font-size: 12px; }
+  .sponsor__body { min-height: 252px; margin-top: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sponsor *,
+  .sponsor *::before,
+  .sponsor *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
