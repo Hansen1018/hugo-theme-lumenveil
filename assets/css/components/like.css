@@ -1,5 +1,5 @@
 /* ===== Article like button — centered at the bottom of the article body ===== */
-.article-like { display: flex; justify-content: center; margin: 24px 0 16px; padding: 0 16px; }
+.article-like { display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap; margin: 24px 0 16px; padding: 0 16px; }
 .like-btn { display: inline-flex; align-items: center; gap: 7px; padding: 7px 15px; border: 1px solid var(--line,rgba(255,255,255,.08)); border-radius: 999px; background: rgba(255,255,255,.04); color: var(--ink-2,rgba(255,255,255,.72)); cursor: pointer; font: 550 12px/1 var(--font-sans,system-ui,sans-serif); letter-spacing: 0; transition: background .25s ease, border-color .25s ease, color .25s ease, transform .25s ease; user-select: none; -webkit-tap-highlight-color: transparent; }
 .like-btn:hover { background: rgba(255,255,255,.08); border-color: var(--line-strong,rgba(255,255,255,.16)); color: var(--ink-1,rgba(255,255,255,.96)); transform: translateY(-1px); }
 .like-btn:active { transform: translateY(0) scale(.98); }
@@ -18,3 +18,9 @@ html[data-theme=light] .like-btn:hover { background: rgba(15,23,42,.06); border-
 .article-share > span { display: inline-flex; align-items: center; min-height: 30px; font-size: 15px; font-weight: 500; letter-spacing: -0.005em; line-height: 1; }
 .article-share > .button { min-height: 30px; padding: 7px 16px; font-size: 14px; }
 .article-comments { position: relative; z-index: 1; margin-top: 8px; padding-top: 24px; border-top: 1px solid var(--line); }
+
+/* Article support link — sits beside .like-btn inside .article-like, anchors to /about/#支持我 */
+.like-btn--support { text-decoration: none; cursor: pointer; }
+.like-btn--support:hover { color: var(--accent-2, #22d3ee); border-color: var(--accent-2, #22d3ee); background: rgba(34,211,238,.08); }
+.like-btn--support:focus-visible { outline: 2px solid var(--accent-2, #22d3ee); outline-offset: 2px; }
+html[data-theme=light] .like-btn--support:hover { color: var(--accent-2, #22d3ee); border-color: var(--accent-2, #22d3ee); background: rgba(34,211,238,.1); }
