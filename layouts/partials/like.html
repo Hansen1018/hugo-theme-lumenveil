@@ -5,18 +5,21 @@
        Count synced across devices via same-origin /api/like/* endpoint
        (like-server.py at /var/www/blog/like-server.py, JSON file backend).
        localStorage is used only for per-user like state (persistent across refresh).
+       Like action is ONE-WAY: once liked it cannot be unliked. The button
+       gets aria-pressed="true" + cursor:not-allowed on the liked state.
     2. Support link — <a class="action-btn action-btn--support"> + coffee icon
        Anchors to /about/#支持我 (the sponsor module's H2 target on /about/).
 
   Both pills share the .action-btn base pill style. The .like-btn class is
-  kept on the like <button> only so the inline script can target it
+  kept on the like button only so the inline script can target it
   unambiguously with document.querySelector('.like-btn').
 */}}
 <div class="article-like">
-  <button class="action-btn like-btn" data-key="{{ .File.UniqueID | default (.RelPermalink | urlize) }}" type="button" aria-label="点赞" aria-pressed="false">
+  <button class="action-btn like-btn" data-key="{{ .File.UniqueID | default (.RelPermalink | urlize) }}" type="button" aria-label="点赞" aria-pressed="false" title="点赞（点赞后不可取消）">
     <svg class="like-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
       <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
     </svg>
+    <span class="like-label">点赞</span>
     <span class="like-count" aria-live="polite">0</span>
   </button>
   <a class="action-btn action-btn--support" href="{{ "/about/" | relURL }}#支持我" aria-label="支持我">
@@ -37,10 +40,15 @@
   var pageKey = window.location.pathname;
   var LOCAL_KEY = 'lumenveil-like-' + btn.dataset.key;
   var countEl = btn.querySelector('.like-count');
+  var labelEl = btn.querySelector('.like-label');
   var isLiked = localStorage.getItem(LOCAL_KEY) === '1';
 
   btn.setAttribute('aria-pressed', isLiked ? 'true' : 'false');
-  if (isLiked) btn.classList.add('is-liked');
+  if (isLiked) {
+    btn.classList.add('is-liked');
+    btn.title = '已点赞';
+    if (labelEl) labelEl.textContent = '已点赞';
+  }
 
   function setCount(count) {
     countEl.textContent = count;
@@ -62,6 +70,8 @@
 
     btn.classList.add('is-liked');
     btn.setAttribute('aria-pressed', 'true');
+    btn.title = '已点赞';
+    if (labelEl) labelEl.textContent = '已点赞';
     var prevCount = parseInt(countEl.textContent || '0', 10);
     setCount(prevCount + 1);
     btn.classList.add('bump');
@@ -76,6 +86,8 @@
       .catch(function () {
         btn.classList.remove('is-liked');
         btn.setAttribute('aria-pressed', 'false');
+        btn.title = '点赞（点赞后不可取消）';
+        if (labelEl) labelEl.textContent = '点赞';
         setCount(prevCount);
         try { localStorage.removeItem(LOCAL_KEY); } catch (e) {}
       });
