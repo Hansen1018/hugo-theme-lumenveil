@@ -22,8 +22,14 @@
     min-height: auto;
     /* v10: padding-top 120 → 144. v9's 50px header→avatar gap still
        felt tight; pushing to 144 gives ~82px breathing room. Hero grows
-       to ~676px — still well inside the 915px viewport, and the CTA→pill
-       22px gap is preserved (content shifts by the same delta as pill). */
+       to ~676px on the v10 layout — still well inside the 915px viewport,
+       and the CTA→pill 22px gap is preserved (content shifts by the same
+       delta as pill).
+       v11 (2026-09-08, same PR #29): padding-bottom 80→140 widened the
+       CTA→pill gap from 22px to ~82px on a 390-wide phone — the prior
+       22px read as cramped once the two CTAs wrapped to a column. Hero
+       grows to ~736px on 390×844, still well inside the 844px mobile
+       viewport. */
     padding: 144px 18px 140px;
     place-items: start center;
   }
@@ -31,10 +37,10 @@
      edge so it's clearly separated from the second CTA. With the inline-flex
      → flex blockification this pill ends up box-sizing: content-box too,
      so its rendered height is 38(content) + 6(padding-top) + 2(border) = 46px,
-     not 38. Override the default `bottom: 28px` to 8px, and with padding-bottom
-     80px that puts the pill at y≈542–588 — a clean 22px gap below the
-     second CTA (which ends at y≈520). */
-  /* Override only `bottom` (default 28px → 8px). Do NOT touch `display` —
+     not 38. Override the default `bottom: 28px` to 16px (v11), and with
+     padding-bottom 140px that puts the pill at y≈658–704 on a 390-wide
+     phone — a clean ~82px gap below the second CTA (which ends at y≈576). */
+  /* Override only `bottom` (default 28px → 16px). Do NOT touch `display` —
      the original .hero__scroll { display: grid } from home.css is what
      blockifies the inner <span> so its width:2px/height:8px rule applies.
      v6 accidentally wrote `display: block` here, which demoted the span
