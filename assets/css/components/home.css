@@ -53,8 +53,9 @@
 
    Desktop / tablet only. The mobile override in responsive.css (max-width:
    760px) already compacts the hero (min-height:auto) and reseats the cursor
-   at bottom:8px, so the section naturally sits flush beneath it — no shift
-   needed there, and applying one would lift the section above the cursor. */
+   at bottom:16px (v11), so the section naturally sits directly beneath
+   the hero without a shift — applying one there would lift the section
+   above the cursor and overlap the hero text. */
 @media (min-width: 761px) { .hero + .section { margin-top: -323px; } }
 .section--compact { padding-top: 20px; padding-bottom: 20px; }
 .section-head { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; margin-bottom: 44px; }
