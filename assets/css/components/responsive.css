@@ -24,7 +24,7 @@
        felt tight; pushing to 144 gives ~82px breathing room. Hero grows
        to ~676px — still well inside the 915px viewport, and the CTA→pill
        22px gap is preserved (content shifts by the same delta as pill). */
-    padding: 144px 18px 80px;
+    padding: 144px 18px 140px;
     place-items: start center;
   }
   /* Scroll hint: restore on mobile and seat it close to the hero's bottom
@@ -40,7 +40,7 @@
      v6 accidentally wrote `display: block` here, which demoted the span
      back to inline and collapsed the bouncing line to 0×0. */
   .hero__scroll {
-    bottom: 8px;
+    bottom: 16px;
   }
   .hero__avatar { width: 84px; height: 84px; margin-bottom: 22px; }
   .hero__title { font-size: clamp(40px,11vw,60px); }
@@ -90,7 +90,7 @@
   /* .hero__chips .chip:last-child { display: none; } -- removed: was hiding the "Since YYYY" chip on mobile */
   .hero__cta { width: 100%; flex-direction: column; }
   .hero__cta .button { width: 100%; }
-  .hero { padding: 136px 16px 76px; }
+  .hero { padding: 136px 16px 130px; }
   .hero__avatar { width: 76px; height: 76px; margin-bottom: 18px; }
   .hero__title { font-size: clamp(36px,10vw,52px); }
   .hero__tagline { font-size: 12px; }
