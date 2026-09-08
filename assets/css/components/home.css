@@ -47,6 +47,15 @@
 
 .section { width: min(calc(100% - 48px),var(--content)); margin: auto; padding-block: clamp(72px,11vh,132px); opacity: 0; transform: translate3d(0,30px,0); transition: opacity .7s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1); }
 .section.is-visible { opacity: 1; transform: none; }
+/* 2026-09-08 — Pull the recent-articles section up so it sits flush beneath
+   the hero scroll-indicator (the "small mouse"). Hero stays untouched so its
+   100dvh full-viewport effect + cursor bounce/aurora remain intact.
+
+   Desktop / tablet only. The mobile override in responsive.css (max-width:
+   760px) already compacts the hero (min-height:auto) and reseats the cursor
+   at bottom:8px, so the section naturally sits flush beneath it — no shift
+   needed there, and applying one would lift the section above the cursor. */
+@media (min-width: 761px) { .hero + .section { margin-top: -323px; } }
 .section--compact { padding-top: 20px; padding-bottom: 20px; }
 .section-head { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; margin-bottom: 44px; }
 .section-head > div:first-child { display: flex; align-items: baseline; gap: 12px; }
