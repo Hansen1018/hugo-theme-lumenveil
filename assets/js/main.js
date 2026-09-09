@@ -59,35 +59,26 @@ menuToggle?.addEventListener('click', () => {
 
   const revealNodes = document.querySelectorAll('[data-reveal]')
   if ('IntersectionObserver' in window) {
-    const scrollPill = document.querySelector('.hero__scroll')
     const revealObserver = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         entry.target.classList.toggle('is-visible', entry.isIntersecting)
-        // Fade out the hero scroll hint as the "Latest Writing" section
-        // starts to fade in — synchronised with the section's own
-        // opacity .7s cubic-bezier(.22,1,.36,1) transition.
-        if (scrollPill && entry.target.id === 'latest') {
-          scrollPill.classList.toggle('is-faded', entry.isIntersecting)
-        }
       })
     }, { threshold: 0.08, rootMargin: '0px 0px -8% 0px' })
     revealNodes.forEach((node) => revealObserver.observe(node))
-
-    // Bidirectional sync for the scroll pill: fade-out tracks #latest, but
-    // fade-back-in tracks the hero itself — when the user scrolls back to the
-    // top and the hero re-enters view, make sure the pill comes back. Without
-    // this, the pill stays .is-faded once #latest has ever crossed the
-    // rootMargin -8% threshold (the section is still partially visible at
-    // scroll y=0 with that config, so .is-faded never gets toggled off).
-    const heroNode = document.querySelector('.hero')
-    if (heroNode && scrollPill) {
-      const heroObserver = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting) scrollPill.classList.remove('is-faded')
-      }, { threshold: 0 })
-      heroObserver.observe(heroNode)
-    }
   } else {
     revealNodes.forEach((node) => node.classList.add('is-visible'))
+  }
+
+  // Hero scroll indicator: fades out the moment the user starts scrolling
+  // away from the top (scrollY > 24), comes back when they return to the
+  // top. Driven by scroll position rather than any specific section
+  // appearing, so it works regardless of what's below the hero. The .7s
+  // opacity transition in home.css smooths both directions.
+  const scrollPill = document.querySelector('.hero__scroll')
+  if (scrollPill) {
+    const syncScrollPill = () => scrollPill.classList.toggle('is-faded', window.scrollY > 24)
+    window.addEventListener('scroll', syncScrollPill, { passive: true })
+    syncScrollPill()
   }
 
   const escapeHTML = (value) => String(value).replace(/[&<>'"]/g, (char) => ({

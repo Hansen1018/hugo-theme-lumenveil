@@ -27,11 +27,9 @@
 .hero__scroll { position: absolute; bottom: calc(28px + 7cm); left: 50%; display: grid; place-items: start center; width: 22px; height: 38px; padding-top: 6px; border: 1px solid var(--line-strong); border-radius: 999px; transform: translateX(-50%); }
 .hero__scroll span { width: 2px; height: 8px; border-radius: 2px; background: var(--ink-2); animation: scroll-line 1.8s ease-in-out infinite; }
 .hero__scroll {
-  /* Synchronised with the "Latest Writing" section's fade-in:
-     main.js toggles .is-faded on this element when #latest intersects the
-     viewport, so the pill disappears in lock-step with the section appearing.
-     Same .7s curve and easing as .section { transition: ... } so the two
-     animations line up. */
+  /* Fades out as soon as the user starts scrolling (main.js toggles
+     .is-faded when scrollY > 24). The .7s curve matches .section's
+     transition so any nearby fade-in lines up smoothly. */
   opacity: 1;
   transition: opacity .7s cubic-bezier(.22,1,.36,1);
 }
