@@ -119,7 +119,7 @@ try {
 {{- end -}}
 <script type="application/ld+json">
 {{ if .IsPage }}
-{"@context":"https://schema.org","@type":"BlogPosting","headline":{{ .Title | jsonify | safeJS }},"description":{{ $description | jsonify | safeJS }},"datePublished":"{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}","dateModified":"{{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" }}","author":{"@type":"Person","name":{{ site.Params.author | jsonify | safeJS }},"mainEntityOfPage":{{ .Permalink | jsonify | safeJS }}}
+{"@context":"https://schema.org","@type":"BlogPosting","headline":{{ .Title | jsonify | safeJS }},"description":{{ $description | jsonify | safeJS }},"datePublished":"{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}","dateModified":"{{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" }}","author":{"@type":"Person","name":{{ site.Params.author | jsonify | safeJS }}},"mainEntityOfPage":{{ .Permalink | jsonify | safeJS }}}
 {{ else }}
 {"@context":"https://schema.org","@type":"WebSite","name":{{ site.Title | jsonify | safeJS }},"url":{{ site.BaseURL | jsonify | safeJS }},"description":{{ site.Params.description | jsonify | safeJS }},"potentialAction":{"@type":"SearchAction","target":"{{ site.Home.Permalink }}?q={search_term_string}","query-input":"required name=search_term_string"}}
 {{ end }}
