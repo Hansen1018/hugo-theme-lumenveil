@@ -53,7 +53,7 @@ theme = 'lumenveil'
   copyright_url = 'https://creativecommons.org/licenses/by-nc-nd/4.0/'
   mainSections = ['posts']
   highlight = 'hljs'
-  # Opt-in KaTeX math rendering (auto-render handles $...$ inline + $$...$$ display)
+  # Opt-in KaTeX math rendering (auto-render targets .article/.article-main/.prose; supports $$...$$ / \\[...\\] display + \\(...\\) inline - bare $...$ deliberately not registered)
   math = true
 
   # Comments — enable the Artalk demo wiring so exampleSite can demonstrate
