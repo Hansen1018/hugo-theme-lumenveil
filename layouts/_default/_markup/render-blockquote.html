@@ -1,0 +1,71 @@
+{{- /*
+  render-blockquote.html — blockquote render hook.
+
+  Handles three cases based on Hugo's render-hook context:
+
+    1. Alert (GitHub-style, Hugo v0.146+):
+         > [!NOTE]
+         > Useful information that users should know.
+       Also: [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION]
+       Optional custom title: > [!WARNING] Custom Title (rendered as the alert heading text)
+       Context: .Type="alert", .AlertType, .AlertTitle, .Text
+
+    2. Attribution (Hugo attribute syntax):
+         > Quoted text
+         {cite="https://..." caption="Author Name"}
+       Requires [markup.goldmark.parser.attribute] block = true in site
+       config — without it the `{...}` syntax passes through as literal
+       text and .Attributes is empty.
+       Context: .Attributes.cite, .Attributes.caption
+
+    3. Regular — everything else:
+       Falls through to <blockquote>{{ .Text }}</blockquote>. With
+       [markup.goldmark.parser.attribute] block = true, author-supplied
+       block attributes (#id, .class) are re-emitted on the opening tag so
+       they are not silently dropped (Hugo's default render does this
+       automatically; a custom hook must do it explicitly).
+
+  Visual styling lives in:
+    - assets/css/components/article.css (.markdown-alert*, .blockquote-figure, .blockquote-caption)
+    - assets/css/components/theme-light.css (light-mode background overrides)
+*/ -}}
+{{- if eq .Type "alert" -}}
+<blockquote class="markdown-alert markdown-alert-{{ .AlertType }}{{ with .Attributes.class }} {{ . }}{{ end }}"{{ with .Attributes.id }} id="{{ . }}"{{ end }}>
+{{- /* Alert title — `.AlertTitle` is set when author writes `> [!WARNING] Custom Text`;
+     otherwise we title-case the type (e.g. `note` → `Note`). Unknown types still render
+     with their type name capitalized, so a future Hugo-added type degrades gracefully. */ -}}
+<p class="markdown-alert-title">{{ with .AlertTitle }}{{ . }}{{ else }}{{ with strings.FirstUpper .AlertType }}{{ . }}{{ else }}Note{{ end }}{{ end }}</p>
+  {{- .Text }}
+</blockquote>
+{{- else if or .Attributes.cite .Attributes.caption -}}
+<figure class="blockquote-figure{{ with .Attributes.class }} {{ . }}{{ end }}"{{ with .Attributes.id }} id="{{ . }}"{{ end }}>
+  {{- /* Bind cite to the <blockquote> opening tag (not loose text) so html/template's
+     URL attribute filter applies. Manual scheme allow-list below restricts to
+     http/https/path/anchor; html/template additionally strips unsafe schemes. */ -}}
+  {{- $cite := "" -}}
+  {{- with .Attributes.cite -}}
+    {{- /* Strict scheme/path allow-list: full http(s) + single-leading-slash
+       root-relative + fragment. Protocol-relative (`//evil.com`) is rejected
+       because cite is an untrusted URL sink and doesn't need cross-protocol
+       resolution the way <img src> does. html/template's URL filter is an
+       additional defense layer. */ -}}
+    {{- /* Lowercase copy for scheme prefix check (HTTPS:// is a valid absolute URL).
+       Path/fragment checks stay on the original casing since `/`, `//`, `#` are
+       case-insensitive anyway. */ -}}
+    {{- $citeLower := lower . -}}
+    {{- if or (hasPrefix $citeLower "http://") (hasPrefix $citeLower "https://") (and (hasPrefix . "/") (not (hasPrefix . "//"))) (hasPrefix . "#") -}}
+      {{- $cite = . -}}
+    {{- end -}}
+  {{- end -}}
+  <blockquote{{ with $cite }} cite="{{ . }}"{{ end }}>
+    {{- .Text }}
+  </blockquote>
+  {{- with .Attributes.caption }}
+  {{- if strings.TrimSpace . }}<figcaption class="blockquote-caption">{{ . }}</figcaption>{{- end }}
+  {{- end }}
+</figure>
+{{- else -}}
+<blockquote{{ with .Attributes.class }} class="{{ . }}"{{ end }}{{ with .Attributes.id }} id="{{ . }}"{{ end }}>
+  {{- .Text }}
+</blockquote>
+{{- end -}}
