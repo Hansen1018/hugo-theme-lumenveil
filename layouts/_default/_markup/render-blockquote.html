@@ -41,7 +41,12 @@
      http/https/path/anchor; html/template additionally strips unsafe schemes. */ -}}
   {{- $cite := "" -}}
   {{- with .Attributes.cite -}}
-    {{- if or (hasPrefix . "http://") (hasPrefix . "https://") (hasPrefix . "/") (hasPrefix . "#") -}}
+    {{- /* Strict scheme/path allow-list: full http(s) + single-leading-slash
+       root-relative + fragment. Protocol-relative (`//evil.com`) is rejected
+       because cite is an untrusted URL sink and doesn't need cross-protocol
+       resolution the way <img src> does. html/template's URL filter is an
+       additional defense layer. */ -}}
+    {{- if or (hasPrefix . "http://") (hasPrefix . "https://") (and (hasPrefix . "/") (not (hasPrefix . "//"))) (hasPrefix . "#") -}}
       {{- $cite = . -}}
     {{- end -}}
   {{- end -}}
