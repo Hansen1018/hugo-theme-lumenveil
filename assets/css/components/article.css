@@ -55,25 +55,26 @@
   position: relative;
 }
 .prose .markdown-alert-title {
+  /* Text styling applied to the whole title element. */
   margin: 0 0 6px 0;
   font-weight: 600;
   font-size: .82em;
   letter-spacing: .04em;
   text-transform: uppercase;
   color: var(--alert-color, var(--accent-1));
-}
-
-
-/* Icon is now an inline <span class="alert-icon"> inside the title
-   (emitted by render-blockquote.html). This replaced the ::before + content
-   approach per R15 — the aria-hidden wrapper suppresses the screen-reader
-   announcement that R8/R15 flagged. */
-.prose .markdown-alert-title {
+  /* Flex layout — hosts the inline <span class="alert-icon"> emitted by
+     layouts/_default/_markup/render-blockquote.html. Replaces the
+     ::before + content approach per R15: aria-hidden on the wrapper
+     suppresses the screen-reader announcement that R8/R15 flagged. */
   display: flex;
   align-items: center;
   gap: 10px;
 }
 .prose .markdown-alert-title > .alert-icon {
+  /* R28 fix: --font-sans stack contains no emoji-capable font. Without this,
+     Linux browsers without implicit emoji fallback render the glyphs as tofu
+     (☐). Apple/Segoe/Noto cover macOS / Windows / Linux respectively. */
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", var(--font-sans);
   font-size: var(--alert-icon-size);
   /* Color palette note (R16): emoji renders in its native palette, not
      tinted by --alert-color. The previous SVG-mask approach filled the icon
@@ -88,7 +89,6 @@
      etc. with variation selectors) is worse than letting them extend
      slightly beyond the slot. */
   width: auto;
-  text-align: center;
 }
 .prose .markdown-alert-note {
   --alert-color: var(--alert-note-color);
