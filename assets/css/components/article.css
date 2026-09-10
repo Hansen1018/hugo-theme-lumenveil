@@ -58,8 +58,11 @@
 /* Alert icon. Gate the painted-block + mask on `@supports (mask)` so
    browsers without mask support don't render the 18×18 background as a
    solid colored square — the ::before simply does not apply, leaving the
-   title text alone (cleaner degradation than a broken-looking block). */
-@supports (mask: url("")) or (-webkit-mask: url("")) {
+   title text alone (cleaner degradation than a broken-looking block).
+   Use a full real-world probe value rather than `url("")` to avoid relying
+   on browsers accepting an empty/degenerate URL — a future UA that treats
+   an empty url() as invalid would silently drop every alert icon. */
+@supports (mask: url("data:image/svg+xml,%3Csvg/%3E") center/contain no-repeat) or (-webkit-mask: url("data:image/svg+xml,%3Csvg/%3E") center/contain no-repeat) {
   .prose .markdown-alert-title::before {
     content: "";
     position: absolute;
@@ -216,6 +219,8 @@ border-color: rgba(124,92,255,.75); background: rgba(124,92,255,.2); color: var(
      (.markdown-alert-note etc.) sets --alert-color via cascade, and every
      goldmark alert element carries both classes. The previous
      [class*="markdown-alert-"] substring selector also matched the inner
-     .markdown-alert-title <p> (harmless today, but unnecessarily broad). */
-  .prose .markdown-alert { --alert-bg: color-mix(in srgb, var(--alert-color) 8%, transparent); }
+     .markdown-alert-title <p> (harmless today, but unnecessarily broad).
+     Fall back to var(--accent-1) for unknown/future alert types so --alert-bg
+     stays valid and the alert still gets a tint instead of rendering bare. */
+  .prose .markdown-alert { --alert-bg: color-mix(in srgb, var(--alert-color, var(--accent-1)) 8%, transparent); }
 }
