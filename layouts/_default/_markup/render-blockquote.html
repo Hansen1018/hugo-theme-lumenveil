@@ -28,23 +28,24 @@
 */ -}}
 {{- if eq .Type "alert" -}}
 <blockquote class="markdown-alert markdown-alert-{{ .AlertType }}">
-  {{- $alertTitles := dict
-  "note" "Note"
-  "tip" "Tip"
-  "important" "Important"
-  "warning" "Warning"
-  "caution" "Caution"
--}}
-<p class="markdown-alert-title">{{ with .AlertTitle }}{{ . }}{{ else }}{{ index $alertTitles .AlertType | default (strings.FirstUpper .AlertType) | default "Note" }}{{ end }}</p>
+{{- /* Alert title — `.AlertTitle` is set when author writes `> [!WARNING] Custom Text`;
+     otherwise we title-case the type (e.g. `note` → `Note`). Unknown types still render
+     with their type name capitalized, so a future Hugo-added type degrades gracefully. */ -}}
+<p class="markdown-alert-title">{{ with .AlertTitle }}{{ . }}{{ else }}{{ strings.FirstUpper .AlertType | default "Note" }}{{ end }}</p>
   {{- .Text }}
 </blockquote>
 {{- else if or .Attributes.cite .Attributes.caption -}}
 <figure class="blockquote-figure">
-  {{- if .Attributes.cite -}}
-  {{- $cite := .Attributes.cite -}}
-  {{- /* cite: manual scheme allow-list; html/template also filters URL attributes, so no safeURL needed. */ -}}
-  {{- if or (hasPrefix $cite "http://") (hasPrefix $cite "https://") (hasPrefix $cite "/") (hasPrefix $cite "#") -}}cite="{{ $cite }}"{{- end -}}
-{{- end -}}
+  {{- /* Bind cite to the <blockquote> opening tag (not loose text) so html/template's
+     URL attribute filter applies. Manual scheme allow-list below restricts to
+     http/https/path/anchor; html/template additionally strips unsafe schemes. */ -}}
+  {{- $cite := "" -}}
+  {{- with .Attributes.cite -}}
+    {{- if or (hasPrefix . "http://") (hasPrefix . "https://") (hasPrefix . "/") (hasPrefix . "#") -}}
+      {{- $cite = . -}}
+    {{- end -}}
+  {{- end -}}
+  <blockquote{{ with $cite }} cite="{{ . }}"{{ end }}>
     {{- .Text }}
   </blockquote>
   {{- with .Attributes.caption }}

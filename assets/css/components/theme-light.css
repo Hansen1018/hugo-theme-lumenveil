@@ -51,7 +51,10 @@ html[data-theme="light"] .prose { color: rgba(30, 41, 59, .82); }
 html[data-theme="light"] .prose blockquote:not(.markdown-alert) { background: rgba(105, 82, 220, .07); }
 /* Light-mode alert variants — override semantic color tokens with darker hues
    to maintain WCAG contrast on the lighter background tint. The :root tokens
-   are defined in tokens.css (dark mode defaults). */
+   are defined in tokens.css (dark mode defaults).
+   Note: the static `rgba()` fallbacks below are intentionally decoupled from the
+   `--alert-*-color` hex tokens (different hues, not derived). The @supports block
+   at the bottom derives the modern tint from the token via `color-mix()`. */
 html[data-theme="light"] {
   --alert-note-color: #1e40af;
   --alert-tip-color: #065f46;
@@ -81,10 +84,10 @@ html[data-theme="light"] .theme-icon--sun { display: block; }
   html[data-theme="light"] .main-nav { background: rgba(250, 251, 254, .97); }
 }
 
-@supports (background: color-mix(in srgb, red 50%, blue)) {
-  html[data-theme="light"] .prose .markdown-alert-note { --alert-bg: color-mix(in srgb, var(--alert-note-color) 6%, transparent); }
-  html[data-theme="light"] .prose .markdown-alert-tip { --alert-bg: color-mix(in srgb, var(--alert-tip-color) 6%, transparent); }
-  html[data-theme="light"] .prose .markdown-alert-important { --alert-bg: color-mix(in srgb, var(--alert-important-color) 6%, transparent); }
-  html[data-theme="light"] .prose .markdown-alert-warning { --alert-bg: color-mix(in srgb, var(--alert-warning-color) 6%, transparent); }
-  html[data-theme="light"] .prose .markdown-alert-caution { --alert-bg: color-mix(in srgb, var(--alert-caution-color) 6%, transparent); }
-}
+/* Note: `--alert-bg` is declared 4 times across article.css + theme-light.css
+   (static rgba fallback × 2, modern color-mix override × 2). The rgba alphas
+   (0.08 dark, 0.06 light) cannot be DRY'd via a single token because `rgba()`
+   does not accept `var()` for the alpha channel. Modern `color-mix()` solves
+   the duplication. If the project later adopts relative-color syntax
+   (`rgb(from var(--alert-note-color) r g b / var(--alert-bg-alpha))`), the
+   4 sites could collapse to a single token reference. */

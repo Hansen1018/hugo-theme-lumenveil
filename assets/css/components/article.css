@@ -28,8 +28,8 @@
    Multi-paragraph alerts (> [!NOTE] with two paragraphs) need vertical rhythm
    to be readable. Use site-wide default spacing on intermediate <p> and reset
    the last one so the alert's bottom padding handles the trailing gap. */
-.prose .markdown-alert > p { margin: 0 0 0.85em; }
-.prose .markdown-alert > p:last-child { margin-bottom: 0; }
+.prose .markdown-alert > p:not(.markdown-alert-title) { margin: 0 0 0.85em; }
+.prose .markdown-alert > p:not(.markdown-alert-title):last-child { margin-bottom: 0; }
 /* Blockquote alerts — Hugo v0.146+ syntax: > [!NOTE], > [!TIP], etc. */
 .prose .markdown-alert {
   /* Layout tokens — kept in sync with .markdown-alert-title::before offsets. */
@@ -64,8 +64,9 @@
   width: var(--alert-icon-size);
   height: var(--alert-icon-size);
   background: var(--alert-color, currentColor);
-  /* `.markdown-alert` (cascade slot above) defines a default --alert-icon;
-     `, none` is a defensive fallback when --alert-icon is unset or invalid. */
+  /* `.markdown-alert` (cascade slot above) defines a default --alert-icon.
+     `var(--alert-icon, none)` only kicks in when the custom property is unset —
+     an invalid `mask-image` value still invalidates the whole declaration. */
   -webkit-mask: var(--alert-icon, none) center / contain no-repeat;
           mask: var(--alert-icon, none) center / contain no-repeat;
 }
