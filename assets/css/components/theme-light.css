@@ -103,10 +103,15 @@ html[data-theme="light"] .theme-icon--sun { display: block; }
   html[data-theme="light"] .main-nav { background: rgba(250, 251, 254, .97); }
 }
 
-/* Note: `--alert-bg` is declared 4 times across article.css + theme-light.css
-   (static rgba fallback × 2, modern color-mix override × 2). The rgba alphas
-   (0.08 dark, 0.06 light) cannot be DRY'd via a single token because `rgba()`
-   does not accept `var()` for the alpha channel. Modern `color-mix()` solves
-   the duplication. If the project later adopts relative-color syntax
-   (`rgb(from var(--alert-note-color) r g b / var(--alert-bg-alpha))`), the
-   4 sites could collapse to a single token reference. */
+/* Note: `--alert-bg` is declared 6 times total — 5 type-specific rgba
+   fallbacks in article.css (one per alert type), 1 single @supports
+   (color-mix) rule in article.css that derives the tint from
+   `var(--alert-color)` for modern browsers, and 5 rgba fallbacks here
+   in theme-light.css under `@supports not (color-mix())` for old browsers
+   in light mode (specificity 0,3,1 wins over article.css's 0,2,0 static
+   rgba). All sites use alpha 0.08 to keep the modern and fallback paths
+   visually aligned. The duplication cannot be DRY'd via a single token
+   because `rgba()` does not accept `var()` for the alpha channel; if the
+   project later adopts relative-color syntax
+   (`rgb(from var(--alert-note-color) r g b / var(--alert-bg-alpha))`),
+   the static-rgba sites could collapse to a single token reference. */

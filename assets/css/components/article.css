@@ -212,5 +212,10 @@ border-color: rgba(124,92,255,.75); background: rgba(124,92,255,.2); color: var(
 @supports (background: color-mix(in srgb, red 50%, blue)) {
   /* Each modifier (e.g. .markdown-alert-note) already sets --alert-color;
      reuse it instead of re-mapping every type→token here. */
-  .prose [class*="markdown-alert-"] { --alert-bg: color-mix(in srgb, var(--alert-color) 8%, transparent); }
+  /* Target the base `.markdown-alert` class only — the per-type modifier
+     (.markdown-alert-note etc.) sets --alert-color via cascade, and every
+     goldmark alert element carries both classes. The previous
+     [class*="markdown-alert-"] substring selector also matched the inner
+     .markdown-alert-title <p> (harmless today, but unnecessarily broad). */
+  .prose .markdown-alert { --alert-bg: color-mix(in srgb, var(--alert-color) 8%, transparent); }
 }
