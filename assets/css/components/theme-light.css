@@ -78,8 +78,11 @@ html[data-theme="light"] {
    order because they live in mutually exclusive @supports branches. */
 @supports not (background: color-mix(in srgb, red 50%, blue)) {
   /* Hue values match the light-mode `--alert-*-color` tokens above, and
-     alpha (8%) matches the modern color-mix path so the no-color-mix fallback
-     renders the same visual as the modern path. */
+     alpha (8%) matches the modern color-mix path's 8% tint. Exact visual
+     equivalence assumes a uniform background — on patterned/gradient
+     surfaces the two paths can differ subtly because color-mix blends
+     over the actual rendered background while rgba() blends over the
+     transparent layer. */
   html[data-theme="light"] .prose .markdown-alert-note { --alert-bg: rgba(30, 64, 175, .08); }
   html[data-theme="light"] .prose .markdown-alert-tip { --alert-bg: rgba(6, 95, 70, .08); }
   html[data-theme="light"] .prose .markdown-alert-important { --alert-bg: rgba(107, 33, 168, .08); }
@@ -103,15 +106,11 @@ html[data-theme="light"] .theme-icon--sun { display: block; }
   html[data-theme="light"] .main-nav { background: rgba(250, 251, 254, .97); }
 }
 
-/* Note: `--alert-bg` is declared 11 times total — 5 type-specific rgba
-   fallbacks in article.css (one per alert type), 1 single @supports
-   (color-mix) rule in article.css that derives the tint from
-   `var(--alert-color)` for modern browsers, and 5 rgba fallbacks here
-   in theme-light.css under `@supports not (color-mix())` for old browsers
-   in light mode (specificity 0,3,1 wins over article.css's 0,2,0 static
-   rgba). All sites use alpha 0.08 to keep the modern and fallback paths
-   visually aligned. The duplication cannot be DRY'd via a single token
-   because `rgba()` does not accept `var()` for the alpha channel; if the
-   project later adopts relative-color syntax
+/* `--alert-bg` is declared in several places (per-type static rgba in
+   article.css, a single @supports (color-mix) rule for modern browsers,
+   and a light-mode @supports not (color-mix) block in this file). The
+   duplication cannot be DRY'd via a single token because `rgba()` does
+   not accept `var()` for the alpha channel; if the project later adopts
+   relative-color syntax
    (`rgb(from var(--alert-note-color) r g b / var(--alert-bg-alpha))`),
    the static-rgba sites could collapse to a single token reference. */

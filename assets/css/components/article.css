@@ -217,9 +217,8 @@ border-color: rgba(124,92,255,.75); background: rgba(124,92,255,.2); color: var(
      reuse it instead of re-mapping every type→token here. */
   /* Target the base `.markdown-alert` class only — the per-type modifier
      (.markdown-alert-note etc.) sets --alert-color via cascade, and every
-     goldmark alert element carries both classes. The previous
-     [class*="markdown-alert-"] substring selector also matched the inner
-     .markdown-alert-title <p> (harmless today, but unnecessarily broad).
+     goldmark alert element carries both classes. This consolidates 5
+     type-specific `--alert-bg` declarations into one rule.
      Fall back to var(--accent-1) for unknown/future alert types so --alert-bg
      stays valid and the alert still gets a tint instead of rendering bare. */
   .prose .markdown-alert { --alert-bg: color-mix(in srgb, var(--alert-color, var(--accent-1)) 8%, transparent); }
