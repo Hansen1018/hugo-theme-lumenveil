@@ -59,6 +59,7 @@ Live preview: <https://blog.hansendong.top>
 - Dynamic copyright range (from `since` to the current year) and CC BY-NC-SA 4.0 license badge in the footer
 - Syntax highlighting and one-click code or article-link copy
 - **Opt-in client-side syntax highlighting via `[params] highlight = 'hljs'`** — When set, the theme loads highlight.js with monokai and a transparent `.hljs { background: transparent !important }` rule so the container blends with the article surface. The `_default/_markup/render-codeblock.html` hook emits raw `<pre><code>` (no chroma spans) so hljs highlights cleanly without double-markup. Sites not setting the param see zero change — no chroma bytes shipped unless you opt in.
+- **Opt-in KaTeX math rendering via `[params] math = true`** — When set, the theme loads KaTeX 0.16.11 (CSS + JS + auto-render) from jsDelivr and renders math in `.article` / `.article-main` / `.prose` containers. Supports `$$...$$` / `\[...\]` display + `\(...\)` inline math; bare `$...$` is intentionally NOT registered to dodge the well-known KaTeX auto-render footgun (e.g. `$PATH` or "costs $5" being greedily matched as math). Sites not setting the param see zero change — no KaTeX bytes shipped unless you opt in.
 - PhotoSwipe-powered image gallery shortcode with CSS grid + justified masonry layouts, sortable by name / date / weight prefix
 - Bilibili video embed shortcode using the native BV short ID — auto-strips `share_source` / `vd_source` tracking params, accepts full URLs (BV extracted from `watch?v=` etc.), responsive 16:9 iframe via `player.bilibili.com`, optional page number and autoplay flag
 - YouTube video embed shortcode using the 11-char video ID (10–12 char legacy-compatible) — auto-strips `si` / `feature` / `pp` tracking params, accepts full URLs (ID extracted from `watch?v=`, `/shorts/`, `youtu.be/`, `/embed/`), responsive 16:9 iframe via `youtube-nocookie.com` (privacy-enhanced — no cookies until play), optional start seconds and autoplay flag
@@ -155,6 +156,7 @@ enableRobotsTXT = true
   # Opt-in client-side syntax highlighting (highlight.js + monokai).
   # Omit this line (or leave it as the default empty) to use Hugo's built-in Chroma instead.
   highlight = 'hljs'   # set to 'hljs' to enable; remove or set to '' to use the default chroma
+  math = true        # set to true to enable KaTeX ($$...$$ / \[...\] / \(...\)); bare $...$ is not registered
 
 [menus]
   [[menus.main]]
