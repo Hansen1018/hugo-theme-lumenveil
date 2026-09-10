@@ -103,7 +103,7 @@ html[data-theme="light"] .theme-icon--sun { display: block; }
   html[data-theme="light"] .main-nav { background: rgba(250, 251, 254, .97); }
 }
 
-/* Note: `--alert-bg` is declared 6 times total — 5 type-specific rgba
+/* Note: `--alert-bg` is declared 11 times total — 5 type-specific rgba
    fallbacks in article.css (one per alert type), 1 single @supports
    (color-mix) rule in article.css that derives the tint from
    `var(--alert-color)` for modern browsers, and 5 rgba fallbacks here
