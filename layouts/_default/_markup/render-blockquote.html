@@ -7,7 +7,7 @@
          > [!NOTE]
          > Useful information that users should know.
        Also: [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION]
-       Optional custom title: > [!WARNING]+] Custom Title (rendered as plain text prefix; no UI sign indicator)
+       Optional custom title: > [!WARNING] Custom Title (rendered as the alert heading text)
        Context: .Type="alert", .AlertType, .AlertTitle, .Text
 
     2. Attribution (Hugo attribute syntax):
@@ -33,11 +33,11 @@
 </blockquote>
 {{- else if or .Attributes.cite .Attributes.caption -}}
 <figure class="blockquote-figure">
-  <blockquote{{ with .Attributes.cite }} cite="{{ . | safeURL }}"{{ end }}>
+  <blockquote{{ with .Attributes.cite }} cite="{{ . }}"{{ end }}>
     {{- .Text }}
   </blockquote>
   {{- with .Attributes.caption }}
-  <figcaption class="blockquote-caption">{{ . }}</figcaption>
+  {{- if strings.TrimSpace . }}<figcaption class="blockquote-caption">{{ . }}</figcaption>{{- end }}
   {{- end }}
 </figure>
 {{- else -}}
