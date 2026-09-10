@@ -19,15 +19,18 @@
        Context: .Attributes.cite, .Attributes.caption
 
     3. Regular — everything else:
-       Falls through to <blockquote>{{ .Text }}</blockquote>, byte-for-byte
-       equivalent to Hugo's default render so this hook is a strict superset.
+       Falls through to <blockquote>{{ .Text }}</blockquote>. With
+       [markup.goldmark.parser.attribute] block = true, author-supplied
+       block attributes (#id, .class) are re-emitted on the opening tag so
+       they are not silently dropped (Hugo's default render does this
+       automatically; a custom hook must do it explicitly).
 
   Visual styling lives in:
     - assets/css/components/article.css (.markdown-alert*, .blockquote-figure, .blockquote-caption)
     - assets/css/components/theme-light.css (light-mode background overrides)
 */ -}}
 {{- if eq .Type "alert" -}}
-<blockquote class="markdown-alert markdown-alert-{{ .AlertType }}">
+<blockquote class="markdown-alert markdown-alert-{{ .AlertType }}{{ with .Attributes.class }} {{ . }}{{ end }}"{{ with .Attributes.id }} id="{{ . }}"{{ end }}>
 {{- /* Alert title — `.AlertTitle` is set when author writes `> [!WARNING] Custom Text`;
      otherwise we title-case the type (e.g. `note` → `Note`). Unknown types still render
      with their type name capitalized, so a future Hugo-added type degrades gracefully. */ -}}
@@ -35,7 +38,7 @@
   {{- .Text }}
 </blockquote>
 {{- else if or .Attributes.cite .Attributes.caption -}}
-<figure class="blockquote-figure">
+<figure class="blockquote-figure{{ with .Attributes.class }} {{ . }}{{ end }}"{{ with .Attributes.id }} id="{{ . }}"{{ end }}>
   {{- /* Bind cite to the <blockquote> opening tag (not loose text) so html/template's
      URL attribute filter applies. Manual scheme allow-list below restricts to
      http/https/path/anchor; html/template additionally strips unsafe schemes. */ -}}
@@ -62,7 +65,7 @@
   {{- end }}
 </figure>
 {{- else -}}
-<blockquote>
+<blockquote{{ with .Attributes.class }} class="{{ . }}"{{ end }}{{ with .Attributes.id }} id="{{ . }}"{{ end }}>
   {{- .Text }}
 </blockquote>
 {{- end -}}
