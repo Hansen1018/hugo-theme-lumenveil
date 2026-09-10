@@ -63,8 +63,17 @@
    needed (emoji rendering has no browser feature-detection requirement).
    The icon-aware left padding is reserved on the base .markdown-alert rule. */
 
+/* A11y note (per OCR run 34482344675, comment R8): emoji inserted via
+   `content` enters the accessibility tree, so screen readers announce
+   the glyph name (e.g. "memo") alongside the alert title. CSS `::before`
+   cannot carry `aria-hidden`, so this is an inherent trade-off of the
+   emoji approach vs the previous SVG-mask (which was purely presentational
+   and contributed nothing to the a11y tree). To suppress the announcement,
+   the render hook would need to emit the emoji inside the title element
+   wrapped in an aria-hidden span — left as a follow-up since this PR
+   scope is the emoji migration itself. */
 .prose .markdown-alert-title::before {
-  content: var(--alert-icon-emoji, "📝");
+  content: var(--alert-icon-emoji);
   position: absolute;
   /* Offsets derive from the layout tokens defined on .markdown-alert. */
   left: var(--alert-pad-x);
@@ -74,8 +83,6 @@
   font-size: var(--alert-icon-size);
   line-height: 1;
   text-align: center;
-  /* Emoji glyph is rendered as text — no `background` / `mask-image` needed. */
-
 }
 .prose .markdown-alert-note {
   --alert-color: var(--alert-note-color);
