@@ -62,11 +62,19 @@ html[data-theme="light"] {
   --alert-warning-color: #92400e;
   --alert-caution-color: #991b1b;
 }
-html[data-theme="light"] .prose .markdown-alert-note { --alert-bg: rgba(59, 130, 246, .06); }
-html[data-theme="light"] .prose .markdown-alert-tip { --alert-bg: rgba(16, 185, 129, .06); }
-html[data-theme="light"] .prose .markdown-alert-important { --alert-bg: rgba(168, 85, 247, .06); }
-html[data-theme="light"] .prose .markdown-alert-warning { --alert-bg: rgba(245, 158, 11, .06); }
-html[data-theme="light"] .prose .markdown-alert-caution { --alert-bg: rgba(239, 68, 68, .06); }
+/* Light-mode --alert-bg fallbacks: gated by `@supports not (color-mix(...))` so the
+   rgba() values only apply on browsers without color-mix support. On modern
+   browsers, the @supports block below provides color-mix() at the same
+   specificity (0,3,1) and wins on source order (theme-light loads after article.css).
+   This restores the intent stated in the comment: "the @supports block derives the
+   modern tint from the token". */
+@supports not (background: color-mix(in srgb, red 50%, blue)) {
+  html[data-theme="light"] .prose .markdown-alert-note { --alert-bg: rgba(59, 130, 246, .06); }
+  html[data-theme="light"] .prose .markdown-alert-tip { --alert-bg: rgba(16, 185, 129, .06); }
+  html[data-theme="light"] .prose .markdown-alert-important { --alert-bg: rgba(168, 85, 247, .06); }
+  html[data-theme="light"] .prose .markdown-alert-warning { --alert-bg: rgba(245, 158, 11, .06); }
+  html[data-theme="light"] .prose .markdown-alert-caution { --alert-bg: rgba(239, 68, 68, .06); }
+}
 
 html[data-theme="light"] .prose th { background: rgba(15, 23, 42, .04); }
 html[data-theme="light"] .article-main { background: rgba(255, 255, 255, .72); }
