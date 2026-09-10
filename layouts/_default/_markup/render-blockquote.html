@@ -76,7 +76,7 @@
        backslashes are never legitimate, so we drop them globally.
        This guard MUST run before the http(s):// and # accept branches,
        otherwise scheme-prefixed values like https://x.com\a bypass it. */ -}}
-    {{- else if contains $raw "\\" -}}
+    {{- else if strings.Contains $raw "\\" -}}
       {{- /* drop — any backslash (see rationale comment above) */ -}}
     {{- else if or (hasPrefix $lower "http://") (hasPrefix $lower "https://") -}}
       {{- $cite = $raw -}}
