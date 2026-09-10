@@ -1,0 +1,47 @@
+{{- /*
+  render-blockquote.html — blockquote render hook.
+
+  Handles three cases based on Hugo's render-hook context:
+
+    1. Alert (GitHub-style, Hugo v0.146+):
+         > [!NOTE]
+         > Useful information that users should know.
+       Also: [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION]
+       Optional alert sign + custom title: > [!WARNING]+] + Custom Title
+       Context: .Type="alert", .AlertType, .AlertTitle, .AlertSign, .Text
+
+    2. Attribution (Hugo attribute syntax):
+         > Quoted text
+         {cite="https://..." caption="Author Name"}
+       Requires [markup.goldmark.parser.attribute] block = true in site
+       config — without it the `{...}` syntax passes through as literal
+       text and .Attributes is empty.
+       Context: .Attributes.cite, .Attributes.caption
+
+    3. Regular — everything else:
+       Falls through to <blockquote>{{ .Text }}</blockquote>, byte-for-byte
+       equivalent to Hugo's default render so this hook is a strict superset.
+
+  Visual styling lives in:
+    - assets/css/components/article.css (.markdown-alert*, .blockquotefigure-c)
+    - assets/css/components/theme-light.css (light-mode background overrides)
+*/ -}}
+{{- if eq .Type "alert" -}}
+<blockquote class="markdown-alert markdown-alert-{{ .AlertType }}">
+  <p class="markdown-alert-title">{{ with .AlertTitle }}{{ . }}{{ else }}{{ title .AlertType }}{{ end }}</p>
+  {{- .Text }}
+</blockquote>
+{{- else if or .Attributes.cite .Attributes.caption -}}
+<figure class="blockquote-figure">
+  <blockquote{{ with .Attributes.cite }} cite="{{ . | safeURL }}"{{ end }}>
+    {{- .Text }}
+  </blockquote>
+  {{- with .Attributes.caption }}
+  <figcaption class="blockquote-caption">{{ . | safeHTML }}</figcaption>
+  {{- end }}
+</figure>
+{{- else -}}
+<blockquote>
+  {{- .Text }}
+</blockquote>
+{{- end -}}

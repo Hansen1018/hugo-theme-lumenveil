@@ -49,6 +49,12 @@ html[data-theme="light"] .empty-state code,
 html[data-theme="light"] .prose :not(pre) > code { background: rgba(105, 82, 220, .07); }
 html[data-theme="light"] .prose { color: rgba(30, 41, 59, .82); }
 html[data-theme="light"] .prose blockquote { background: rgba(105, 82, 220, .07); }
+html[data-theme="light"] .prose .markdown-alert-note { --alert-bg: rgba(59,130,246,.06); }
+html[data-theme="light"] .prose .markdown-alert-tip { --alert-bg: rgba(16,185,129,.06); }
+html[data-theme="light"] .prose .markdown-alert-important { --alert-bg: rgba(168,85,247,.06); }
+html[data-theme="light"] .prose .markdown-alert-warning { --alert-bg: rgba(245,158,11,.06); }
+html[data-theme="light"] .prose .markdown-alert-caution { --alert-bg: rgba(239,68,68,.06); }
+
 html[data-theme="light"] .prose th { background: rgba(15, 23, 42, .04); }
 html[data-theme="light"] .article-main { background: rgba(255, 255, 255, .72); }
 html[data-theme="light"] .search-dialog { background: rgba(250, 251, 254, .97); box-shadow: 0 40px 100px rgba(51, 65, 85, .28); }
