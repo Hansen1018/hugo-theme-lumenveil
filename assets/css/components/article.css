@@ -59,9 +59,7 @@
   text-transform: uppercase;
   color: var(--alert-color, var(--accent-1));
 }
-/* Emoji glyph is rendered as text — no `@supports (mask)` wrapper
-   needed (emoji rendering has no browser feature-detection requirement).
-   The icon-aware left padding is reserved on the base .markdown-alert rule. */
+
 
 /* Icon is now an inline <span class="alert-icon"> inside the title
    (emitted by render-blockquote.html). This replaced the ::before + content
@@ -80,19 +78,14 @@
      accent color on its icon. System emoji fonts cannot be CSS-tinted cleanly,
      so this is an intentional drop — keep --alert-color on the title text
      and left border for visual type differentiation. */
-  line-height: 1;
-  /* R17 fix: glyphs wider than 1em overflow the box. line-height: 1 caps the
-     line box at font-size height so the glyph vertically overflows harmlessly
-     (instead of being clipped or pushing the title down). overflow:hidden
-     on the wrapper ensures the glyph stays within its allocated slot. */
   line-height: var(--alert-icon-size);
   flex-shrink: 0;
-  display: inline-block;
-  overflow: hidden;
-  width: var(--alert-icon-size);
-  height: var(--alert-icon-size);
+  /* R22 update: removed overflow:hidden + width/height — flex parent's
+     gap-based spacing handles layout, and clipping wide glyphs (⚠️, ℹ️,
+     etc. with variation selectors) is worse than letting them extend
+     slightly beyond the slot. */
+  width: auto;
   text-align: center;
-  vertical-align: middle;
 }
 .prose .markdown-alert-note {
   --alert-color: var(--alert-note-color);

@@ -43,7 +43,7 @@
 {{- $icons := dict "note" "ℹ️" "tip" "💡" "important" "📌" "warning" "⚠️" "caution" "🚨" -}}
 {{- $icon := index $icons .AlertType -}}
 {{- if not $icon }}{{ $icon = "📝" }}{{ end -}}
-<p class="markdown-alert-title"><span class="alert-icon" aria-hidden="true">{{ $icon }}</span> {{ with .AlertTitle }}{{ . }}{{ else }}{{ with strings.FirstUpper .AlertType }}{{ . }}{{ else }}Note{{ end }}{{ end }}</p>
+<p class="markdown-alert-title"><span class="alert-icon" aria-hidden="true">{{ $icon }}</span>{{ with .AlertTitle }}{{ . }}{{ else }}{{ with strings.FirstUpper .AlertType }}{{ . }}{{ else }}Note{{ end }}{{ end }}</p>
   {{- .Text }}
 </blockquote>
 {{- else if or .Attributes.cite .Attributes.caption -}}
