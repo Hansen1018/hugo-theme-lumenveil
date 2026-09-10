@@ -40,11 +40,11 @@
      Emojis render with their native color font, so no SVG mask-image needed. */
   --alert-icon-emoji: "📝";
   margin: 1.8em 0;
-  /* Default padding (no icon reservation). The icon-aware variant — with the
-     extra left space for the ::before icon — is applied inside the
-     @supports (mask) block below. Browsers without mask support get this
-     default, so they don't render an empty gap where the icon would have been. */
-  padding: var(--alert-pad-y) var(--alert-pad-x);
+  /* Reserve left padding for the absolutely-positioned emoji ::before —
+     the same calc() the previous SVG-mask approach applied inside its
+     @supports (mask) gate. Emoji rendering needs no feature detection
+     (works in every browser with an emoji font), so no @supports wrapper. */
+  padding: var(--alert-pad-y) var(--alert-pad-x) var(--alert-pad-y) calc(var(--alert-pad-x) + var(--alert-icon-size) + 14px);
   border-left: 3px solid var(--alert-color, var(--accent-1));
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   background: var(--alert-bg, rgba(124,92,255,.08));
@@ -61,9 +61,7 @@
 }
 /* Emoji glyph is rendered as text — no `@supports (mask)` wrapper
    needed (emoji rendering has no browser feature-detection requirement).
-   The base `.markdown-alert` rule already reserves padding-left via the
-   calc(--alert-pad-x + --alert-icon-size + 14px) — same value the
-   previous SVG-mask approach used inside its @supports block. */
+   The icon-aware left padding is reserved on the base .markdown-alert rule. */
 
 .prose .markdown-alert-title::before {
   content: var(--alert-icon-emoji, "📝");
@@ -83,9 +81,10 @@
   --alert-color: var(--alert-note-color);
   /* Background tint — static rgba fallback for old browsers; modern browsers
      override via @supports. Using @supports (not duplicate declarations) so
-     the CSS minifier (tdewolff) doesn't collapse the rgba fallback. */
+     the CSS minifier (tdewolff) doesn't collapse the rgba fallback.
+     (--alert-icon-emoji intentionally NOT overridden — inherits the
+     default "📝" from .markdown-alert so the default lives in one place.) */
   --alert-bg: rgba(59, 130, 246, .08);
-  --alert-icon-emoji: "📝";
 }
 .prose .markdown-alert-tip {
   --alert-color: var(--alert-tip-color);
