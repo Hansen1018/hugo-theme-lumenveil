@@ -52,9 +52,23 @@
     {{- /* Lowercase copy for scheme prefix check (HTTPS:// is a valid absolute URL).
        Path/fragment checks stay on the original casing since `/`, `//`, `#` are
        case-insensitive anyway. */ -}}
-    {{- $citeLower := lower . -}}
-    {{- if or (hasPrefix $citeLower "http://") (hasPrefix $citeLower "https://") (and (hasPrefix . "/") (not (hasPrefix . "//"))) (hasPrefix . "#") -}}
-      {{- $cite = . -}}
+    {{- /* Coarse pre-filter + structural parse. urls.Parse is the authoritative
+       check for absolute URLs (it validates scheme + authority and rejects
+       malformed input). For path-only and fragment-only values we keep the
+       hasPrefix pre-filter; html/template's URL filter is the final defense at
+       render time. Note: this is intentionally a coarse pre-filter, not a
+       strict allow-list — do not advertise it as one. */ -}}
+    {{- $raw := . -}}
+    {{- $lower := lower $raw -}}
+    {{- if or (hasPrefix $lower "http://") (hasPrefix $lower "https://") -}}
+      {{- $parsed := urls.Parse $lower -}}
+      {{- if and $parsed.IsAbs (ne $parsed.Host "") (or (eq $parsed.Scheme "http") (eq $parsed.Scheme "https")) -}}
+        {{- $cite = $raw -}}
+      {{- end -}}
+    {{- else if and (hasPrefix $raw "/") (not (hasPrefix $raw "//")) -}}
+      {{- $cite = $raw -}}
+    {{- else if hasPrefix $raw "#" -}}
+      {{- $cite = $raw -}}
     {{- end -}}
   {{- end -}}
   <blockquote{{ with $cite }} cite="{{ . }}"{{ end }}>

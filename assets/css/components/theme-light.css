@@ -77,13 +77,14 @@ html[data-theme="light"] {
    higher-specificity rgba fallback. The two blocks never compete on source
    order because they live in mutually exclusive @supports branches. */
 @supports not (background: color-mix(in srgb, red 50%, blue)) {
-  /* Hue values match the light-mode `--alert-*-color` tokens above so the
-     no-color-mix fallback path renders the same visual as the modern path. */
-  html[data-theme="light"] .prose .markdown-alert-note { --alert-bg: rgba(30, 64, 175, .06); }
-  html[data-theme="light"] .prose .markdown-alert-tip { --alert-bg: rgba(6, 95, 70, .06); }
-  html[data-theme="light"] .prose .markdown-alert-important { --alert-bg: rgba(107, 33, 168, .06); }
-  html[data-theme="light"] .prose .markdown-alert-warning { --alert-bg: rgba(146, 64, 14, .06); }
-  html[data-theme="light"] .prose .markdown-alert-caution { --alert-bg: rgba(153, 27, 27, .06); }
+  /* Hue values match the light-mode `--alert-*-color` tokens above, and
+     alpha (8%) matches the modern color-mix path so the no-color-mix fallback
+     renders the same visual as the modern path. */
+  html[data-theme="light"] .prose .markdown-alert-note { --alert-bg: rgba(30, 64, 175, .08); }
+  html[data-theme="light"] .prose .markdown-alert-tip { --alert-bg: rgba(6, 95, 70, .08); }
+  html[data-theme="light"] .prose .markdown-alert-important { --alert-bg: rgba(107, 33, 168, .08); }
+  html[data-theme="light"] .prose .markdown-alert-warning { --alert-bg: rgba(146, 64, 14, .08); }
+  html[data-theme="light"] .prose .markdown-alert-caution { --alert-bg: rgba(153, 27, 27, .08); }
 }
 
 html[data-theme="light"] .prose th { background: rgba(15, 23, 42, .04); }
