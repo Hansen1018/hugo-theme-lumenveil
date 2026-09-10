@@ -110,12 +110,12 @@ try {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer></script>
 <script>document.addEventListener('DOMContentLoaded',function(){if(window.hljs)hljs.highlightAll();});</script>
 {{- end -}}
-{{- /* opt-in KaTeX via [params] math = true: auto-render targets .article / .article-main / .prose containers (querySelectorAll + forEach so multi-container pages render math in each; covers post + page layouts that lack an .article wrapper; NO document.body fallback to avoid the bare-$ footgun). Supports $$...$$ / \\[...\\] display + \\(...\\) inline. Bare $...$ intentionally NOT registered (dodge the footgun). KaTeX 0.16.11 from jsDelivr CDN. throwOnError:false so broken math falls back to literal text. */ -}}
+{{- /* opt-in KaTeX via [params] math = true: auto-render targets .article / .article-main / .prose containers (querySelectorAll + forEach with [data-katex-rendered] ancestor dedup, so multi-container pages render math in each but nested selectors like .article > .article-main > .prose only render once; covers post + page layouts that lack an .article wrapper; NO document.body fallback to avoid the bare-$ footgun). Supports $$...$$ / \\[...\\] display + \\(...\\) inline. Bare $...$ intentionally NOT registered (dodge the footgun). KaTeX 0.16.11 from jsDelivr CDN. throwOnError:false so broken math falls back to literal text. */ -}}
 {{- if site.Params.math -}}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous"
-  onload="document.querySelectorAll('.article, .article-main, .prose').forEach(function(t){renderMathInElement(t,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="document.querySelectorAll('.article, .article-main, .prose').forEach(function(t){if(t.closest('[data-katex-rendered]'))return;t.setAttribute('data-katex-rendered','1');renderMathInElement(t,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});"></script>
 {{- end -}}
 <script type="application/ld+json">
 {{ if .IsPage }}
