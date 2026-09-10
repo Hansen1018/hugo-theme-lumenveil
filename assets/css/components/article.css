@@ -64,11 +64,10 @@
   width: var(--alert-icon-size);
   height: var(--alert-icon-size);
   background: var(--alert-color, currentColor);
-  -webkit-mask: var(--alert-icon) center / contain no-repeat;
+  /* `.markdown-alert` (cascade slot above) defines a default --alert-icon;
+     `, none` is a defensive fallback when --alert-icon is unset or invalid. */
+  -webkit-mask: var(--alert-icon, none) center / contain no-repeat;
           mask: var(--alert-icon, none) center / contain no-repeat;
-          /* `.markdown-alert` defines a default --alert-icon; `, none` is a
-             defensive fallback for the rare case where the modifier is unset
-             or the computed var value is invalid. */
 }
 .prose .markdown-alert-note {
   --alert-color: var(--alert-note-color);
@@ -122,7 +121,6 @@
   content: "— ";
   font-style: normal;
 }
-
 .prose hr { margin: 3em 0; border: 0; border-top: 1px solid var(--line); }
 .prose img {
   margin: 2em auto;

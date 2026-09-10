@@ -35,16 +35,15 @@
   "warning" "Warning"
   "caution" "Caution"
 -}}
-{{- $title := "" -}}
-{{- with index $alertTitles .AlertType -}}{{- $title = . -}}{{- end -}}
-<p class="markdown-alert-title">{{ with .AlertTitle }}{{ . }}{{ else }}{{ $title | default "Note" }}{{ end }}</p>
+<p class="markdown-alert-title">{{ with .AlertTitle }}{{ . }}{{ else }}{{ index $alertTitles .AlertType | default (strings.FirstUpper .AlertType) | default "Note" }}{{ end }}</p>
   {{- .Text }}
 </blockquote>
 {{- else if or .Attributes.cite .Attributes.caption -}}
 <figure class="blockquote-figure">
   {{- if .Attributes.cite -}}
   {{- $cite := .Attributes.cite -}}
-  {{- if or (hasPrefix $cite "http://") (hasPrefix $cite "https://") (hasPrefix $cite "/") (hasPrefix $cite "#") -}}cite="{{ $cite | safeURL }}"{{- end -}}
+  {{- /* cite: manual scheme allow-list; html/template also filters URL attributes, so no safeURL needed. */ -}}
+  {{- if or (hasPrefix $cite "http://") (hasPrefix $cite "https://") (hasPrefix $cite "/") (hasPrefix $cite "#") -}}cite="{{ $cite }}"{{- end -}}
 {{- end -}}
     {{- .Text }}
   </blockquote>
