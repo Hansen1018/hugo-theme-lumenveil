@@ -110,12 +110,12 @@ try {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer></script>
 <script>document.addEventListener('DOMContentLoaded',function(){if(window.hljs)hljs.highlightAll();});</script>
 {{- end -}}
-{{- /* opt-in KaTeX via [params] math = true: renders $...$ inline and $$...$$ display via auto-render. KaTeX 0.16.11 from jsDelivr CDN. throwOnError:false so broken math falls back to literal text. */ -}}
+{{- /* opt-in KaTeX via [params] math = true: auto-render scans .article containers only (avoids the well-known document.body KaTeX footgun where bare $ greedily matches prose like "costs $5" or "$PATH"). Supports $$...$$ / \\[...\\] display + \\(...\\) inline. Bare $...$ intentionally NOT supported to dodge the footgun. KaTeX 0.16.11 from jsDelivr CDN. throwOnError:false so broken math falls back to literal text. */ -}}
 {{- if site.Params.math -}}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous"
-  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});"></script>
+  onload="renderMathInElement(document.querySelector('.article')||document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});"></script>
 {{- end -}}
 <script type="application/ld+json">
 {{ if .IsPage }}
