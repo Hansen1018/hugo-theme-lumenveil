@@ -39,8 +39,11 @@
   /* Fallback icon (generic info circle) — used when per-type --alert-icon is unset. */
   --alert-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='currentColor' stroke-width='1.5'/%3E%3Cpath d='M8 7v4M8 4.5h.01' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
   margin: 1.8em 0;
-  /* Left padding reserves room for the icon + a small gap before the title text. */
-  padding: var(--alert-pad-y) var(--alert-pad-x) var(--alert-pad-y) calc(var(--alert-pad-x) + var(--alert-icon-size) + 14px);
+  /* Default padding (no icon reservation). The icon-aware variant — with the
+     extra left space for the ::before icon — is applied inside the
+     @supports (mask) block below. Browsers without mask support get this
+     default, so they don't render an empty gap where the icon would have been. */
+  padding: var(--alert-pad-y) var(--alert-pad-x);
   border-left: 3px solid var(--alert-color, var(--accent-1));
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   background: var(--alert-bg, rgba(124,92,255,.08));
@@ -55,20 +58,31 @@
   text-transform: uppercase;
   color: var(--alert-color, var(--accent-1));
 }
-.prose .markdown-alert-title::before {
-  content: "";
-  position: absolute;
-  /* Offsets derive from the layout tokens defined on .markdown-alert. */
-  left: var(--alert-pad-x);
-  top: var(--alert-pad-y);
-  width: var(--alert-icon-size);
-  height: var(--alert-icon-size);
-  background: var(--alert-color, currentColor);
-  /* `.markdown-alert` (cascade slot above) defines a default --alert-icon.
-     `var(--alert-icon, none)` only kicks in when the custom property is unset —
-     an invalid `mask-image` value still invalidates the whole declaration. */
-  -webkit-mask: var(--alert-icon, none) center / contain no-repeat;
-          mask: var(--alert-icon, none) center / contain no-repeat;
+/* Alert icon. Gate the painted-block + mask on `@supports (mask)` so
+   browsers without mask support don't render the 18×18 background as a
+   solid colored square — the ::before simply does not apply, leaving the
+   title text alone (cleaner degradation than a broken-looking block).
+   Use a full real-world probe value rather than `url("")` to avoid relying
+   on browsers accepting an empty/degenerate URL — a future UA that treats
+   an empty url() as invalid would silently drop every alert icon. */
+@supports (mask: url("data:image/svg+xml,%3Csvg/%3E") center/contain no-repeat) or (-webkit-mask: url("data:image/svg+xml,%3Csvg/%3E") center/contain no-repeat) {
+  /* Browsers with mask support get the icon + icon-aware left padding. */
+  .prose .markdown-alert { padding-left: calc(var(--alert-pad-x) + var(--alert-icon-size) + 14px); }
+  .prose .markdown-alert-title::before {
+    content: "";
+    position: absolute;
+    /* Offsets derive from the layout tokens defined on .markdown-alert. */
+    left: var(--alert-pad-x);
+    top: var(--alert-pad-y);
+    width: var(--alert-icon-size);
+    height: var(--alert-icon-size);
+    background: var(--alert-color, currentColor);
+    /* `.markdown-alert` (cascade slot above) defines a default --alert-icon.
+       `var(--alert-icon, none)` only kicks in when the custom property is unset —
+       an invalid `mask-image` value still invalidates the whole declaration. */
+    -webkit-mask: var(--alert-icon, none) center / contain no-repeat;
+            mask: var(--alert-icon, none) center / contain no-repeat;
+  }
 }
 .prose .markdown-alert-note {
   --alert-color: var(--alert-note-color);
@@ -204,9 +218,13 @@ border-color: rgba(124,92,255,.75); background: rgba(124,92,255,.2); color: var(
 }
 
 @supports (background: color-mix(in srgb, red 50%, blue)) {
-  .prose .markdown-alert-note { --alert-bg: color-mix(in srgb, var(--alert-note-color) 8%, transparent); }
-  .prose .markdown-alert-tip { --alert-bg: color-mix(in srgb, var(--alert-tip-color) 8%, transparent); }
-  .prose .markdown-alert-important { --alert-bg: color-mix(in srgb, var(--alert-important-color) 8%, transparent); }
-  .prose .markdown-alert-warning { --alert-bg: color-mix(in srgb, var(--alert-warning-color) 8%, transparent); }
-  .prose .markdown-alert-caution { --alert-bg: color-mix(in srgb, var(--alert-caution-color) 8%, transparent); }
+  /* Each modifier (e.g. .markdown-alert-note) already sets --alert-color;
+     reuse it instead of re-mapping every type→token here. */
+  /* Target the base `.markdown-alert` class only — the per-type modifier
+     (.markdown-alert-note etc.) sets --alert-color via cascade, and every
+     goldmark alert element carries both classes. This consolidates 5
+     type-specific `--alert-bg` declarations into one rule.
+     Fall back to var(--accent-1) for unknown/future alert types so --alert-bg
+     stays valid and the alert still gets a tint instead of rendering bare. */
+  .prose .markdown-alert { --alert-bg: color-mix(in srgb, var(--alert-color, var(--accent-1)) 8%, transparent); }
 }

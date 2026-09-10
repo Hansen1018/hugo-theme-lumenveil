@@ -44,17 +44,29 @@
      http/https/path/anchor; html/template additionally strips unsafe schemes. */ -}}
   {{- $cite := "" -}}
   {{- with .Attributes.cite -}}
-    {{- /* Strict scheme/path allow-list: full http(s) + single-leading-slash
-       root-relative + fragment. Protocol-relative (`//evil.com`) is rejected
-       because cite is an untrusted URL sink and doesn't need cross-protocol
-       resolution the way <img src> does. html/template's URL filter is an
-       additional defense layer. */ -}}
-    {{- /* Lowercase copy for scheme prefix check (HTTPS:// is a valid absolute URL).
-       Path/fragment checks stay on the original casing since `/`, `//`, `#` are
-       case-insensitive anyway. */ -}}
-    {{- $citeLower := lower . -}}
-    {{- if or (hasPrefix $citeLower "http://") (hasPrefix $citeLower "https://") (and (hasPrefix . "/") (not (hasPrefix . "//"))) (hasPrefix . "#") -}}
-      {{- $cite = . -}}
+    {{- /* Coarse scheme/path pre-filter (NOT a strict URL grammar check).
+       Accepts: full http(s) absolute URLs, single-leading-slash root-relative
+       paths, and `#fragment` anchors. Rejects: protocol-relative `//evil.com`
+       (cite is an untrusted URL sink; doesn't need cross-protocol resolution
+       the way <img src> does) and any value containing ASCII C0 control
+       characters or DEL (verified via findRE with the hardcoded regex
+       [\x00-\x1f\x7f] below — that pattern only covers ASCII C0 + DEL,
+       not C1 controls (U+0080–U+009F) or Unicode format/control chars like
+       U+2028 / U+FEFF / bidi overrides; the call itself can never error
+       and abort the build because the regex is a hardcoded valid range).
+       The authoritative defense at render time is html/template's URL
+       attribute filter; this layer is only meant to drop obvious junk
+       before it reaches cite="...". */ -}}
+    {{- $raw := . -}}
+    {{- $lower := lower $raw -}}
+    {{- if findRE "[\x00-\x1f\x7f]" $lower -}}
+      {{- /* drop — contains control chars */ -}}
+    {{- else if or (hasPrefix $lower "http://") (hasPrefix $lower "https://") -}}
+      {{- $cite = $raw -}}
+    {{- else if hasPrefix $raw "#" -}}
+      {{- $cite = $raw -}}
+    {{- else if and (hasPrefix $raw "/") (not (hasPrefix $raw "//")) -}}
+      {{- $cite = $raw -}}
     {{- end -}}
   {{- end -}}
   <blockquote{{ with $cite }} cite="{{ . }}"{{ end }}>

@@ -51,10 +51,11 @@ html[data-theme="light"] .prose { color: rgba(30, 41, 59, .82); }
 html[data-theme="light"] .prose blockquote:not(.markdown-alert) { background: rgba(105, 82, 220, .07); }
 /* Light-mode alert variants — override semantic color tokens with darker hues
    to maintain WCAG contrast on the lighter background tint. The :root tokens
-   are defined in tokens.css (dark mode defaults).
-   Note: the static `rgba()` fallbacks below are intentionally decoupled from the
-   `--alert-*-color` hex tokens (different hues, not derived). The @supports block
-   at the bottom derives the modern tint from the token via `color-mix()`. */
+   are defined in tokens.css (dark mode defaults). The rgba() values in the
+   `@supports not (color-mix())` fallback below use the SAME hues as these
+   light-mode tokens (e.g. #1e40af == rgb(30,64,175)) so old browsers render
+   the same color family; only the mechanism (literal rgba vs. color-mix
+   derivation) differs. */
 html[data-theme="light"] {
   --alert-note-color: #1e40af;
   --alert-tip-color: #065f46;
@@ -77,13 +78,17 @@ html[data-theme="light"] {
    higher-specificity rgba fallback. The two blocks never compete on source
    order because they live in mutually exclusive @supports branches. */
 @supports not (background: color-mix(in srgb, red 50%, blue)) {
-  /* Hue values match the light-mode `--alert-*-color` tokens above so the
-     no-color-mix fallback path renders the same visual as the modern path. */
-  html[data-theme="light"] .prose .markdown-alert-note { --alert-bg: rgba(30, 64, 175, .06); }
-  html[data-theme="light"] .prose .markdown-alert-tip { --alert-bg: rgba(6, 95, 70, .06); }
-  html[data-theme="light"] .prose .markdown-alert-important { --alert-bg: rgba(107, 33, 168, .06); }
-  html[data-theme="light"] .prose .markdown-alert-warning { --alert-bg: rgba(146, 64, 14, .06); }
-  html[data-theme="light"] .prose .markdown-alert-caution { --alert-bg: rgba(153, 27, 27, .06); }
+  /* Hue values match the light-mode `--alert-*-color` tokens above, and
+     alpha (8%) matches the modern color-mix path's 8% tint. Exact visual
+     equivalence assumes a uniform background — on patterned/gradient
+     surfaces the two paths can differ subtly because color-mix blends
+     over the actual rendered background while rgba() blends over the
+     transparent layer. */
+  html[data-theme="light"] .prose .markdown-alert-note { --alert-bg: rgba(30, 64, 175, .08); }
+  html[data-theme="light"] .prose .markdown-alert-tip { --alert-bg: rgba(6, 95, 70, .08); }
+  html[data-theme="light"] .prose .markdown-alert-important { --alert-bg: rgba(107, 33, 168, .08); }
+  html[data-theme="light"] .prose .markdown-alert-warning { --alert-bg: rgba(146, 64, 14, .08); }
+  html[data-theme="light"] .prose .markdown-alert-caution { --alert-bg: rgba(153, 27, 27, .08); }
 }
 
 html[data-theme="light"] .prose th { background: rgba(15, 23, 42, .04); }
@@ -102,10 +107,11 @@ html[data-theme="light"] .theme-icon--sun { display: block; }
   html[data-theme="light"] .main-nav { background: rgba(250, 251, 254, .97); }
 }
 
-/* Note: `--alert-bg` is declared 4 times across article.css + theme-light.css
-   (static rgba fallback × 2, modern color-mix override × 2). The rgba alphas
-   (0.08 dark, 0.06 light) cannot be DRY'd via a single token because `rgba()`
-   does not accept `var()` for the alpha channel. Modern `color-mix()` solves
-   the duplication. If the project later adopts relative-color syntax
-   (`rgb(from var(--alert-note-color) r g b / var(--alert-bg-alpha))`), the
-   4 sites could collapse to a single token reference. */
+/* `--alert-bg` is declared in several places (per-type static rgba in
+   article.css, a single @supports (color-mix) rule for modern browsers,
+   and a light-mode @supports not (color-mix) block in this file). The
+   duplication cannot be DRY'd via a single token because `rgba()` does
+   not accept `var()` for the alpha channel; if the project later adopts
+   relative-color syntax
+   (`rgb(from var(--alert-note-color) r g b / var(--alert-bg-alpha))`),
+   the static-rgba sites could collapse to a single token reference. */
