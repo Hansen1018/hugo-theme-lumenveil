@@ -33,13 +33,3 @@ features = [
   comments      = false
   highlight     = 'chroma'
   pagerSize     = 7
-
-[markup]
-  # Enable Hugo's goldmark attribute syntax on block elements (Hugo v0.112+).
-  # Without this, {.className} / {#id} / {cite="..." caption="..."} on a
-  # blockquote pass through as literal text. The render hook
-  # layouts/_default/_markup/render-blockquote.html re-emits these attributes
-  # on the opening tag and uses cite/caption to render the <figure>/<figcaption>
-  # branch — both features are silently broken without this setting (R4).
-  [markup.goldmark.parser.attribute]
-    block = true
