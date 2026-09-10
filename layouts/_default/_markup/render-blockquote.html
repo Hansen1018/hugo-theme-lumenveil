@@ -7,8 +7,8 @@
          > [!NOTE]
          > Useful information that users should know.
        Also: [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION]
-       Optional alert sign + custom title: > [!WARNING]+] + Custom Title
-       Context: .Type="alert", .AlertType, .AlertTitle, .AlertSign, .Text
+       Optional custom title: > [!WARNING]+] Custom Title (rendered as plain text prefix; no UI sign indicator)
+       Context: .Type="alert", .AlertType, .AlertTitle, .Text
 
     2. Attribution (Hugo attribute syntax):
          > Quoted text
@@ -23,7 +23,7 @@
        equivalent to Hugo's default render so this hook is a strict superset.
 
   Visual styling lives in:
-    - assets/css/components/article.css (.markdown-alert*, .blockquotefigure-c)
+    - assets/css/components/article.css (.markdown-alert*, .blockquote-figure, .blockquote-caption)
     - assets/css/components/theme-light.css (light-mode background overrides)
 */ -}}
 {{- if eq .Type "alert" -}}
@@ -37,7 +37,7 @@
     {{- .Text }}
   </blockquote>
   {{- with .Attributes.caption }}
-  <figcaption class="blockquote-caption">{{ . | safeHTML }}</figcaption>
+  <figcaption class="blockquote-caption">{{ . }}</figcaption>
   {{- end }}
 </figure>
 {{- else -}}

@@ -48,12 +48,14 @@ html[data-theme="light"] .post-nav a:hover { background: rgba(255, 255, 255, .88
 html[data-theme="light"] .empty-state code,
 html[data-theme="light"] .prose :not(pre) > code { background: rgba(105, 82, 220, .07); }
 html[data-theme="light"] .prose { color: rgba(30, 41, 59, .82); }
-html[data-theme="light"] .prose blockquote { background: rgba(105, 82, 220, .07); }
-html[data-theme="light"] .prose .markdown-alert-note { --alert-bg: rgba(59,130,246,.06); }
-html[data-theme="light"] .prose .markdown-alert-tip { --alert-bg: rgba(16,185,129,.06); }
-html[data-theme="light"] .prose .markdown-alert-important { --alert-bg: rgba(168,85,247,.06); }
-html[data-theme="light"] .prose .markdown-alert-warning { --alert-bg: rgba(245,158,11,.06); }
-html[data-theme="light"] .prose .markdown-alert-caution { --alert-bg: rgba(239,68,68,.06); }
+html[data-theme="light"] .prose blockquote:not(.markdown-alert) { background: rgba(105, 82, 220, .07); }
+/* Light-mode alert variants — darker hues for the title text + icon to maintain
+   WCAG contrast on the lighter background tint. */
+html[data-theme="light"] .prose .markdown-alert-note { --alert-color: #1e40af; --alert-bg: rgba(59,130,246,.06); }
+html[data-theme="light"] .prose .markdown-alert-tip { --alert-color: #065f46; --alert-bg: rgba(16,185,129,.06); }
+html[data-theme="light"] .prose .markdown-alert-important { --alert-color: #6b21a8; --alert-bg: rgba(168,85,247,.06); }
+html[data-theme="light"] .prose .markdown-alert-warning { --alert-color: #92400e; --alert-bg: rgba(245,158,11,.06); }
+html[data-theme="light"] .prose .markdown-alert-caution { --alert-color: #991b1b; --alert-bg: rgba(239,68,68,.06); }
 
 html[data-theme="light"] .prose th { background: rgba(15, 23, 42, .04); }
 html[data-theme="light"] .article-main { background: rgba(255, 255, 255, .72); }

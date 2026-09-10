@@ -25,8 +25,15 @@
 .prose blockquote p { margin: 0; }
 /* Blockquote alerts — Hugo v0.146+ syntax: > [!NOTE], > [!TIP], etc. */
 .prose .markdown-alert {
+  /* Layout tokens — kept in sync with .markdown-alert-title::below offsets. */
+  --alert-pad-x: 20px;
+  --alert-pad-y: 14px;
+  --alert-icon-size: 18px;
+  /* Fallback icon (generic info circle) — used when per-type --alert-icon is unset. */
+  --alert-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='currentColor' stroke-width='1.5'/%3E%3Cpath d='M8 7v4M8 4.5h.01' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
   margin: 1.8em 0;
-  padding: 14px 20px 14px 52px;
+  /* Left padding reserves room for the icon + a small gap before the title text. */
+  padding: var(--alert-pad-y) var(--alert-pad-x) var(--alert-pad-y) calc(var(--alert-pad-x) + var(--alert-icon-size) + 14px);
   border-left: 3px solid var(--alert-color, var(--accent-1));
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   background: var(--alert-bg, rgba(124,92,255,.08));
@@ -44,13 +51,15 @@
 .prose .markdown-alert-title::before {
   content: "";
   position: absolute;
-  left: 18px;
-  top: 18px;
-  width: 18px;
-  height: 18px;
+  /* Offsets derive from the layout tokens defined on .markdown-alert. */
+  left: var(--alert-pad-x);
+  top: var(--alert-pad-y);
+  width: var(--alert-icon-size);
+  height: var(--alert-icon-size);
   background: var(--alert-color, currentColor);
   -webkit-mask: var(--alert-icon) center / contain no-repeat;
-  mask: var(--alert-icon) center / contain no-repeat;
+          /* mask fallback: 'none' so the icon doesn't disappear if --alert-icon is unset. */
+          mask: var(--alert-icon) center / contain no-repeat, none;
 }
 .prose .markdown-alert-note {
   --alert-color: #3b82f6;
@@ -97,7 +106,6 @@
   content: "— ";
   font-style: normal;
 }
-
 
 .prose hr { margin: 3em 0; border: 0; border-top: 1px solid var(--line); }
 .prose img {
