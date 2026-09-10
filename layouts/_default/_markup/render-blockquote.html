@@ -48,11 +48,15 @@
        Accepts: full http(s) absolute URLs, single-leading-slash root-relative
        paths, and `#fragment` anchors. Rejects: protocol-relative `//evil.com`
        (cite is an untrusted URL sink; doesn't need cross-protocol resolution
-       the way <img src> does) and any value containing control characters
-       (verified via findRE below — uses a hardcoded ASCII range regex so the
-       call can never error and abort the build). The authoritative defense
-       at render time is html/template's URL attribute filter; this layer is
-       only meant to drop obvious junk before it reaches cite="...". */ -}}
+       the way <img src> does) and any value containing ASCII C0 control
+       characters or DEL (verified via findRE with the hardcoded regex
+       [\x00-\x1f\x7f] below — that pattern only covers ASCII C0 + DEL,
+       not C1 controls (U+0080–U+009F) or Unicode format/control chars like
+       U+2028 / U+FEFF / bidi overrides; the call itself can never error
+       and abort the build because the regex is a hardcoded valid range).
+       The authoritative defense at render time is html/template's URL
+       attribute filter; this layer is only meant to drop obvious junk
+       before it reaches cite="...". */ -}}
     {{- $raw := . -}}
     {{- $lower := lower $raw -}}
     {{- if findRE "[\x00-\x1f\x7f]" $lower -}}

@@ -51,10 +51,11 @@ html[data-theme="light"] .prose { color: rgba(30, 41, 59, .82); }
 html[data-theme="light"] .prose blockquote:not(.markdown-alert) { background: rgba(105, 82, 220, .07); }
 /* Light-mode alert variants — override semantic color tokens with darker hues
    to maintain WCAG contrast on the lighter background tint. The :root tokens
-   are defined in tokens.css (dark mode defaults).
-   Note: the static `rgba()` fallbacks below are intentionally decoupled from the
-   `--alert-*-color` hex tokens (different hues, not derived). The @supports block
-   at the bottom derives the modern tint from the token via `color-mix()`. */
+   are defined in tokens.css (dark mode defaults). The rgba() values in the
+   `@supports not (color-mix())` fallback below use the SAME hues as these
+   light-mode tokens (e.g. #1e40af == rgb(30,64,175)) so old browsers render
+   the same color family; only the mechanism (literal rgba vs. color-mix
+   derivation) differs. */
 html[data-theme="light"] {
   --alert-note-color: #1e40af;
   --alert-tip-color: #065f46;
