@@ -31,7 +31,7 @@
 {{- /* Alert title — `.AlertTitle` is set when author writes `> [!WARNING] Custom Text`;
      otherwise we title-case the type (e.g. `note` → `Note`). Unknown types still render
      with their type name capitalized, so a future Hugo-added type degrades gracefully. */ -}}
-<p class="markdown-alert-title">{{ with .AlertTitle }}{{ . }}{{ else }}{{ strings.FirstUpper .AlertType | default "Note" }}{{ end }}</p>
+<p class="markdown-alert-title">{{ with .AlertTitle }}{{ . }}{{ else }}{{ with strings.FirstUpper .AlertType }}{{ . }}{{ else }}Note{{ end }}{{ end }}</p>
   {{- .Text }}
 </blockquote>
 {{- else if or .Attributes.cite .Attributes.caption -}}
