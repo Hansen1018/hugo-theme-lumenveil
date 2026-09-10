@@ -34,15 +34,13 @@
 {{- /* Alert title — `.AlertTitle` is set when author writes `> [!WARNING] Custom Text`;
      otherwise we title-case the type (e.g. `note` → `Note`). Unknown types still render
      with their type name capitalized, so a future Hugo-added type degrades gracefully. */ -}}
-{{- /* Alert type → emoji map (R15). Emitted inside an aria-hidden span so
+{{- /* Alert type → emoji map. Emitted inside an aria-hidden span so
      screen readers announce only the alert title, not the glyph name —
      the previous SVG-mask ::before approach was a11y-clean but visually
-     over-complex for emoji rendering. R8 noted the a11y trade-off but
-     left it as TODO; R15 escalated this to bug·high and explicitly asked
-     to either fix it in this PR or confirm a follow-up — fixed here. */ -}}
+     over-complex for emoji rendering. The icon span gets aria-hidden="true"
+     below so the glyph is suppressed from the accessibility tree. */ -}}
 {{- $icons := dict "note" "ℹ️" "tip" "💡" "important" "📌" "warning" "⚠️" "caution" "🚨" -}}
-{{- $icon := index $icons .AlertType -}}
-{{- if not $icon }}{{ $icon = "📝" }}{{ end -}}
+{{- $icon := or (index $icons .AlertType) "📝" -}}
 <p class="markdown-alert-title"><span class="alert-icon" aria-hidden="true">{{ $icon }}</span>{{ with .AlertTitle }}{{ . }}{{ else }}{{ with strings.FirstUpper .AlertType }}{{ . }}{{ else }}Note{{ end }}{{ end }}</p>
   {{- .Text }}
 </blockquote>
@@ -70,21 +68,20 @@
     {{- $lower := lower $raw -}}
     {{- if findRE "[\x00-\x1f\x7f]" $lower -}}
       {{- /* drop — contains control chars */ -}}
-    {{- /* R6/R30 fix: reject ANY cite containing a backslash. Previous R6 patch
-       only rejected "/\\evil" (backslash immediately after the leading slash),
-       but browsers' WHATWG URL parser can normalize backslashes to forward
-       slashes inside path segments, so /a\\b/c or /foo\\..\\..\\//evil
-       can re-interpret the input as protocol-relative. cite is meant for
-       fragment IDs (#frag) or root-relative paths (/path) — backslashes are
-       never legitimate, so we drop them globally. */ -}}
-    {{- else if hasPrefix $raw "\\" -}}
-      {{- /* drop — backslash at start normalizes to protocol-relative */ -}}
+    {{- /* Reject ANY cite containing a backslash. Browsers' WHATWG URL parser
+       can normalize backslashes to forward slashes inside path segments, so
+       values like https://x.com\a or #frag\x can re-interpret the input as
+       protocol-relative or otherwise break out of the intended scheme. cite
+       is meant for fragment IDs (#frag) or root-relative paths (/path) —
+       backslashes are never legitimate, so we drop them globally.
+       This guard MUST run before the http(s):// and # accept branches,
+       otherwise scheme-prefixed values like https://x.com\a bypass it. */ -}}
+    {{- else if contains $raw "\\" -}}
+      {{- /* drop — any backslash (see rationale comment above) */ -}}
     {{- else if or (hasPrefix $lower "http://") (hasPrefix $lower "https://") -}}
       {{- $cite = $raw -}}
     {{- else if hasPrefix $raw "#" -}}
       {{- $cite = $raw -}}
-    {{- else if contains $raw "\\" -}}
-      {{- /* drop — any other backslash (R30: see comment above) */ -}}
     {{- else if and (hasPrefix $raw "/") (not (hasPrefix $raw "//")) -}}
       {{- $cite = $raw -}}
     {{- end -}}

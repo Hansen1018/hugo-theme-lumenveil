@@ -29,24 +29,27 @@
    to be readable. Use site-wide default spacing on intermediate <p> and reset
    the last one so the alert's bottom padding handles the trailing gap. */
 .prose .markdown-alert > p:not(.markdown-alert-title) { margin: 0 0 0.85em; }
-/* R3 fix: reset trailing margin on ANY last child (list/code/...), not just <p>,
+/* Reset trailing margin on ANY last child (list/code/...), not just <p>,
    so multi-paragraph alerts ending in a list or code block don't keep their
-   default block margin and produce uneven trailing space. */
-.prose .markdown-alert > *:last-child { margin-bottom: 0; }
+   default block margin. The :not(.markdown-alert-title) raises specificity
+   above the per-paragraph rule above it (which is (0,3,1)). */
+.prose .markdown-alert > *:not(.markdown-alert-title):last-child { margin-bottom: 0; }
 /* Blockquote alerts — Hugo v0.146+ syntax: > [!NOTE], > [!TIP], etc. */
 .prose .markdown-alert {
-  /* Layout tokens for the inline <span class="alert-icon"> rendered by
-     layouts/_default/_markup/render-blockquote.html. The glyph itself is
-     emitted by the render hook's $icons dict — do NOT reintroduce a parallel
-     CSS source of truth here (R18/R23). */
+  /* Layout tokens for the .markdown-alert block. The icon glyph itself is
+     emitted by the render hook's $icons dict (see render-blockquote.html) — do
+     NOT reintroduce a parallel CSS source of truth for the emoji here.
+     --alert-pad-x / --alert-pad-y are symmetric block padding, NOT coupled
+     to the icon (padding is reserved for the block itself, the icon is an
+     inline element inside .markdown-alert-title). */
   --alert-pad-x: 20px;
   --alert-pad-y: 14px;
   --alert-icon-size: 18px;
   margin: 1.8em 0;
   /* Symmetric padding — the icon is now an inline element inside
-     .markdown-alert-title (per R15 a11y fix), so no icon reservation
+     .markdown-alert-title, so no icon reservation
      in the block padding. Eliminates the implicit padding↔title
-     coupling that R14 flagged. */
+     coupling. */
   padding: var(--alert-pad-y) var(--alert-pad-x);
   border-left: 3px solid var(--alert-color, var(--accent-1));
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
@@ -64,19 +67,19 @@
   color: var(--alert-color, var(--accent-1));
   /* Flex layout — hosts the inline <span class="alert-icon"> emitted by
      layouts/_default/_markup/render-blockquote.html. Replaces the
-     ::before + content approach per R15: aria-hidden on the wrapper
-     suppresses the screen-reader announcement that R8/R15 flagged. */
+     aria-hidden on the wrapper suppresses screen-reader announcement
+     of the icon. */
   display: flex;
   align-items: center;
   gap: 10px;
 }
 .prose .markdown-alert-title > .alert-icon {
-  /* R28 fix: --font-sans stack contains no emoji-capable font. Without this,
+  /* --font-sans stack contains no emoji-capable font. Without this,
      Linux browsers without implicit emoji fallback render the glyphs as tofu
      (☐). Apple/Segoe/Noto cover macOS / Windows / Linux respectively. */
   font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", var(--font-sans);
   font-size: var(--alert-icon-size);
-  /* Color palette note (R16): emoji renders in its native palette, not
+  /* Color palette note: emoji renders in its native palette, not
      tinted by --alert-color. The previous SVG-mask approach filled the icon
      with `background: var(--alert-color)` so each alert type had a matching
      accent color on its icon. System emoji fonts cannot be CSS-tinted cleanly,
@@ -84,7 +87,7 @@
      and left border for visual type differentiation. */
   line-height: var(--alert-icon-size);
   flex-shrink: 0;
-  /* R22 update: removed overflow:hidden + width/height — flex parent's
+  /* No overflow:hidden + width/height — flex parent's
      gap-based spacing handles layout, and clipping wide glyphs (⚠️, ℹ️,
      etc. with variation selectors) is worse than letting them extend
      slightly beyond the slot. */
