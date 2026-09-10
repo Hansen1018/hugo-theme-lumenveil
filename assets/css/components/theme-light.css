@@ -51,7 +51,7 @@ html[data-theme="light"] .prose { color: rgba(30, 41, 59, .82); }
 html[data-theme="light"] .prose blockquote:not(.markdown-alert) { background: rgba(105, 82, 220, .07); }
 /* Light-mode alert variants — override semantic color tokens with darker hues
    to maintain WCAG contrast on the lighter background tint. The :root tokens
-   are defined in article.css (dark mode defaults). */
+   are defined in tokens.css (dark mode defaults). */
 html[data-theme="light"] {
   --alert-note-color: #1e40af;
   --alert-tip-color: #065f46;
@@ -59,11 +59,11 @@ html[data-theme="light"] {
   --alert-warning-color: #92400e;
   --alert-caution-color: #991b1b;
 }
-html[data-theme="light"] .prose .markdown-alert-note { --alert-bg: rgba(59, 130, 246, .06); --alert-bg: color-mix(in srgb, var(--alert-note-color) 6%, transparent); }
-html[data-theme="light"] .prose .markdown-alert-tip { --alert-bg: rgba(16, 185, 129, .06); --alert-bg: color-mix(in srgb, var(--alert-tip-color) 6%, transparent); }
-html[data-theme="light"] .prose .markdown-alert-important { --alert-bg: rgba(168, 85, 247, .06); --alert-bg: color-mix(in srgb, var(--alert-important-color) 6%, transparent); }
-html[data-theme="light"] .prose .markdown-alert-warning { --alert-bg: rgba(245, 158, 11, .06); --alert-bg: color-mix(in srgb, var(--alert-warning-color) 6%, transparent); }
-html[data-theme="light"] .prose .markdown-alert-caution { --alert-bg: rgba(239, 68, 68, .06); --alert-bg: color-mix(in srgb, var(--alert-caution-color) 6%, transparent); }
+html[data-theme="light"] .prose .markdown-alert-note { --alert-bg: rgba(59, 130, 246, .06); @supports (background: color-mix(in srgb, red 50%, blue)) { --alert-bg: color-mix(in srgb, var(--alert-note-color) 6%, transparent); } }
+html[data-theme="light"] .prose .markdown-alert-tip { --alert-bg: rgba(16, 185, 129, .06); @supports (background: color-mix(in srgb, red 50%, blue)) { --alert-bg: color-mix(in srgb, var(--alert-tip-color) 6%, transparent); } }
+html[data-theme="light"] .prose .markdown-alert-important { --alert-bg: rgba(168, 85, 247, .06); @supports (background: color-mix(in srgb, red 50%, blue)) { --alert-bg: color-mix(in srgb, var(--alert-important-color) 6%, transparent); } }
+html[data-theme="light"] .prose .markdown-alert-warning { --alert-bg: rgba(245, 158, 11, .06); @supports (background: color-mix(in srgb, red 50%, blue)) { --alert-bg: color-mix(in srgb, var(--alert-warning-color) 6%, transparent); } }
+html[data-theme="light"] .prose .markdown-alert-caution { --alert-bg: rgba(239, 68, 68, .06); @supports (background: color-mix(in srgb, red 50%, blue)) { --alert-bg: color-mix(in srgb, var(--alert-caution-color) 6%, transparent); } }
 
 html[data-theme="light"] .prose th { background: rgba(15, 23, 42, .04); }
 html[data-theme="light"] .article-main { background: rgba(255, 255, 255, .72); }

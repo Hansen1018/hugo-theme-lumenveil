@@ -28,12 +28,19 @@
 */ -}}
 {{- if eq .Type "alert" -}}
 <blockquote class="markdown-alert markdown-alert-{{ .AlertType }}">
-  <p class="markdown-alert-title">{{ with .AlertTitle }}{{ . }}{{ else }}{{ title .AlertType }}{{ end }}</p>
+  {{- $alertTitles := dict
+  "note" "Note"
+  "tip" "Tip"
+  "important" "Important"
+  "warning" "Warning"
+  "caution" "Caution"
+-}}
+<p class="markdown-alert-title">{{ with .AlertTitle }}{{ . }}{{ else }}{{ index $alertTitles .AlertType }}{{ end }}</p>
   {{- .Text }}
 </blockquote>
 {{- else if or .Attributes.cite .Attributes.caption -}}
 <figure class="blockquote-figure">
-  <blockquote{{ with .Attributes.cite }} cite="{{ . }}"{{ end }}>
+  <blockquote{{ with .Attributes.cite }} cite="{{ . | safeURL }}"{{ end }}>
     {{- .Text }}
   </blockquote>
   {{- with .Attributes.caption }}
