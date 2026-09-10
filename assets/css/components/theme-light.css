@@ -48,7 +48,44 @@ html[data-theme="light"] .post-nav a:hover { background: rgba(255, 255, 255, .88
 html[data-theme="light"] .empty-state code,
 html[data-theme="light"] .prose :not(pre) > code { background: rgba(105, 82, 220, .07); }
 html[data-theme="light"] .prose { color: rgba(30, 41, 59, .82); }
-html[data-theme="light"] .prose blockquote { background: rgba(105, 82, 220, .07); }
+html[data-theme="light"] .prose blockquote:not(.markdown-alert) { background: rgba(105, 82, 220, .07); }
+/* Light-mode alert variants — override semantic color tokens with darker hues
+   to maintain WCAG contrast on the lighter background tint. The :root tokens
+   are defined in tokens.css (dark mode defaults).
+   Note: the static `rgba()` fallbacks below are intentionally decoupled from the
+   `--alert-*-color` hex tokens (different hues, not derived). The @supports block
+   at the bottom derives the modern tint from the token via `color-mix()`. */
+html[data-theme="light"] {
+  --alert-note-color: #1e40af;
+  --alert-tip-color: #065f46;
+  --alert-important-color: #6b21a8;
+  --alert-warning-color: #92400e;
+  --alert-caution-color: #991b1b;
+}
+/* Light-mode --alert-bg fallbacks. Two browser buckets, two separate paths:
+     - Browsers WITH `color-mix()` support: the `@supports (color-mix(...))` block
+       in article.css applies and provides the token-derived tint (specificity
+       0,2,0). The `@supports not (...)` block below is mutually exclusive with
+       `@supports (...)`, so it does NOT apply on these browsers.
+     - Browsers WITHOUT `color-mix()` support: article.css's @supports block does
+       not apply, leaving the (0,2,0) static rgba as the fallback. This
+       `@supports not (...)` block applies instead, with specificity (0,3,1)
+       (the `html[data-theme="light"]` attribute selector + class chain),
+       winning over article.css's (0,2,0) static rgba so the light tint stays
+       visible.
+   In short: modern browsers → article.css color-mix; old browsers → this
+   higher-specificity rgba fallback. The two blocks never compete on source
+   order because they live in mutually exclusive @supports branches. */
+@supports not (background: color-mix(in srgb, red 50%, blue)) {
+  /* Hue values match the light-mode `--alert-*-color` tokens above so the
+     no-color-mix fallback path renders the same visual as the modern path. */
+  html[data-theme="light"] .prose .markdown-alert-note { --alert-bg: rgba(30, 64, 175, .06); }
+  html[data-theme="light"] .prose .markdown-alert-tip { --alert-bg: rgba(6, 95, 70, .06); }
+  html[data-theme="light"] .prose .markdown-alert-important { --alert-bg: rgba(107, 33, 168, .06); }
+  html[data-theme="light"] .prose .markdown-alert-warning { --alert-bg: rgba(146, 64, 14, .06); }
+  html[data-theme="light"] .prose .markdown-alert-caution { --alert-bg: rgba(153, 27, 27, .06); }
+}
+
 html[data-theme="light"] .prose th { background: rgba(15, 23, 42, .04); }
 html[data-theme="light"] .article-main { background: rgba(255, 255, 255, .72); }
 html[data-theme="light"] .search-dialog { background: rgba(250, 251, 254, .97); box-shadow: 0 40px 100px rgba(51, 65, 85, .28); }
@@ -64,3 +101,11 @@ html[data-theme="light"] .theme-icon--sun { display: block; }
 @media (max-width: 980px) {
   html[data-theme="light"] .main-nav { background: rgba(250, 251, 254, .97); }
 }
+
+/* Note: `--alert-bg` is declared 4 times across article.css + theme-light.css
+   (static rgba fallback × 2, modern color-mix override × 2). The rgba alphas
+   (0.08 dark, 0.06 light) cannot be DRY'd via a single token because `rgba()`
+   does not accept `var()` for the alpha channel. Modern `color-mix()` solves
+   the duplication. If the project later adopts relative-color syntax
+   (`rgb(from var(--alert-note-color) r g b / var(--alert-bg-alpha))`), the
+   4 sites could collapse to a single token reference. */
