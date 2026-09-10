@@ -61,14 +61,6 @@ html[data-theme="light"] .empty-state code,
 html[data-theme="light"] .prose :not(pre) > code { background: rgba(105, 82, 220, .07); }
 html[data-theme="light"] .prose { color: rgba(30, 41, 59, .82); }
 html[data-theme="light"] .prose blockquote:not(.markdown-alert) { background: rgba(105, 82, 220, .07); }
-/* Light-mode alert variants — override semantic color tokens with darker hues
-   to maintain WCAG contrast on the lighter background tint. The :root tokens
-   are defined in tokens.css (dark mode defaults). The rgba() values in the
-   `@supports not (color-mix())` fallback below use the SAME hues as these
-   light-mode tokens (e.g. #1e40af == rgb(30,64,175)) so old browsers render
-   the same color family; only the mechanism (literal rgba vs. color-mix
-   derivation) differs. */
-
 /* Light-mode --alert-bg fallbacks. Two browser buckets, two separate paths:
      - Browsers WITH `color-mix()` support: the `@supports (color-mix(...))` block
        in article.css applies and provides the token-derived tint (specificity

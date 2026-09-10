@@ -70,15 +70,22 @@
     {{- $lower := lower $raw -}}
     {{- if findRE "[\x00-\x1f\x7f]" $lower -}}
       {{- /* drop — contains control chars */ -}}
+    {{- /* R6/R30 fix: reject ANY cite containing a backslash. Previous R6 patch
+       only rejected "/\\evil" (backslash immediately after the leading slash),
+       but browsers' WHATWG URL parser can normalize backslashes to forward
+       slashes inside path segments, so /a\\b/c or /foo\\..\\..\\//evil
+       can re-interpret the input as protocol-relative. cite is meant for
+       fragment IDs (#frag) or root-relative paths (/path) — backslashes are
+       never legitimate, so we drop them globally. */ -}}
+    {{- else if hasPrefix $raw "\\" -}}
+      {{- /* drop — backslash at start normalizes to protocol-relative */ -}}
     {{- else if or (hasPrefix $lower "http://") (hasPrefix $lower "https://") -}}
       {{- $cite = $raw -}}
     {{- else if hasPrefix $raw "#" -}}
       {{- $cite = $raw -}}
-    {{- /* R6 fix: reject "/\evil" too — browsers normalize backslash to forward slash
-       in special schemes, so "/\evil.com" resolves like "//evil.com" despite not
-       having a literal "//" prefix. The intent of the allow-list is to block
-       protocol-relative URLs, so this is in scope. */ -}}
-    {{- else if and (hasPrefix $raw "/") (not (hasPrefix $raw "//")) (not (hasPrefix $raw "/\\")) -}}
+    {{- else if contains $raw "\\" -}}
+      {{- /* drop — any other backslash (R30: see comment above) */ -}}
+    {{- else if and (hasPrefix $raw "/") (not (hasPrefix $raw "//")) -}}
       {{- $cite = $raw -}}
     {{- end -}}
   {{- end -}}
