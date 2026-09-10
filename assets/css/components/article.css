@@ -97,7 +97,7 @@
   --alert-color: var(--alert-important-color);
   /* @supports guard for color-mix() — see .markdown-alert-note for rationale */
   --alert-bg: rgba(168, 85, 247, .08);
-  --alert-icon-emoji: "❗";
+  --alert-icon-emoji: "📌";
 }
 .prose .markdown-alert-warning {
   --alert-color: var(--alert-warning-color);
@@ -109,7 +109,7 @@
   --alert-color: var(--alert-caution-color);
   /* @supports guard for color-mix() — see .markdown-alert-note for rationale */
   --alert-bg: rgba(239, 68, 68, .08);
-  --alert-icon-emoji: "🛑";
+  --alert-icon-emoji: "🚨";
 }
 
 /* Blockquote with attribution: <figure>/<figcaption> */
