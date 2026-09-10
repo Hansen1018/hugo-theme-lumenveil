@@ -35,12 +35,17 @@
   "warning" "Warning"
   "caution" "Caution"
 -}}
-<p class="markdown-alert-title">{{ with .AlertTitle }}{{ . }}{{ else }}{{ index $alertTitles .AlertType }}{{ end }}</p>
+{{- $title := "" -}}
+{{- with index $alertTitles .AlertType -}}{{- $title = . -}}{{- end -}}
+<p class="markdown-alert-title">{{ with .AlertTitle }}{{ . }}{{ else }}{{ $title | default "Note" }}{{ end }}</p>
   {{- .Text }}
 </blockquote>
 {{- else if or .Attributes.cite .Attributes.caption -}}
 <figure class="blockquote-figure">
-  <blockquote{{ with .Attributes.cite }} cite="{{ . | safeURL }}"{{ end }}>
+  {{- if .Attributes.cite -}}
+  {{- $cite := .Attributes.cite -}}
+  {{- if or (hasPrefix $cite "http://") (hasPrefix $cite "https://") (hasPrefix $cite "/") (hasPrefix $cite "#") -}}cite="{{ $cite | safeURL }}"{{- end -}}
+{{- end -}}
     {{- .Text }}
   </blockquote>
   {{- with .Attributes.caption }}
