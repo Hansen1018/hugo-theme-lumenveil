@@ -29,16 +29,19 @@
    to be readable. Use site-wide default spacing on intermediate <p> and reset
    the last one so the alert's bottom padding handles the trailing gap. */
 .prose .markdown-alert > p:not(.markdown-alert-title) { margin: 0 0 0.85em; }
-.prose .markdown-alert > p:not(.markdown-alert-title):last-child { margin-bottom: 0; }
+/* R3 fix: reset trailing margin on ANY last child (list/code/...), not just <p>,
+   so multi-paragraph alerts ending in a list or code block don't keep their
+   default block margin and produce uneven trailing space. */
+.prose .markdown-alert > *:last-child { margin-bottom: 0; }
 /* Blockquote alerts — Hugo v0.146+ syntax: > [!NOTE], > [!TIP], etc. */
 .prose .markdown-alert {
-  /* Layout tokens — kept in sync with .markdown-alert-title::before offsets. */
+  /* Layout tokens for the inline <span class="alert-icon"> rendered by
+     layouts/_default/_markup/render-blockquote.html. The glyph itself is
+     emitted by the render hook's $icons dict — do NOT reintroduce a parallel
+     CSS source of truth here (R18/R23). */
   --alert-pad-x: 20px;
   --alert-pad-y: 14px;
   --alert-icon-size: 18px;
-  /* Default emoji icon — overridden per alert type below.
-     Emojis render with their native color font, so no SVG mask-image needed. */
-  --alert-icon-emoji: "📝";
   margin: 1.8em 0;
   /* Symmetric padding — the icon is now an inline element inside
      .markdown-alert-title (per R15 a11y fix), so no icon reservation
@@ -93,35 +96,26 @@
      override via @supports. Using @supports (not duplicate declarations) so
      the CSS minifier (tdewolff) doesn't collapse the rgba fallback. */
   --alert-bg: rgba(59, 130, 246, .08);
-  /* NOTE-only emoji override. The base default "📝" (memo) is semantically
-     misleading for a Note alert — ℹ️ (info symbol) matches the original
-     SVG-mask icon's semantic intent (info-circle) and is the only alert
-     type that gets its own type-specific icon here. */
-  --alert-icon-emoji: "ℹ️";
 }
 .prose .markdown-alert-tip {
   --alert-color: var(--alert-tip-color);
   /* @supports guard for color-mix() — see .markdown-alert-note for rationale */
   --alert-bg: rgba(16, 185, 129, .08);
-  --alert-icon-emoji: "💡";
 }
 .prose .markdown-alert-important {
   --alert-color: var(--alert-important-color);
   /* @supports guard for color-mix() — see .markdown-alert-note for rationale */
   --alert-bg: rgba(168, 85, 247, .08);
-  --alert-icon-emoji: "📌";
 }
 .prose .markdown-alert-warning {
   --alert-color: var(--alert-warning-color);
   /* @supports guard for color-mix() — see .markdown-alert-note for rationale */
   --alert-bg: rgba(245, 158, 11, .08);
-  --alert-icon-emoji: "⚠️";
 }
 .prose .markdown-alert-caution {
   --alert-color: var(--alert-caution-color);
   /* @supports guard for color-mix() — see .markdown-alert-note for rationale */
   --alert-bg: rgba(239, 68, 68, .08);
-  --alert-icon-emoji: "🚨";
 }
 
 /* Blockquote with attribution: <figure>/<figcaption> */

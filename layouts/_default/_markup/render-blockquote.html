@@ -74,7 +74,11 @@
       {{- $cite = $raw -}}
     {{- else if hasPrefix $raw "#" -}}
       {{- $cite = $raw -}}
-    {{- else if and (hasPrefix $raw "/") (not (hasPrefix $raw "//")) -}}
+    {{- /* R6 fix: reject "/\evil" too — browsers normalize backslash to forward slash
+       in special schemes, so "/\evil.com" resolves like "//evil.com" despite not
+       having a literal "//" prefix. The intent of the allow-list is to block
+       protocol-relative URLs, so this is in scope. */ -}}
+    {{- else if and (hasPrefix $raw "/") (not (hasPrefix $raw "//")) (not (hasPrefix $raw "/\\")) -}}
       {{- $cite = $raw -}}
     {{- end -}}
   {{- end -}}

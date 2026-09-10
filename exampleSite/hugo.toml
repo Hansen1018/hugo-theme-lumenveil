@@ -28,6 +28,8 @@ theme = 'lumenveil'
   tag = 'tags'
 
 [markup]
+  [markup.goldmark.parser.attribute]
+    block = true
   [markup.highlight]
     noClasses = false
     guessSyntax = true
