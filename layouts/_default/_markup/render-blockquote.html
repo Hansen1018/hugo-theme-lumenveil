@@ -34,7 +34,16 @@
 {{- /* Alert title — `.AlertTitle` is set when author writes `> [!WARNING] Custom Text`;
      otherwise we title-case the type (e.g. `note` → `Note`). Unknown types still render
      with their type name capitalized, so a future Hugo-added type degrades gracefully. */ -}}
-<p class="markdown-alert-title">{{ with .AlertTitle }}{{ . }}{{ else }}{{ with strings.FirstUpper .AlertType }}{{ . }}{{ else }}Note{{ end }}{{ end }}</p>
+{{- /* Alert type → emoji map (R15). Emitted inside an aria-hidden span so
+     screen readers announce only the alert title, not the glyph name —
+     the previous SVG-mask ::before approach was a11y-clean but visually
+     over-complex for emoji rendering. R8 noted the a11y trade-off but
+     left it as TODO; R15 escalated this to bug·high and explicitly asked
+     to either fix it in this PR or confirm a follow-up — fixed here. */ -}}
+{{- $icons := dict "note" "ℹ️" "tip" "💡" "important" "📌" "warning" "⚠️" "caution" "🚨" -}}
+{{- $icon := index $icons .AlertType -}}
+{{- if not $icon }}{{ $icon = "📝" }}{{ end -}}
+<p class="markdown-alert-title"><span class="alert-icon" aria-hidden="true">{{ $icon }}</span> {{ with .AlertTitle }}{{ . }}{{ else }}{{ with strings.FirstUpper .AlertType }}{{ . }}{{ else }}Note{{ end }}{{ end }}</p>
   {{- .Text }}
 </blockquote>
 {{- else if or .Attributes.cite .Attributes.caption -}}

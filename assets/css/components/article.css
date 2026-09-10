@@ -40,11 +40,11 @@
      Emojis render with their native color font, so no SVG mask-image needed. */
   --alert-icon-emoji: "📝";
   margin: 1.8em 0;
-  /* Reserve left padding for the absolutely-positioned emoji ::before —
-     the same calc() the previous SVG-mask approach applied inside its
-     @supports (mask) gate. Emoji rendering needs no feature detection
-     (works in every browser with an emoji font), so no @supports wrapper. */
-  padding: var(--alert-pad-y) var(--alert-pad-x) var(--alert-pad-y) calc(var(--alert-pad-x) + var(--alert-icon-size) + 14px);
+  /* Symmetric padding — the icon is now an inline element inside
+     .markdown-alert-title (per R15 a11y fix), so no icon reservation
+     in the block padding. Eliminates the implicit padding↔title
+     coupling that R14 flagged. */
+  padding: var(--alert-pad-y) var(--alert-pad-x);
   border-left: 3px solid var(--alert-color, var(--accent-1));
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   background: var(--alert-bg, rgba(124,92,255,.08));
@@ -63,30 +63,36 @@
    needed (emoji rendering has no browser feature-detection requirement).
    The icon-aware left padding is reserved on the base .markdown-alert rule. */
 
-/* A11y note: emoji inserted via `content` enters the accessibility tree,
-   so screen readers announce the glyph name (e.g. "memo") alongside the
-   alert title. CSS `::before` cannot carry `aria-hidden`, so this is an
-   inherent trade-off of the emoji approach vs the previous SVG-mask (which
-   was purely presentational and contributed nothing to the a11y tree).
-   To suppress the announcement, the render hook would need to emit the
-   emoji inside the title element wrapped in an aria-hidden span — left
-   as a follow-up since this PR scope is the emoji migration itself. */
-.prose .markdown-alert-title::before {
-  content: var(--alert-icon-emoji);
-  position: absolute;
-  /* Offsets derive from the layout tokens defined on .markdown-alert. */
-  left: var(--alert-pad-x);
-  top: var(--alert-pad-y);
-  width: var(--alert-icon-size);
-  height: var(--alert-icon-size);
-  font-size: var(--alert-icon-size);
-  /* Flexbox centering replaces the previous SVG-mask approach's
-     `background ... center / contain` auto-centering — emoji glyphs
-     sit on the text baseline by default, which would render visually
-     low inside the fixed-size box. */
+/* Icon is now an inline <span class="alert-icon"> inside the title
+   (emitted by render-blockquote.html). This replaced the ::before + content
+   approach per R15 — the aria-hidden wrapper suppresses the screen-reader
+   announcement that R8/R15 flagged. */
+.prose .markdown-alert-title {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 10px;
+}
+.prose .markdown-alert-title > .alert-icon {
+  font-size: var(--alert-icon-size);
+  /* Color palette note (R16): emoji renders in its native palette, not
+     tinted by --alert-color. The previous SVG-mask approach filled the icon
+     with `background: var(--alert-color)` so each alert type had a matching
+     accent color on its icon. System emoji fonts cannot be CSS-tinted cleanly,
+     so this is an intentional drop — keep --alert-color on the title text
+     and left border for visual type differentiation. */
+  line-height: 1;
+  /* R17 fix: glyphs wider than 1em overflow the box. line-height: 1 caps the
+     line box at font-size height so the glyph vertically overflows harmlessly
+     (instead of being clipped or pushing the title down). overflow:hidden
+     on the wrapper ensures the glyph stays within its allocated slot. */
+  line-height: var(--alert-icon-size);
+  flex-shrink: 0;
+  display: inline-block;
+  overflow: hidden;
+  width: var(--alert-icon-size);
+  height: var(--alert-icon-size);
+  text-align: center;
+  vertical-align: middle;
 }
 .prose .markdown-alert-note {
   --alert-color: var(--alert-note-color);
