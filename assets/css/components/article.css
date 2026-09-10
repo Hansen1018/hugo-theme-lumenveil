@@ -66,9 +66,9 @@
   text-transform: uppercase;
   color: var(--alert-color, var(--accent-1));
   /* Flex layout — hosts the inline <span class="alert-icon"> emitted by
-     layouts/_default/_markup/render-blockquote.html. Replaces the
-     aria-hidden on the wrapper suppresses screen-reader announcement
-     of the icon. */
+     layouts/_default/_markup/render-blockquote.html and reserves gap spacing
+     between the icon and the title text. Screen-reader suppression of the
+     glyph is handled in the hook via aria-hidden="true" on that span. */
   display: flex;
   align-items: center;
   gap: 10px;
