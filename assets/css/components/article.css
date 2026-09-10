@@ -37,7 +37,7 @@
   --alert-pad-y: 14px;
   --alert-icon-size: 18px;
   /* Fallback icon (generic info circle) — used when per-type --alert-icon is unset. */
-  --alert-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='currentColor' stroke-width='1.5'/%3E%3Cpath d='M8 7v4M8 4.5h.01' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  --alert-icon: "ℹ️";
   margin: 1.8em 0;
   /* Default padding (no icon reservation). The icon-aware variant — with the
      extra left space for the ::before icon — is applied inside the
@@ -65,23 +65,30 @@
    Use a full real-world probe value rather than `url("")` to avoid relying
    on browsers accepting an empty/degenerate URL — a future UA that treats
    an empty url() as invalid would silently drop every alert icon. */
-@supports (mask: url("data:image/svg+xml,%3Csvg/%3E") center/contain no-repeat) or (-webkit-mask: url("data:image/svg+xml,%3Csvg/%3E") center/contain no-repeat) {
-  /* Browsers with mask support get the icon + icon-aware left padding. */
+@supports (content: "📝") or (-webkit-text-stroke: 0) {
+  /* Browsers with emoji font support get the icon + icon-aware left padding. */
   .prose .markdown-alert { padding-left: calc(var(--alert-pad-x) + var(--alert-icon-size) + 14px); }
   .prose .markdown-alert-title::before {
-    content: "";
+    /* Emoji icons: --alert-icon is now a quoted string (e.g. "📝") instead of
+       a SVG data URI. We emit it directly via `content` and let the browser
+       render the glyph (color comes from currentColor / font-family defaults,
+       no mask needed). The font-size token controls visual size — emoji are
+       text glyphs, not painted blocks. */
+    content: var(--alert-icon, "ℹ️");
     position: absolute;
     /* Offsets derive from the layout tokens defined on .markdown-alert. */
     left: var(--alert-pad-x);
     top: var(--alert-pad-y);
     width: var(--alert-icon-size);
     height: var(--alert-icon-size);
-    background: var(--alert-color, currentColor);
-    /* `.markdown-alert` (cascade slot above) defines a default --alert-icon.
-       `var(--alert-icon, none)` only kicks in when the custom property is unset —
-       an invalid `mask-image` value still invalidates the whole declaration. */
-    -webkit-mask: var(--alert-icon, none) center / contain no-repeat;
-            mask: var(--alert-icon, none) center / contain no-repeat;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--alert-icon-size);
+    /* Emoji glyphs render in their native color — drop the SVG tint via
+       currentColor; let the OS / browser pick the emoji font. */
+    color: var(--alert-color, currentColor);
   }
 }
 .prose .markdown-alert-note {
@@ -90,31 +97,31 @@
      override via @supports. Using @supports (not duplicate declarations) so
      the CSS minifier (tdewolff) doesn't collapse the rgba fallback. */
   --alert-bg: rgba(59, 130, 246, .08);
-  --alert-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 0 7.25 7h1a.75.75 0 0 0 .75-.75v-1a.75.75 0 0 0-.75-.75h-1a.75.75 0 0 0-.75.75v1ZM8 4a.75.75 0 0 1 .75.75v3a.75.75 0 0 1-1.5 0v-3A.75.75 0 0 1 8 4Z'/%3E%3C/svg%3E");
+  --alert-icon: "📝";
 }
 .prose .markdown-alert-tip {
   --alert-color: var(--alert-tip-color);
   /* @supports guard for color-mix() — see .markdown-alert-note for rationale */
   --alert-bg: rgba(16, 185, 129, .08);
-  --alert-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1.5c-2.363 0-4.467.864-6.041 2.272L.357 4.5h3.5v3l-1.4-1.4A8.96 8.96 0 0 0 0 8c0 4.962 4.038 9 9 9s9-4.038 9-9-4.038-9-9-9Zm0 1.5c.738 0 1.45.103 2.13.295l-1.43 1.43A6.91 6.91 0 0 0 8 4.5c-.563 0-1.121.066-1.665.197L4.85 3.214A8.012 8.012 0 0 1 8 3Zm-3.16 1.045l1.435 1.435a6.961 6.961 0 0 0-3.21 3.21L1.629 7.27A8.044 8.044 0 0 1 4.84 4.045ZM1.5 8c0-.246.011-.1.034-.246l1.575 1.575a6.95 6.95 0 0 0 0 3.342L1.534 14.246A8.002 8.002 0 0 1 1.5 8Zm13.5 0c0 .246-.011.1-.034.246l-1.575-1.575a6.95 6.95 0 0 0 0-3.342l1.575-1.575c.023.146.034.246.034.246Z'/%3E%3C/svg%3E");
+  --alert-icon: "💡";
 }
 .prose .markdown-alert-important {
   --alert-color: var(--alert-important-color);
   /* @supports guard for color-mix() — see .markdown-alert-note for rationale */
   --alert-bg: rgba(168, 85, 247, .08);
-  --alert-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5c0 .966-.784 1.75-1.75 1.75H8.31l-3.227 2.5a.75.75 0 0 1-1.083-.78Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25H6.5v3.31l3.227-2.5a.75.75 0 0 1 .473-.188h4.75a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Z'/%3E%3C/svg%3E");
+  --alert-icon: "📌";
 }
 .prose .markdown-alert-warning {
   --alert-color: var(--alert-warning-color);
   /* @supports guard for color-mix() — see .markdown-alert-note for rationale */
   --alert-bg: rgba(245, 158, 11, .08);
-  --alert-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z'/%3E%3C/svg%3E");
+  --alert-icon: "⚠️";
 }
 .prose .markdown-alert-caution {
   --alert-color: var(--alert-caution-color);
   /* @supports guard for color-mix() — see .markdown-alert-note for rationale */
   --alert-bg: rgba(239, 68, 68, .08);
-  --alert-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z'/%3E%3C/svg%3E");
+  --alert-icon: "🚨";
 }
 
 /* Blockquote with attribution: <figure>/<figcaption> */
