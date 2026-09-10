@@ -62,12 +62,20 @@ html[data-theme="light"] {
   --alert-warning-color: #92400e;
   --alert-caution-color: #991b1b;
 }
-/* Light-mode --alert-bg fallbacks: gated by `@supports not (color-mix(...))` so the
-   rgba() values only apply on browsers without color-mix support. On modern
-   browsers, the @supports block below provides color-mix() at the same
-   specificity (0,3,1) and wins on source order (theme-light loads after article.css).
-   This restores the intent stated in the comment: "the @supports block derives the
-   modern tint from the token". */
+/* Light-mode --alert-bg fallbacks. Two browser buckets, two separate paths:
+     - Browsers WITH `color-mix()` support: the `@supports (color-mix(...))` block
+       in article.css applies and provides the token-derived tint (specificity
+       0,2,0). The `@supports not (...)` block below is mutually exclusive with
+       `@supports (...)`, so it does NOT apply on these browsers.
+     - Browsers WITHOUT `color-mix()` support: article.css's @supports block does
+       not apply, leaving the (0,2,0) static rgba as the fallback. This
+       `@supports not (...)` block applies instead, with specificity (0,3,1)
+       (the `html[data-theme="light"]` attribute selector + class chain),
+       winning over article.css's (0,2,0) static rgba so the light tint stays
+       visible.
+   In short: modern browsers → article.css color-mix; old browsers → this
+   higher-specificity rgba fallback. The two blocks never compete on source
+   order because they live in mutually exclusive @supports branches. */
 @supports not (background: color-mix(in srgb, red 50%, blue)) {
   html[data-theme="light"] .prose .markdown-alert-note { --alert-bg: rgba(59, 130, 246, .06); }
   html[data-theme="light"] .prose .markdown-alert-tip { --alert-bg: rgba(16, 185, 129, .06); }
