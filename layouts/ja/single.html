@@ -10,10 +10,10 @@
     <div class="article-main glass">
       {{ partial "cover.html" . }}
       <div class="prose">{{ .Content }}</div>
+      <nav class="post-nav" aria-label="記事ナビゲーション">{{ with .PrevInSection }}<a href="{{ .RelPermalink }}"><span>前の記事</span><strong>{{ .LinkTitle }}</strong></a>{{ else }}<span></span>{{ end }}{{ with .NextInSection }}<a href="{{ .RelPermalink }}" class="post-nav__next"><span>次の記事</span><strong>{{ .LinkTitle }}</strong></a>{{ end }}</nav>
       <div class="article-comments">{{ partial "comments.html" . }}</div>
     </div>
     {{ partial "toc.html" . }}
   </div>
-  <nav class="post-nav" aria-label="記事ナビゲーション">{{ with .PrevInSection }}<a href="{{ .RelPermalink }}"><span>前の記事</span><strong>{{ .LinkTitle }}</strong></a>{{ else }}<span></span>{{ end }}{{ with .NextInSection }}<a href="{{ .RelPermalink }}" class="post-nav__next"><span>次の記事</span><strong>{{ .LinkTitle }}</strong></a>{{ end }}</nav>
 </article>
 {{ end }}
