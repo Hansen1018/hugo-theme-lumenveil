@@ -69,9 +69,9 @@ Live preview: <https://blog.hansendong.top>
   ```
 - Optional Artalk comments module — config-driven partial that mirrors the article card style (glass, button--ghost, mono uppercase header) and auto-aligns to `.article-main` via the existing CSS grid, with a per-comment stagger fade-in on list load. **Note:** the demo `server` URL is a placeholder; the theme emits a build-time warning if you enable Artalk without setting your real backend.
 - Optional article like button — centered heart CTA at the bottom of the article body, one-way semantics (no cancel after click) with bump animation, pink accent (#ff6b8a) when liked, count synced across devices via a self-hosted `/api/like/*` endpoint (like-server.py, JSON file backend) with `localStorage` fallback for per-user like state; cursor switches to `not-allowed` to signal the action is locked
-- Optional `cover` front matter per post — page-bundle image (resolved via `Resources.GetMatch`) or `static/` asset, used as the archive-page thumbnail **and as the `og:image` / `twitter:image` meta tag for social sharing** (falls back to `/og.svg` when unset — covers with leading `/` or page-bundle resources resolve to their real permalink)
+- Optional `cover` front matter per post — page-bundle image (resolved via `Resources.GetMatch`) or `static/` asset, used as the archive-page thumbnail **and as the `og:image` / `twitter:image` meta tag for social sharing** (falls back to `/og.png` when unset — covers with leading `/` or page-bundle resources resolve to their real permalink)
 - Optional `cover_caption` front matter — When set, renders below the cover image inside a dark-glass pill wrapper (`rgba(15,23,42,.72)` + `border: 1px solid rgba(255,255,255,.08)` + `border-radius: 999px` + `backdrop-filter: blur(8px)` + off-white text) readable on any cover background, including white. Empty (default) → no `<figcaption>` rendered.
-- Open Graph, Twitter Card, canonical URL, and JSON-LD metadata
+- Open Graph, Twitter Card, canonical URL, and JSON-LD metadata. Override the site-wide social card with `[params] ogImage = "https://…/card.png"`; per-post images use the `cover` key above.
 - Reduced-motion support, keyboard focus states, and mobile navigation
 - Hugo Pipes minification and asset fingerprinting
 
@@ -215,7 +215,7 @@ toc: true
 
 `lastmod` is optional. When present and later than `date`, a "Last updated …" line is rendered in the article header (the template uses a localized label, so the rendered text matches the site's language).
 
-`cover` is optional. When set, it shows up as the post-card thumbnail on the archives page and as the `og:image` / `twitter:image` meta tag for social sharing (used by Twitter, Facebook, Discord, Slack previews). The value is first looked up as a page-bundle resource via `Resources.GetMatch`, then falls back to a path under `static/` (e.g. `cover: images/foo.png` resolves to `/images/foo.png`); paths without a leading `/` are auto-prefixed. Falls back to `/og.svg` when `cover` is unset.
+`cover` is optional. When set, it shows up as the post-card thumbnail on the archives page and as the `og:image` / `twitter:image` meta tag for social sharing (used by Twitter, Facebook, Discord, Slack previews). The value is first looked up as a page-bundle resource via `Resources.GetMatch`, then falls back to a path under `static/` (e.g. `cover: images/foo.png` resolves to `/images/foo.png`); paths without a leading `/` are auto-prefixed. Falls back to `/og.png` when `cover` is unset.
 
 `cover_caption` is optional. When set, it renders inside a dark-glass pill below the cover image (the existing `.article-cover figcaption { text-align: center }` rule centers the pill). Leave empty to skip the `<figcaption>` entirely.
 
@@ -390,7 +390,7 @@ The 26 components, in cascade order:
 ### Customization
 
 - Edit site identity, social links, and license year under `[params]`.
-- Replace `static/favicon.svg` and `static/og.svg` with your own brand assets.
+- Replace `static/favicon.svg` and `static/og.png` with your own brand assets (the social card is a bitmap on purpose — X, Facebook and Slack do not reliably render SVG previews).
 - Override any theme file by creating the same path in your site's `layouts`, `assets`, or `static` directory.
 - The theme follows the system color preference by default. A visitor's manual selection is stored locally in the browser.
 
