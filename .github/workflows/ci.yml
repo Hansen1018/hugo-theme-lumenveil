@@ -66,6 +66,10 @@ jobs:
       # env var clears a [params] value is version-sensitive behaviour a future
       # Hugo bump could silently break.
       - name: Build the default (Chroma) render path
+        # This step uses `mapfile` and process substitution, which are bash
+        # builtins. ubuntu-latest happens to default `run:` to `bash -e`, but
+        # relying on a runner-image default is not a contract — declare it.
+        shell: bash
         run: |
           cd exampleSite
           hugo --minify --config hugo.toml,hugo-chroma.toml -d /tmp/pub-chroma
@@ -92,37 +96,43 @@ jobs:
             exit 1
           fi
           echo "asserting on ${#POSTS[@]} example post pages"
-          saw_pre=0
-          # Count Chroma CONTAINERS and code-bearing containers, and require
-          # them equal. Per-page, not per-block: a page with one good container
-          # and one dropped block used to pass, because the `elif` only fired
-          # when a page had zero wrapped containers.
+          # Two independent checks, because neither alone catches a dropped
+          # block.
           #
-          # Counting <pre> against containers would be wrong: with line numbers
-          # one container holds several <pre> (measured on 0.166.0 with
-          # lineNos: 2 containers, 4 <pre>). The container is matched with a
-          # bounded gap rather than exact adjacency — Chroma emits
-          #     <div class=highlight><pre tabindex=0 class=chroma>...
-          # by default but inserts a wrapper when line numbers are on:
-          #     <div class=highlight><div class=chroma><table class=lntable>…<pre…>
-          # An exact `><pre` would false-fail every page of such a site.
-          # Plain ERE alternation, not (?:…): GNU grep 3.8 accepts the
-          # non-capturing form but warns on stderr, and POSIX ERE does not
-          # define it. Quote-insensitive: whether --minify strips the optional
-          # quotes is the minifier's business, not ours to assert on.
+          # (a) Per page: a rendered <pre> must sit inside a .highlight
+          #     container. This is the theme's own contract — a block that
+          #     escaped the hook's wrapper is a theme bug. The class is matched
+          #     WITHOUT requiring `>` to follow it, so an extra attribute on the
+          #     container (style=, data-*) does not break the count, and no
+          #     bound is placed on anything after it: an earlier
+          #     `…>[^<]{0,40}<(div|span|pre)` tracked Chroma's exact wrapper
+          #     shape and false-failed on any site that changed it.
+          #     Quote-insensitive: whether --minify strips the optional quotes
+          #     is the minifier's business, not ours to assert on.
+          #
+          # (b) In aggregate: rendered containers must equal fenced blocks in
+          #     the source. This is what actually catches a DROPPED block. An
+          #     earlier per-page container/wrapper equality did not: dropping one
+          #     rendered container decremented both sides together, so they
+          #     stayed equal and the page passed (measured on 0.166.0 — one
+          #     container removed from hello-lumenveil left the counts 0 and 0).
+          #     The aggregate form holds on a correct build (source=3, output=3)
+          #     and breaks on a partial drop (output drops to 2).
+          #     Aggregate rather than per-page on purpose: the slug is not
+          #     always the filename (douban-card-shortcode is rendered from
+          #     douban-card-demo.md), so a per-page source lookup needs a
+          #     mapping this step should not have to maintain.
+          saw_pre=0
+          out_boxes=0
           for p in "${POSTS[@]}"; do
             n_pre=$(grep -o '<pre' "$p" | wc -l)
+            n_box=$(grep -oE 'class=["'"'"']?highlight["'"'"']?' "$p" | wc -l)
+            out_boxes=$((out_boxes + n_box))
+            if [ "$n_pre" -gt 0 ] && [ "$n_box" -eq 0 ]; then
+              echo "::error::$n_pre <pre> on the page but no Chroma .highlight container: $p"
+              exit 1
+            fi
             if [ "$n_pre" -gt 0 ]; then
-              n_box=$(grep -oE 'class=["'"'"']?highlight["'"'"']?>' "$p" | wc -l)
-              if [ "$n_box" -eq 0 ]; then
-                echo "::error::$n_pre <pre> on the page but no Chroma .highlight container: $p"
-                exit 1
-              fi
-              n_wrapped=$(grep -oE 'class=["'"'"']?highlight["'"'"']?>[^<]{0,40}<(div|span|pre)' "$p" | wc -l)
-              if [ "$n_box" -ne "$n_wrapped" ]; then
-                echo "::error::$((n_box - n_wrapped)) of $n_box .highlight containers hold no code block: $p"
-                exit 1
-              fi
               saw_pre=$((saw_pre + 1))
             fi
             # Anchored to an actual script load. A bare filename match also
@@ -137,4 +147,15 @@ jobs:
             echo "::error::no <pre> in any of the ${#POSTS[@]} example posts — the render hook dropped code blocks"
             exit 1
           fi
-          echo "ok: $saw_pre of ${#POSTS[@]} post page(s) rendered code blocks through Chroma"
+          # Fenced blocks in the example content, counted from the source.
+          src_boxes=0
+          for md in exampleSite/content/posts/*.md; do
+            [ -e "$md" ] || continue
+            n=$(grep -c '^```' "$md" || true)
+            src_boxes=$((src_boxes + n / 2))
+          done
+          if [ "$out_boxes" -ne "$src_boxes" ]; then
+            echo "::error::rendered $out_boxes Chroma containers but the source has $src_boxes fenced code blocks — the render hook dropped $((src_boxes - out_boxes))"
+            exit 1
+          fi
+          echo "ok: $out_boxes of $src_boxes fenced code blocks rendered through Chroma across ${#POSTS[@]} post pages"
