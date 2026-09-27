@@ -89,7 +89,13 @@ theme = 'lumenveil'
 [permalinks]
   posts = '/posts/:slug/'
 
-[imaging]
-  # `quality` at this level was deprecated in Hugo v0.163.0 and will be removed.
-  # Set per-format instead.
-  jpegQuality = 85
+# `imaging.quality` was deprecated in Hugo v0.163.0, whose replacement is these
+# per-format tables. The older `jpegQuality` / `webpQuality` / `pngQuality` keys
+# are themselves deprecated (since v0.83.0) and each cover only one format, so
+# they would silently leave webp/avif output on the encoder default.
+[imaging.jpeg]
+  quality = 85
+[imaging.webp]
+  quality = 85
+[imaging.avif]
+  quality = 85

@@ -56,7 +56,7 @@ Live preview: <https://blog.hansendong.top>
 - Client-side search powered by Hugo JSON output
 - Categories, tags, pagination, RSS, sitemap, and robots.txt
 - Article table of contents, reading time, word count, last modified indicator, and a real-time cross-user page view count via the busuanzi partial (third-party CN service)
-- Dynamic copyright range (from `since` to the current year) and CC BY-NC-SA 4.0 license badge in the footer
+- Dynamic copyright range (from `since` to the current year) and CC BY-NC-ND 4.0 license badge in the footer
 - Syntax highlighting and one-click code or article-link copy
 - **Opt-in client-side syntax highlighting via `[params] highlight = 'hljs'`** — When set, the theme loads highlight.js with monokai and a transparent `.hljs { background: transparent !important }` rule so the container blends with the article surface. The `_default/_markup/render-codeblock.html` hook emits raw `<pre><code>` (no chroma spans) so hljs highlights cleanly without double-markup. Sites not setting the param see zero change — no chroma bytes shipped unless you opt in.
 - **Opt-in KaTeX math rendering via `[params] math = true`** — When set, the theme loads KaTeX 0.16.11 (CSS + JS + auto-render) from jsDelivr and renders math in `.article` / `.article-main` / `.prose` containers. Supports `$$...$$` / `\[...\]` display + `\(...\)` inline math; bare `$...$` is intentionally NOT registered to dodge the well-known KaTeX auto-render footgun (e.g. `$PATH` or "costs $5" being greedily matched as math). Sites not setting the param see zero change — no KaTeX bytes shipped unless you opt in.
@@ -402,6 +402,6 @@ See [CHANGELOG.md](./CHANGELOG.md) for version notes. Detailed per-version notes
 
 ## License
 
-Lumenveil is released under the [GNU General Public License v3.0](LICENSE). The default site footer links to the [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans) license for the site's written content; you can replace it with the license that suits your work.
+Lumenveil is released under the [GNU General Public License v3.0](LICENSE). The default site footer links to the [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.zh-hans) license for the site's written content; you can replace it with the license that suits your work.
 
 **Tested up to:** Hugo 0.165.0 (verified via local dev and exampleSite build).

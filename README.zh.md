@@ -57,7 +57,7 @@ Lumenveil（光幕）是一款面向个人博客的 Hugo 主题，以通透玻�
 - 基于 Hugo JSON 输出的前端全文搜索
 - 分类、标签、分页、RSS、站点地图与 robots.txt
 - 文章目录、阅读时间、字数统计、最后更新时间与通过 busuanzi partial 显示的实时跨访客阅读次数（第三方 CN 服务）
-- 页脚动态版权（`since` 至今）和 CC BY-NC-SA 4.0 许可链接
+- 页脚动态版权（`since` 至今）和 CC BY-NC-ND 4.0 许可链接
 - 代码高亮、代码复制与文章链接复制
 - **Opt-in 客户端语法高亮（`[params] highlight = 'hljs'`）** —— 设置后主题加载 highlight.js + monokai，并通过 `.hljs { background: transparent !important }` 让容器融入文章底色。`_default/_markup/render-codeblock.html` 输出原始 `<pre><code>`（无 chroma span），hljs 不会重复标记。未设置该参数时零变更 —— 不主动发 chroma 字节。
 - **Opt-in KaTeX 数学渲染（`[params] math = true`）** —— 设置后主题从 jsDelivr 加载 KaTeX 0.16.11（CSS + JS + auto-render），对 `.article` / `.article-main` / `.prose` 容器内的数学公式进行渲染。支持 `$$...$$` / `\[...\]` 块状以及 `\(...\)` 行内数学；决定不注册裸 `$...$` 以避免 KaTeX auto-render 经典的 `$PATH` / "costs $5" 被贪婪匹配为数学 bug。未设置该参数时零变更 —— 不主动发 KaTeX 字节。
@@ -204,4 +204,4 @@ toc: true
 
 ## 许可
 
-Lumenveil 主题以 [GNU General Public License v3.0](LICENSE) 发布。站点默认页脚的 CC BY-NC-SA 4.0 链接用于站点文字内容，请按需要替换为适合你的许可协议。
+Lumenveil 主题以 [GNU General Public License v3.0](LICENSE) 发布。站点默认页脚的 CC BY-NC-ND 4.0 链接用于站点文字内容，请按需要替换为适合你的许可协议。

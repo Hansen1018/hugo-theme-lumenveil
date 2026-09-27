@@ -5,10 +5,15 @@
 {{ $isList := or (eq .Section "archives") (eq .Section "posts") }}
 {{/* Year-filter base URL. Built from the section's own permalink instead of a
      hardcoded "/posts/" or "/archives/" string, so it stays correct for any
-     section name, any permalink config, and any baseURL subpath. Every href
-     derived from it goes through relURL — see the archive bar below. */}}
+     section name, any permalink config, and any baseURL subpath.
+     relURL is idempotent in Hugo (it no-ops on a path that already carries the
+     base path), so piping the already-prefixed RelPermalink through it below is
+     safe — do not "simplify" it away without re-measuring subpath builds.
+     The with/else mirrors posts/single.html: on a multilingual site the section
+     can be absent for the current language, and an empty $yearBase would emit
+     href="" (reloads the current page) instead of a real target. */}}
 {{ $yearBase := "" }}
-{{ with site.GetPage "section" .Section }}{{ $yearBase = .RelPermalink }}{{ end }}
+{{ with site.GetPage "section" .Section }}{{ $yearBase = .RelPermalink }}{{ else }}{{ $yearBase = "/archives/" | relURL }}{{ end }}
 {{ $yearCount := 0 }}
 {{ if $isList }}
   {{ $yearCount = len ((where site.RegularPages "Section" "in" site.Params.mainSections).GroupByDate "2006") }}

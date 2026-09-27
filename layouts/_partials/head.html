@@ -91,8 +91,10 @@ try {
 {{- else -}}
   {{/* og:image must be a raster format. X, Facebook and Slack do not reliably
        render SVG previews, so the default points at static/og.png (a 1200x630
-       bitmap of static/og.svg) rather than the vector source. Override per site
-       with `[params] ogImage = "…"` when you want a site-specific card. */}}
+       bitmap of static/og.svg) rather than the vector source.
+       Site-wide override: `[params] ogImage = "https://…/card.png"`.
+       Deliberately site-scoped, unlike `cover` which is read per page — the
+       social card is site branding, a per-post image is `cover`. */}}
   {{- with site.Params.ogImage -}}
     {{- $ogImage = . | absURL -}}
   {{- else -}}
