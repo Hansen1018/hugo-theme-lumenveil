@@ -18,6 +18,12 @@
      for the current language. An unresolved target renders href="", which
      reloads the current page instead of navigating anywhere.
 
+     The fallback cannot produce "//": for an empty .Section, `site.GetPage
+     "section" ""` resolves to the home page and returns "/", so the `with`
+     branch wins. The else-branch is reached only for a NON-empty section whose
+     section page is missing, where it synthesises "/<section>/" correctly.
+     Verified on 0.166.0: with .Section empty the partial returns "/", not "//".
+
   Returns a string, so callers use it directly as the href.
 */ -}}
 {{- $page := . -}}

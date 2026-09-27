@@ -64,12 +64,28 @@ jobs:
           hugo --minify --config hugo.toml,hugo-chroma.toml -d /tmp/pub-chroma
           # `hugo` exits 0 even when a render hook silently drops a code block —
           # that is why the original P0 stayed green. Assert the output instead.
-          grep -q '<pre' /tmp/pub-chroma/posts/hello-lumenveil/index.html \
-            || { echo "::error::no <pre> in default Chroma build"; exit 1; }
+          #
+          # The page is located by glob rather than by a hardcoded
+          # /posts/hello-lumenveil/index.html: a renamed example post or a
+          # changed permalink config would otherwise surface as a misleading
+          # "no <pre>" error pointing at the render hook, when the hook is fine.
+          # Resolve it once, then assert it exists — a missing page and a page
+          # missing its code block are different failures and deserve different
+          # messages.
+          POST=$(find /tmp/pub-chroma -name index.html -path '*/posts/*' \
+                   ! -path '*/page/*' | head -n1)
+          if [ -z "$POST" ]; then
+            echo "::error::no post page found under /tmp/pub-chroma — did the example content or permalink config change?"
+            find /tmp/pub-chroma -name index.html | head -20
+            exit 1
+          fi
+          echo "asserting on $POST"
+          grep -q '<pre' "$POST" \
+            || { echo "::error::no <pre> in default Chroma build ($POST)"; exit 1; }
           # Quote-insensitive: Chroma emits class="highlight", and whether
           # --minify strips the optional quotes is the minifier's business, not
           # ours to assert on.
-          grep -Eq 'class=["'"'"']?highlight' /tmp/pub-chroma/posts/hello-lumenveil/index.html \
-            || { echo "::error::no Chroma container in default build"; exit 1; }
-          ! grep -q 'highlight.min.js' /tmp/pub-chroma/posts/hello-lumenveil/index.html \
+          grep -Eq 'class=["'"'"']?highlight' "$POST" \
+            || { echo "::error::no Chroma container in default build ($POST)"; exit 1; }
+          ! grep -q 'highlight.min.js' "$POST" \
             || { echo "::error::hljs CDN loaded despite highlight being chroma"; exit 1; }

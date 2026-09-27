@@ -304,7 +304,6 @@ menuToggle?.addEventListener('click', () => {
         next.textContent = '下一页 →'
       }
       pagination.appendChild(next)
-      pagination.dataset.client = '1'
     }
     const yearPills = Array.from(pills)
     const update = (year) => {
