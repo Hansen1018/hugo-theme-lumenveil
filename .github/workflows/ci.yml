@@ -5,6 +5,14 @@ on:
   pull_request:
     branches: [main]
 
+# Least privilege, declared explicitly rather than inherited. This workflow only
+# checks out code and runs Hugo — it never writes to the repo — so a repo-wide
+# default change to a wider GITHUB_TOKEN scope should not silently widen this
+# job. Matches the explicit grant in ocr-review.yml, which additionally needs
+# pull-requests: write to post review comments.
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
