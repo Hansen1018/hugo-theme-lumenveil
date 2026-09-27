@@ -8,6 +8,16 @@
   section names this theme hardcoded before mainSections was consulted at all
   (v0.2-era `or (eq .Section "archives") (eq .Section "posts")`).
 
+  These two literals deliberately repeat the same names as the no-config
+  default in main-sections.html, and the two lists must stay independent even
+  though they can drift apart. They answer different questions:
+  main-sections.html answers "which sections are main when this site configures
+  none", while the union below answers "which sections get list treatment no
+  matter how the site configures mainSections". Deriving one from the other
+  would make a site with mainSections = ['blog'] lose the year pills and
+  #archive-all-cards on /posts/ and /archives/ — the back-compat regression the
+  union exists to prevent. Change one list and the other deliberately stays put.
+
   The literals are load-bearing, not legacy cruft. Dropping them regresses:
   on the shipped exampleSite config (mainSections = ['posts']) a site that also
   has an /archives/ section would stop being a list section there and lose both

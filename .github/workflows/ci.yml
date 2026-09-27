@@ -93,16 +93,22 @@ jobs:
           fi
           echo "asserting on ${#POSTS[@]} example post pages"
           saw_pre=0
+          # Tie the two markers to the SAME element in ONE pattern. Chroma emits
+          # exactly:
+          #     <div class=highlight><pre tabindex=0 class=chroma>...
+          # Two independent greps could both be satisfied without either proving
+          # a rendered code block — `class=...highlight...` also matches an
+          # unrelated class merely CONTAINING "highlight", and a bare `<pre`
+          # matches escaped or inlined text. Then a page whose code blocks had
+          # been dropped would still pass, which is the masked failure this step
+          # exists to catch. Quote-insensitive: whether --minify strips the
+          # optional quotes is the minifier's business, not ours to assert on.
           for p in "${POSTS[@]}"; do
-            if grep -q '<pre' "$p"; then
+            if grep -Eq 'class=["'"'"']?highlight["'"'"']?><pre' "$p"; then
               saw_pre=1
-              # Quote-insensitive: Chroma emits class="highlight", and whether
-              # --minify strips the optional quotes is the minifier's business,
-              # not ours to assert on.
-              if ! grep -Eq 'class=["'"'"']?highlight' "$p"; then
-                echo "::error::code block without a Chroma container: $p"
-                exit 1
-              fi
+            elif grep -q '<pre' "$p"; then
+              echo "::error::<pre> present but not wrapped in the Chroma .highlight container: $p"
+              exit 1
             fi
             if grep -q 'highlight.min.js' "$p"; then
               echo "::error::hljs CDN loaded despite highlight being chroma: $p"

@@ -4,6 +4,16 @@
   Returns the configured slice, or the literal (slice "archives" "posts") when
   the site sets none.
 
+  "Sets none" is decided by truthiness, and that is deliberate. Switching to
+  `isset site.Params "mainSections"` to tell an unset param from an explicitly
+  empty one does not work: on 0.166.0, isset returns false for BOTH
+  mainSections = ['posts'] and mainSections = [], so it would send every
+  configured site down the default branch. There is also nothing to preserve — an
+  empty mainSections could never have meant "no list sections", because the
+  union in is-list-section.html treats /posts/ and /archives/ as list sections
+  regardless of this param. Treat [] and unset as the same thing: a site with no
+  main sections configured still wants the built-in article sections.
+
   Why this exists: `site.Params.mainSections` was read in five places
   (section.html, posts/single.html, single.html, ja/single.html, plus the
   per-template fallbacks) and every copy carried its own `default`. That is not
