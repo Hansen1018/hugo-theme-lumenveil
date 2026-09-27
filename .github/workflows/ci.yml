@@ -93,32 +93,42 @@ jobs:
           fi
           echo "asserting on ${#POSTS[@]} example post pages"
           saw_pre=0
-          # Tie the two markers to the SAME .highlight container. Two
-          # independent greps could both be satisfied without either proving a
-          # rendered code block — `class=...highlight...` also matches an
-          # unrelated class merely CONTAINING "highlight", and a bare `<pre`
-          # matches escaped or inlined text. A page whose code blocks had been
-          # dropped would then still pass, which is the masked failure this step
-          # exists to catch.
+          # Count Chroma CONTAINERS and code-bearing containers, and require
+          # them equal. Per-page, not per-block: a page with one good container
+          # and one dropped block used to pass, because the `elif` only fired
+          # when a page had zero wrapped containers.
           #
-          # The container is matched with a bounded gap rather than exact
-          # adjacency. Chroma emits
+          # Counting <pre> against containers would be wrong: with line numbers
+          # one container holds several <pre> (measured on 0.166.0 with
+          # lineNos: 2 containers, 4 <pre>). The container is matched with a
+          # bounded gap rather than exact adjacency — Chroma emits
           #     <div class=highlight><pre tabindex=0 class=chroma>...
-          # by default, but with line numbers it inserts a wrapper first:
+          # by default but inserts a wrapper when line numbers are on:
           #     <div class=highlight><div class=chroma><table class=lntable>…<pre…>
-          # Verified on 0.166.0 for all three variants. An exact `><pre` would
-          # false-fail every page of a site that enables lineNos.
-          # Quote-insensitive: whether --minify strips the optional quotes is
-          # the minifier's business, not ours to assert on.
+          # An exact `><pre` would false-fail every page of such a site.
+          # Plain ERE alternation, not (?:…): GNU grep 3.8 accepts the
+          # non-capturing form but warns on stderr, and POSIX ERE does not
+          # define it. Quote-insensitive: whether --minify strips the optional
+          # quotes is the minifier's business, not ours to assert on.
           for p in "${POSTS[@]}"; do
-            if grep -Eq 'class=["'"'"']?highlight["'"'"']?>[^<]{0,40}<(?:div|span|pre)' "$p" \
-               && grep -q '<pre' "$p"; then
+            n_pre=$(grep -o '<pre' "$p" | wc -l)
+            if [ "$n_pre" -gt 0 ]; then
+              n_box=$(grep -oE 'class=["'"'"']?highlight["'"'"']?>' "$p" | wc -l)
+              if [ "$n_box" -eq 0 ]; then
+                echo "::error::$n_pre <pre> on the page but no Chroma .highlight container: $p"
+                exit 1
+              fi
+              n_wrapped=$(grep -oE 'class=["'"'"']?highlight["'"'"']?>[^<]{0,40}<(div|span|pre)' "$p" | wc -l)
+              if [ "$n_box" -ne "$n_wrapped" ]; then
+                echo "::error::$((n_box - n_wrapped)) of $n_box .highlight containers hold no code block: $p"
+                exit 1
+              fi
               saw_pre=$((saw_pre + 1))
-            elif grep -q '<pre' "$p"; then
-              echo "::error::<pre> present but not wrapped in the Chroma .highlight container: $p"
-              exit 1
             fi
-            if grep -q 'highlight.min.js' "$p"; then
+            # Anchored to an actual script load. A bare filename match also
+            # fires on prose that merely mentions the CDN — a post documenting
+            # the hljs path would false-fail the whole step.
+            if grep -Eq '<script[^>]+src=["'"'"'][^"'"'"']*highlight\.min\.js' "$p"; then
               echo "::error::hljs CDN loaded despite highlight being chroma: $p"
               exit 1
             fi
