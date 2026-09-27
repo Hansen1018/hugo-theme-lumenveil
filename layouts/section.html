@@ -3,8 +3,12 @@
 {{ $allList := .RegularPagesRecursive.ByDate.Reverse }}
 {{ $list := $allList }}
 {{ $isList := or (eq .Section "archives") (eq .Section "posts") }}
-{{ $yearBase := "/posts/" }}
-{{ if and $isList (eq .Section "archives") }}{{ $yearBase = "/archives/" }}{{ end }}
+{{/* Year-filter base URL. Built from the section's own permalink instead of a
+     hardcoded "/posts/" or "/archives/" string, so it stays correct for any
+     section name, any permalink config, and any baseURL subpath. Every href
+     derived from it goes through relURL — see the archive bar below. */}}
+{{ $yearBase := "" }}
+{{ with site.GetPage "section" .Section }}{{ $yearBase = .RelPermalink }}{{ end }}
 {{ $yearCount := 0 }}
 {{ if $isList }}
   {{ $yearCount = len ((where site.RegularPages "Section" "in" site.Params.mainSections).GroupByDate "2006") }}
@@ -34,7 +38,7 @@
   {{ if $pages }}
     <div class="tag-list tag-list--archive" role="list">
 <a href="{{ $yearBase | relURL }}" data-archive-all{{ if eq $year "" }} class="is-active"{{ end }} role="listitem">全部<span class="archive-count">{{ len $pages }}</span></a>
-      {{ range sort ($pages.GroupByDate "2006") "Key" "desc" }}<a href="{{ printf "%s?year=%s" $yearBase .Key }}" data-year="{{ .Key }}"{{ if eq $year .Key }} class="is-active"{{ end }} role="listitem">{{ .Key }}<span class="archive-count">{{ len .Pages }}</span></a>{{ end }}
+      {{ range sort ($pages.GroupByDate "2006") "Key" "desc" }}<a href="{{ printf "%s?year=%s" $yearBase .Key | relURL }}" data-year="{{ .Key }}"{{ if eq $year .Key }} class="is-active"{{ end }} role="listitem">{{ .Key }}<span class="archive-count">{{ len .Pages }}</span></a>{{ end }}
     </div>
   {{ end }}
 </section>
@@ -51,7 +55,13 @@
   {{ if $paginator.Pages }}
     <div class="post-grid" data-post-grid data-per-page="{{ $pageSize }}">{{ range $paginator.Pages }}{{ partial "post-card.html" . }}{{ end }}</div>
     {{ partial "pagination.html" (dict "Paginator" $paginator "Year" $year) }}
-    {{ if and $isList (eq .Section "archives") }}<template id="archive-all-cards">{{ range $allList }}{{ partial "post-card.html" . }}{{ end }}</template>{{ end }}
+    {{/* main.js filters the grid client-side by year. It needs every card in the
+         section, not just the current page, so the full list is shipped once in
+         a <template> and cloned into the grid on filter change. This must be
+         emitted for any list section ($isList) — gating it on
+         .Section == "archives" left the posts section with year pills that could
+         only ever filter the 7 cards already on screen. */}}
+    {{ if $isList }}<template id="archive-all-cards">{{ range $allList }}{{ partial "post-card.html" . }}{{ end }}</template>{{ end }}
   {{ else }}
     <div class="empty-state"><strong>{{ if $year }}{{ $year }} 年暂无文章{{ else }}暂无文章{{ end }}</strong><p>{{ if $year }}换个年份试试，或<a href="{{ $yearBase | relURL }}">查看全部文章</a>。{{ else }}内容发布后会显示在这里。{{ end }}</p></div>
   {{ end }}

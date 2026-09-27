@@ -1,22 +1,44 @@
 {{- /*
-  render-codeblock.html — opt-in hljs hook.
+  render-codeblock.html — code-block render hook with two rendering modes.
 
-  Activate with `[params] highlight = "hljs"` in site config. When the param
-  is NOT set, this template outputs nothing and Hugo falls back to its
-  default Chroma rendering — so existing theme users see zero behavior
-  change until they opt in.
+  Mode A — Chroma (default): `[params] highlight` unset or anything != "hljs".
+    Renders server-side syntax highlighting through `transform.HighlightCodeBlock`,
+    which honours the site's `[markup.highlight]` config (noClasses, guessSyntax…).
 
-  Why a render hook instead of just disabling Chroma in head:
-    - Hugo's default fenced-code render emits <pre><code class="language-x">
-      with Chroma spans inside. hljs then scans the same nodes and adds
-      its own spans, producing double-markup where Chroma classes fight
-      hljs classes for the same text.
-    - This hook strips Chroma entirely: raw <pre><code class="language-x">
-      with the literal source. hljs picks up `language-x` on the client
-      and highlights cleanly. No JS? Code still renders as plain
-      monospace — the fallback we want.
+  Mode B — hljs (opt-in): `[params] highlight = "hljs"`.
+    Emits raw <pre><code class="language-x"> with the literal source and lets
+    highlight.js do the work client-side from the CDN (see _partials/head.html).
+
+  Why a render hook at all in Mode B:
+    - Hugo's default fenced-code render emits <pre><code class="language-x"> with
+      Chroma spans inside. hljs then scans the same nodes and adds its own spans,
+      producing double-markup where Chroma classes fight hljs classes for the same
+      text.
+    - This hook strips Chroma entirely in Mode B: raw <pre><code> with the
+      literal source. hljs picks up `language-x` on the client. No JS? Code still
+      renders as plain monospace — the fallback we want.
+
+  BUG FIX (2026-09-27) — code blocks vanished for every site not opting into hljs.
+  This file used to wrap its entire body in `{{ if eq site.Params.highlight "hljs" }}`
+  and emit nothing otherwise, on the assumption that "a render hook that outputs
+  nothing makes Hugo fall back to its default Chroma rendering". That assumption is
+  false: once a render hook exists for the hook type, Hugo uses its output
+  verbatim — an empty render hook means the code block is simply gone.
+
+  Measured on exampleSite/content/posts/hello-lumenveil.md (2 fenced blocks),
+  Hugo 0.146.0 and 0.166.0 alike:
+    highlight = "hljs"  -> 2 <pre>, 2 language-* class   (correct)
+    highlight unset     -> 0 <pre>, 0 language-* class   (code silently dropped)
+  exampleSite sets highlight = "hljs", and CI only builds exampleSite, so the
+  breakage was invisible in this repo while hitting every default-config consumer
+  of the theme. The non-hljs branch now calls transform.HighlightCodeBlock so the
+  default path renders Chroma-highlighted code like any stock Hugo site.
 */ -}}
 {{- if eq site.Params.highlight "hljs" -}}
-{{- $lang := .Type | default "text" -}}
-<pre><code class="language-{{ $lang }}">{{ .Inner }}</code></pre>
+  {{- $lang := .Type | default "text" -}}
+  <pre><code class="language-{{ $lang }}">{{ .Inner }}</code></pre>
+{{- else -}}
+  {{- /* .Wrapped is a template.HTML (already safe); piping the result straight into
+       safeHTML fails — HighlightResult is a struct, not a string. */ -}}
+  {{- (transform.HighlightCodeBlock .).Wrapped -}}
 {{- end -}}

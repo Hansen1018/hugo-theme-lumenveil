@@ -52,7 +52,6 @@ theme = 'lumenveil'
   copyright = 'CC BY-NC-ND 4.0 DEED'
   copyright_url = 'https://creativecommons.org/licenses/by-nc-nd/4.0/'
   mainSections = ['posts']
-  highlight = 'hljs'
   # Opt-in KaTeX math rendering (auto-render targets .article/.article-main/.prose; supports $$...$$ / \\[...\\] display + \\(...\\) inline - bare $...$ deliberately not registered)
   math = true
 
@@ -91,4 +90,6 @@ theme = 'lumenveil'
   posts = '/posts/:slug/'
 
 [imaging]
-  quality = 85
+  # `quality` at this level was deprecated in Hugo v0.163.0 and will be removed.
+  # Set per-format instead.
+  jpegQuality = 85

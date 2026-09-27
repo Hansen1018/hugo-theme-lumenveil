@@ -14,7 +14,13 @@ jobs:
           submodules: recursive
       - uses: peaceiris/actions-hugo@v3
         with:
-          hugo-version: '0.146.0'
+          # Test against current Hugo, not the theme's minimum supported version.
+          # Pinned to 0.146.0 this workflow missed 20 releases: Hugo 0.163.0
+          # deprecated `imaging.quality` and the build emitted a WARN that CI
+          # never saw. Minimum-version support is a release policy, not something
+          # CI should enforce — bump this when cutting a release, and widen the
+          # matrix if you want to prove the minimum still works.
+          hugo-version: '0.166.0'
           extended: true
       # exampleSite uses theme = 'lumenveil' but doesn't ship the theme
       # itself; create a symlink so Hugo can find it locally.

@@ -37,7 +37,17 @@
   updateHeader()
   window.addEventListener('scroll', updateHeader, { passive: true })
 
-  document.addEventListener('keydown', (e) => { if (e.key === "Escape" && menu?.classList.contains("is-open")) { menu.classList.remove("is-open"); menuToggle.setAttribute("aria-expanded", "false"); menuToggle.focus(); } });
+  // Escape closes the mobile menu (keyboard a11y) and returns focus to the
+  // toggle that opened it. Previously two separate keydown listeners did this —
+  // the one-liner above and a second block further down — so every Escape press
+  // ran the close path twice.
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && menu?.classList.contains('is-open')) {
+      menu.classList.remove('is-open')
+      menuToggle?.setAttribute('aria-expanded', 'false')
+      menuToggle?.focus()
+    }
+  })
 
 menuToggle?.addEventListener('click', () => {
     const open = menu?.classList.toggle('is-open') ?? false
@@ -48,14 +58,6 @@ menuToggle?.addEventListener('click', () => {
     menu.classList.remove('is-open')
     menuToggle?.setAttribute('aria-expanded', 'false')
   }))
-
-  // Escape closes the mobile menu (keyboard a11y).
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && menu?.classList.contains('is-open')) {
-      menu.classList.remove('is-open')
-      menuToggle?.setAttribute('aria-expanded', 'false')
-    }
-  })
 
   const revealNodes = document.querySelectorAll('[data-reveal]')
   if ('IntersectionObserver' in window) {
@@ -304,23 +306,6 @@ menuToggle?.addEventListener('click', () => {
       pagination.appendChild(next)
       pagination.dataset.client = '1'
     }
-    let serverPaginationCache = ''
-    const captureServerPagination = () => {
-      if (!pagination) return
-      let tpl = pagination.querySelector('[data-pagination-template]')
-      if (!tpl) {
-        tpl = document.createElement('template')
-        tpl.setAttribute('data-pagination-template', '')
-        tpl.innerHTML = pagination.innerHTML
-        pagination.appendChild(tpl)
-      }
-      serverPaginationCache = tpl.innerHTML
-    }
-    const restoreServerPagination = () => {
-      if (!pagination || !serverPaginationCache) return
-      pagination.innerHTML = serverPaginationCache
-      pagination.dataset.client = '0'
-    }
     const yearPills = Array.from(pills)
     const update = (year) => {
       const sourceCards = allArchiveCards.length > 0 ? allArchiveCards : cards
@@ -362,10 +347,10 @@ yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year
       if (emptyNode) emptyNode.hidden = visible !== 0 || !year
       if (pagination) {
         /* Hansen 2026-09-01 fix: always rebuild pagination to match the
-           visible card count. restoreServerPagination() served a stale
-           nav after a "全部" click from a year-filtered state (grid showed
-           18 cards but nav still showed 2 pages from the year-filtered
-           server render). */
+           visible card count. The old restoreServerPagination() path served a
+           stale nav after a "全部" click from a year-filtered state (grid showed
+           18 cards but nav still showed 2 pages from the year-filtered server
+           render). It has been removed — this rebuild is the only path. */
         buildClientPagination(visible)
       }
     }
@@ -392,7 +377,6 @@ yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year
       const date = card.querySelector('time[datetime]')
       if (date) card.dataset.year = (date.getAttribute('datetime') || '').slice(0, 4)
     })
-    captureServerPagination()
     /* Hansen 2026-09-01 fix: only invoke update() when the URL has ?year=.
        On initial page load with no year filter, leaving update() alone
        keeps the server-rendered paginated grid (e.g. 7 cards + 3-page

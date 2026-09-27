@@ -4,14 +4,15 @@
   Component CSS — explicitly ordered slice (NOT resources.Match, which sorts
   alphabetically and broke cascade order in commit 61b585f).
 
-  Cascade order:
+  Cascade order (must stay in sync with the slice below):
     1. tokens        2. reset         3. utilities      4. aurora
     5. header        6. home          7. page-hero      8. pagination
     9. gallery-prose 10. photoswipe   11. embeds        12. term
     13. article      14. friends      15. like          16. archive
     17. toc          18. 404          19. search        20. footer
-    21. back-to-top  22. responsive   23. motion        24. theme-light
-    25. gallery      26. douban-card   27. sponsor
+    21. back-to-top  22. scroll-progress                23. responsive
+    24. motion       25. theme-light  26. gallery       27. douban-card
+    28. sponsor
 */}}
 {{ $components := slice
     (resources.Get "css/components/tokens.css")
@@ -88,7 +89,15 @@ try {
     {{- $ogImage = . | absURL -}}
   {{- end -}}
 {{- else -}}
-  {{- $ogImage = "og.svg" | absURL -}}
+  {{/* og:image must be a raster format. X, Facebook and Slack do not reliably
+       render SVG previews, so the default points at static/og.png (a 1200x630
+       bitmap of static/og.svg) rather than the vector source. Override per site
+       with `[params] ogImage = "…"` when you want a site-specific card. */}}
+  {{- with site.Params.ogImage -}}
+    {{- $ogImage = . | absURL -}}
+  {{- else -}}
+    {{- $ogImage = "og.png" | absURL -}}
+  {{- end -}}
 {{- end -}}
 <meta property="og:image" content="{{ $ogImage }}">
 <meta name="twitter:image" content="{{ $ogImage }}">
