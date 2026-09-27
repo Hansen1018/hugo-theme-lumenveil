@@ -39,6 +39,11 @@
   <pre><code class="language-{{ $lang }}">{{ .Inner }}</code></pre>
 {{- else -}}
   {{- /* .Wrapped is a template.HTML (already safe); piping the result straight into
-       safeHTML fails — HighlightResult is a struct, not a string. */ -}}
-  {{- (transform.HighlightCodeBlock .).Wrapped -}}
+       safeHTML fails — HighlightResult is a struct, not a string.
+       .Options carries any fence attributes (```go {linenos=table, hl_lines=[3]}).
+       Hugo's stock codeblock hook passes it; without it those attributes are
+       dropped. Measured: .Options is populated from the fence (keys hl_lines,
+       linenos), and output is byte-identical with and without it in the cases
+       probed, so this is parity with stock rather than a behaviour fix. */ -}}
+  {{- (transform.HighlightCodeBlock . .Options).Wrapped -}}
 {{- end -}}

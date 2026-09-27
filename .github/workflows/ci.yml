@@ -8,19 +8,24 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # theme.toml declares min_version = "0.146.0" and README promises
+    # "Hugo Extended 0.146.0 or newer", so that floor is part of the public
+    # contract — test it. A single pinned version proved the opposite: pinned at
+    # 0.146.0 this workflow missed 20 releases, and Hugo 0.163.0's
+    # imaging.quality deprecation only surfaced after the pin was raised.
+    # Neither end alone is enough — the floor catches 0.146+ syntax creeping in,
+    # the tip catches upstream deprecations before they reach users.
+    strategy:
+      fail-fast: false
+      matrix:
+        hugo-version: ['0.146.0', '0.166.0']
     steps:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
       - uses: peaceiris/actions-hugo@v3
         with:
-          # Test against current Hugo, not the theme's minimum supported version.
-          # Pinned to 0.146.0 this workflow missed 20 releases: Hugo 0.163.0
-          # deprecated `imaging.quality` and the build emitted a WARN that CI
-          # never saw. Minimum-version support is a release policy, not something
-          # CI should enforce — bump this when cutting a release, and widen the
-          # matrix if you want to prove the minimum still works.
-          hugo-version: '0.166.0'
+          hugo-version: ${{ matrix.hugo-version }}
           extended: true
       # exampleSite uses theme = 'lumenveil' but doesn't ship the theme
       # itself; create a symlink so Hugo can find it locally.
