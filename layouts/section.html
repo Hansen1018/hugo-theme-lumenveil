@@ -119,7 +119,7 @@
          only ever filter the 7 cards already on screen. */}}
     {{ if $isList }}<template id="archive-all-cards">{{ range $allList }}{{ partial "post-card.html" . }}{{ end }}</template>{{ end }}
   {{ else }}
-    <div class="empty-state"><strong>{{ if $year }}{{ $year }} 年暂无文章{{ else }}暂无文章{{ end }}</strong><p>{{ if $year }}换个年份试试，或<a href="{{ $yearBase | relURL }}">查看全部文章</a>。{{ else }}内容发布后会显示在这里。{{ end }}</p></div>
+    <div class="empty-state"><strong>{{ if $year }}{{ $year }} 年暂无文章{{ else }}暂无文章{{ end }}</strong><p>{{ if $year }}换个年份试试，或<a href="{{ $yearBase }}">查看全部文章</a>。{{ else }}内容发布后会显示在这里。{{ end }}</p></div>
   {{ end }}
 </section>
 {{ end }}

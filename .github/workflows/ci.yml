@@ -163,15 +163,38 @@ jobs:
           # (content/posts/foo/index.md) DO render into the output set, so `find`
           # rather than a flat glob, or they would be silently missed.
           #
-          # Open/close parity is tracked with awk instead of dividing a fence
-          # line count by 2. The divisor was wrong for a tilde fence (~~~), a
-          # longer fence (````), an indented fence inside a list item, and it
-          # silently truncated an odd count. Anything opening a fence counts once.
+          # Fence counting follows CommonMark's open/close rules rather than
+          # toggling on any ``` or ~~~ line:
+          #   - a fence may be indented, or follow a list marker (`- ```bash`,
+          #     `1. ~~~`) — a leading-whitespace-only regex missed those entirely;
+          #   - a fence opens with 3+ of one marker and closes only on the SAME
+          #     marker, at least as long, with nothing after it. Without the
+          #     length check a 4-backtick outer fence wrapping an inner
+          #     3-backtick block toggled twice per outer pair and miscounted;
+          #   - a closing fence carries no info string.
+          # Verified by ci_fence_test.sh against every form listed above.
           src_boxes=0
           while IFS= read -r md; do
             n=$(awk '
-              /^[[:space:]]*(```|~~~)/ {
-                if (!open) { open=1; c++ } else { open=0 }
+              {
+                if (!open) {
+                  if (match($0, /^[[:space:]]*([-*+]|[0-9]+[.)])?[[:space:]]*(```+|~~~+)/)) {
+                    s = substr($0, RSTART, RLENGTH)
+                    ch = (index(s, "`") > 0) ? "`" : "~"
+                    if (length(substr(s, index(s, ch))) >= 3) {
+                      open = 1; c++
+                      clen = length(substr(s, index(s, ch)))
+                      cch = ch
+                    }
+                  }
+                } else {
+                  if (match($0, /^[[:space:]]*(```+|~~~+)[[:space:]]*$/)) {
+                    s = substr($0, RSTART, RLENGTH)
+                    if (index(s, cch) > 0 && length(substr(s, index(s, cch))) >= clen) {
+                      open = 0
+                    }
+                  }
+                }
               }
               END { print c+0 }' "$md")
             src_boxes=$((src_boxes + n))
