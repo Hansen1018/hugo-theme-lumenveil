@@ -13,6 +13,13 @@ on:
 permissions:
   contents: read
 
+# One build per ref. This workflow runs a two-version matrix, so without a
+# group every push to the same PR branch re-runs both legs and the older run's
+# result arrives last. Matches the convention in ocr-review.yml.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -65,27 +72,45 @@ jobs:
           # `hugo` exits 0 even when a render hook silently drops a code block —
           # that is why the original P0 stayed green. Assert the output instead.
           #
-          # The page is located by glob rather than by a hardcoded
-          # /posts/hello-lumenveil/index.html: a renamed example post or a
-          # changed permalink config would otherwise surface as a misleading
-          # "no <pre>" error pointing at the render hook, when the hook is fine.
-          # Resolve it once, then assert it exists — a missing page and a page
-          # missing its code block are different failures and deserve different
-          # messages.
-          POST=$(find /tmp/pub-chroma -name index.html -path '*/posts/*' \
-                   ! -path '*/page/*' | head -n1)
-          if [ -z "$POST" ]; then
-            echo "::error::no post page found under /tmp/pub-chroma — did the example content or permalink config change?"
-            find /tmp/pub-chroma -name index.html | head -20
+          # Assert over EVERY example post, not one page picked by find order.
+          # Two things make a single pick unsafe: find yields directory order,
+          # which is not a guarantee, and the example content includes posts
+          # with no fenced code block at all — the-aurora-background and the
+          # section index itself both render 0 <pre>. Landing on either would
+          # report a false "no <pre>" failure against a render hook that is
+          # working. So: every page that does contain <pre> must also carry the
+          # Chroma container, no page may load the hljs CDN, and at least one
+          # page must contain a code block so the step cannot pass on an empty
+          # set.
+          #
+          # -mindepth 2 keeps the posts section index (posts/index.html) out;
+          # ! -path '*/page/*' keeps paginated pages out.
+          mapfile -t POSTS < <(find /tmp/pub-chroma/posts -mindepth 2 -name index.html \
+                                 ! -path '*/page/*' | sort)
+          if [ ${#POSTS[@]} -eq 0 ]; then
+            echo "::error::no example post pages under /tmp/pub-chroma/posts — did the content or permalink config change?"
             exit 1
           fi
-          echo "asserting on $POST"
-          grep -q '<pre' "$POST" \
-            || { echo "::error::no <pre> in default Chroma build ($POST)"; exit 1; }
-          # Quote-insensitive: Chroma emits class="highlight", and whether
-          # --minify strips the optional quotes is the minifier's business, not
-          # ours to assert on.
-          grep -Eq 'class=["'"'"']?highlight' "$POST" \
-            || { echo "::error::no Chroma container in default build ($POST)"; exit 1; }
-          ! grep -q 'highlight.min.js' "$POST" \
-            || { echo "::error::hljs CDN loaded despite highlight being chroma"; exit 1; }
+          echo "asserting on ${#POSTS[@]} example post pages"
+          saw_pre=0
+          for p in "${POSTS[@]}"; do
+            if grep -q '<pre' "$p"; then
+              saw_pre=1
+              # Quote-insensitive: Chroma emits class="highlight", and whether
+              # --minify strips the optional quotes is the minifier's business,
+              # not ours to assert on.
+              if ! grep -Eq 'class=["'"'"']?highlight' "$p"; then
+                echo "::error::code block without a Chroma container: $p"
+                exit 1
+              fi
+            fi
+            if grep -q 'highlight.min.js' "$p"; then
+              echo "::error::hljs CDN loaded despite highlight being chroma: $p"
+              exit 1
+            fi
+          done
+          if [ "$saw_pre" -ne 1 ]; then
+            echo "::error::no <pre> in any of the ${#POSTS[@]} example posts — the render hook dropped code blocks"
+            exit 1
+          fi
+          echo "ok: $saw_pre post page(s) rendered code blocks through Chroma"
