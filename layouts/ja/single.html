@@ -3,12 +3,18 @@
      only renders for pages under the ja section, so .Section is "ja" here.
      Resolve the breadcrumb from the page's own section. Resolving it from
      site.Params.mainSections[0] made the 記事 link point at the main article
-     list (/posts/ on a typical site) instead of the JA one (/ja/). */}}
+     list (/posts/ on a typical site) instead of the JA one (/ja/).
+
+     post-meta is rendered unconditionally, as in archives/single.html. It used to
+     be gated on mainSections membership, but .Section is "ja" here and "ja" is a
+     section name for page-style content, never a main section — so that test was
+     permanently false and the whole date/reading-time/word-count bar was dead
+     markup that could never render on any site. */}}
 {{ $listSection := site.GetPage "section" .Section }}
 <article class="article fade-up">
   <header class="article-header">
     <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><a href="{{ with $listSection }}{{ .RelPermalink }}{{ else }}{{ printf "/%s/" .Section | relURL }}{{ end }}">記事</a><span>/</span><span>{{ .Title }}</span></div>
-    {{ if in (site.Params.mainSections | default (slice "archives" "posts")) .Section }}<div class="post-meta"><time datetime="{{ .Date.Format "2006-01-02" }}">发表于 {{ .Date.Format "2006 年 01 月 02 日" }}</time>{{ partial "lastmod-meta.html" . }}<span>{{ .ReadingTime }} 分阅读</span><span>{{ .WordCount }} 字</span></div>{{ end }}
+    <div class="post-meta"><time datetime="{{ .Date.Format "2006-01-02" }}">发表于 {{ .Date.Format "2006 年 01 月 02 日" }}</time>{{ partial "lastmod-meta.html" . }}<span>{{ .ReadingTime }} 分阅读</span><span>{{ .WordCount }} 字</span></div>
     <h1>{{ .Title }}</h1>
     {{ with .Description }}<p class="article-deck">{{ . }}</p>{{ end }}
   </header>

@@ -9,7 +9,7 @@
      mainSections = ['posts'] a section literally named "post" matched — and
      indexing [0] ignores further entries, leaving mainSections =
      ['posts','notes'] without pills. Both measured on 0.166.0. */}}
-{{ $mainSections := site.Params.mainSections | default (slice "archives" "posts") }}
+{{ $mainSections := partial "main-sections.html" . }}
 {{/* $isList decides only whether this page gets the year-filter UI: the pill
      row and the <template id="archive-all-cards"> payload.
 
@@ -20,7 +20,7 @@
      pills and the card template — precisely the broken state this file exists to
      fix. mainSections widens the set; it must not narrow it below the old
      behaviour. */}}
-{{ $isList := or (in $mainSections .Section) (eq .Section "archives") (eq .Section "posts") }}
+{{ $isList := partial "is-list-section.html" . }}
 {{/* The <h1> label is a SEPARATE predicate on purpose, and it must stay one.
      Deriving the heading from $isList made /archives/ print "文章" instead of its
      own .Title; gating it on $isList is wrong even though the pill block is

@@ -1,0 +1,25 @@
+{{- /*
+  is-list-section.html — is the given page in a section that gets the
+  article-list treatment? Returns a bool.
+
+  Usage: {{ $isList := partial "is-list-section.html" . }}
+
+  The predicate is the UNION of configured mainSections membership and the two
+  section names this theme hardcoded before mainSections was consulted at all
+  (v0.2-era `or (eq .Section "archives") (eq .Section "posts")`).
+
+  The literals are load-bearing, not legacy cruft. Dropping them regresses:
+  on the shipped exampleSite config (mainSections = ['posts']) a site that also
+  has an /archives/ section would stop being a list section there and lose both
+  the year pills and #archive-all-cards. mainSections is allowed to WIDEN the set;
+  it must not narrow it below the previous behaviour.
+
+  Every consumer — section.html (year pills, #archive-all-cards, year stats) and
+  the single templates (breadcrumb, post-meta, post-nav) — goes through here, so
+  a post page and its list page can never disagree about whether the section is
+  a list section.
+*/ -}}
+{{- $page := . -}}
+{{- $mainSections := partial "main-sections.html" $page -}}
+{{- $section := $page.Section -}}
+{{- return or (in $mainSections $section) (eq $section "archives") (eq $section "posts") -}}

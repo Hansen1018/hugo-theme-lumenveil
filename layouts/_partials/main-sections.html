@@ -1,0 +1,19 @@
+{{- /*
+  main-sections.html — the single resolution of site.Params.mainSections.
+
+  Returns the configured slice, or the literal (slice "archives" "posts") when
+  the site sets none.
+
+  Why this exists: `site.Params.mainSections` was read in five places
+  (section.html, posts/single.html, single.html, ja/single.html, plus the
+  per-template fallbacks) and every copy carried its own `default`. That is not
+  a style preference — the copies already diverged once, and the divergence
+  shipped: section.html widened the list set to include the literal
+  "archives"/"posts" names so /archives/ keeps its year pills, while the single
+  templates gated on plain membership, so on mainSections = ['notes'] a post
+  under /posts/ got year pills and a card template from its list page but no
+  breadcrumb, no post-meta and no post-nav from its own page. One predicate, one
+  definition, called from all of them.
+*/ -}}
+{{- $mainSections := site.Params.mainSections | default (slice "archives" "posts") -}}
+{{- return $mainSections -}}
