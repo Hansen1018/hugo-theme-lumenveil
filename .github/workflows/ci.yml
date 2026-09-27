@@ -41,4 +41,14 @@ jobs:
       # fixed in this PR lived: the hook returned nothing, so code blocks
       # disappeared while CI stayed green. Build the default path too.
       - name: Build the default (Chroma) render path
-        run: cd exampleSite && HUGO_PARAMS_HIGHLIGHT= hugo --minify -d /tmp/pub-chroma
+        run: |
+          cd exampleSite
+          HUGO_PARAMS_HIGHLIGHT= hugo --minify -d /tmp/pub-chroma
+          # `hugo` exits 0 even when a render hook silently drops a code block —
+          # that is why the original P0 stayed green. Assert the output instead.
+          grep -q '<pre' /tmp/pub-chroma/posts/hello-lumenveil/index.html \
+            || { echo "::error::no <pre> in default Chroma build"; exit 1; }
+          grep -q 'class=highlight' /tmp/pub-chroma/posts/hello-lumenveil/index.html \
+            || { echo "::error::no Chroma container in default build"; exit 1; }
+          ! grep -q 'highlight.min.js' /tmp/pub-chroma/posts/hello-lumenveil/index.html \
+            || { echo "::error::hljs CDN loaded despite highlight being unset"; exit 1; }

@@ -2,7 +2,14 @@
 {{ $year := "" }}
 {{ $allList := .RegularPagesRecursive.ByDate.Reverse }}
 {{ $list := $allList }}
-{{ $isList := or (eq .Section "archives") (eq .Section "posts") }}
+{{/* $isList follows site.Params.mainSections rather than naming "archives" and
+     "posts" literally. A consumer with mainSections = ['blog'] would otherwise get
+     $isList = false, and both the year-pill block and the <template> holding
+     every card would be skipped — main.js would then find no pills and no full
+     card set, which is the same broken state the previous gating had. The two
+     literal names are kept only as a fallback for sites that set no
+     mainSections at all. */}}
+{{ $isList := or (in (index site.Params.mainSections 0 | default "archives") .Section) (or (eq .Section "archives") (eq .Section "posts")) }}
 {{/* Year-filter base URL. Built from the section's own permalink instead of a
      hardcoded "/posts/" or "/archives/" string, so it stays correct for any
      section name, any permalink config, and any baseURL subpath.
@@ -30,7 +37,7 @@
 <section class="page-hero">
   <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><span>{{ .Title }}</span></div>
   <span class="eyebrow">Writing Archive</span>
-  <h1>{{ if eq .Section "posts" }}文章{{ else if eq .Section "categories" }}分类{{ else if eq .Section "tags" }}标签{{ else }}{{ .Title }}{{ end }}</h1>
+  <h1>{{ if in (site.Params.mainSections | default (slice "archives" "posts")) .Section }}文章{{ else if eq .Section "categories" }}分类{{ else if eq .Section "tags" }}标签{{ else }}{{ .Title }}{{ end }}</h1>
   <p>{{ .Description | default "所有文章，按时间倒序排列。" }}</p>
   <div class="page-hero__stats">
     <span>{{ len .RegularPagesRecursive }} 篇文章</span>

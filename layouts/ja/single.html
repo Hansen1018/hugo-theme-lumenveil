@@ -1,7 +1,10 @@
 {{ define "main" }}
-{{/* Same hardcoded-"/archives/" breadcrumb issue as layouts/posts/single.html —
-     resolve from the section page so it follows mainSections. */}}
-{{ $listSection := site.GetPage "section" (index site.Params.mainSections 0 | default "archives") }}
+{{/* Same section-scoped reasoning as layouts/archives/single.html: this template
+     only renders for pages under the ja section, so .Section is "ja" here.
+     Resolve the breadcrumb from the page's own section. Resolving it from
+     site.Params.mainSections[0] made the 記事 link point at the main article
+     list (/posts/ on a typical site) instead of the JA one (/ja/). */}}
+{{ $listSection := site.GetPage "section" .Section }}
 <article class="article fade-up">
   <header class="article-header">
     <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><a href="{{ with $listSection }}{{ .RelPermalink }}{{ else }}{{ printf "/%s/" .Section | relURL }}{{ end }}">記事</a><span>/</span><span>{{ .Title }}</span></div>
