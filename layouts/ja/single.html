@@ -22,7 +22,8 @@
          Note layouts/page/single.html is NOT a precedent here. It renders no
          meta bar at all, so it says nothing about which individual values are
          safe to show. */}}
-    <div class="post-meta">{{ if not .Date.IsZero }}<time datetime="{{ .Date.Format "2006-01-02" }}">发表于 {{ .Date.Format "2006 年 01 月 02 日" }}</time>{{ partial "lastmod-meta.html" . }}{{ end }}{{ if gt .WordCount 0 }}<span>{{ .ReadingTime }} 分阅读</span><span>{{ .WordCount }} 字</span>{{ end }}</div>
+    {{/* Gated on having any content at all: both inner guards can be false on a stub page, and an empty <div class=post-meta></div> is the same dead markup the guards exist to prevent. */}}
+    {{ if or (not .Date.IsZero) (gt .WordCount 0) }}<div class="post-meta">{{ if not .Date.IsZero }}<time datetime="{{ .Date.Format "2006-01-02" }}">发表于 {{ .Date.Format "2006 年 01 月 02 日" }}</time>{{ partial "lastmod-meta.html" . }}{{ end }}{{ if gt .WordCount 0 }}<span>{{ .ReadingTime }} 分阅读</span><span>{{ .WordCount }} 字</span>{{ end }}</div>{{ end }}
     <h1>{{ .Title }}</h1>
     {{ with .Description }}<p class="article-deck">{{ . }}</p>{{ end }}
   </header>

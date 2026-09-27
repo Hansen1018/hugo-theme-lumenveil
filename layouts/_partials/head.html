@@ -112,7 +112,11 @@ try {
 <meta name="twitter:description" content="{{ $description }}">
 <meta name="twitter:url" content="{{ .Permalink }}">
 {{ if .IsPage }}
-<meta property="article:published_time" content="{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}">
+{{- /* Guarded on IsZero: page-style content legitimately has no `date:` front
+     matter, and an unguarded .Date emits 0001-01-01T00:00:00Z to crawlers.
+     A page with no date should carry no published_time, not a false one. The
+     modified_time below already needed `with` for the same reason. */}}
+{{ if not .Date.IsZero }}<meta property="article:published_time" content="{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}">{{ end }}
 {{ with .Lastmod }}<meta property="article:modified_time" content="{{ .Format "2006-01-02T15:04:05Z07:00" }}">{{ end }}
 {{ end }}
 {{- /* opt-in hljs via [params] highlight = "hljs": cdnjs full bundle (121KB, all langs incl. toml/html) + monokai + auto-highlightAll. common.min.js omitted toml/html so language-toml blocks rendered unstyled. */ -}}
@@ -130,7 +134,16 @@ try {
 {{- end -}}
 <script type="application/ld+json">
 {{ if .IsPage }}
+{{- /* The article schema is emitted only for pages that actually have a date.
+     A BlogPosting with datePublished 0001-01-01 is worse than no BlogPosting:
+     it is a false claim to a consumer that cannot tell it apart from a real
+     one. Page-style content has no date by design, so it gets the generic
+     WebSite shape below instead. dateModified is guarded for the same reason. */}}
+{{- if not .Date.IsZero }}
 {"@context":"https://schema.org","@type":"BlogPosting","headline":{{ .Title | jsonify | safeJS }},"description":{{ $description | jsonify | safeJS }},"datePublished":"{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}","dateModified":"{{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" }}","author":{"@type":"Person","name":{{ site.Params.author | jsonify | safeJS }}},"mainEntityOfPage":{{ .Permalink | jsonify | safeJS }}}
+{{- else }}
+{"@context":"https://schema.org","@type":"WebPage","name":{{ .Title | jsonify | safeJS }},"url":{{ .Permalink | jsonify | safeJS }},"description":{{ $description | jsonify | safeJS }}}
+{{- end }}
 {{ else }}
 {"@context":"https://schema.org","@type":"WebSite","name":{{ site.Title | jsonify | safeJS }},"url":{{ site.BaseURL | jsonify | safeJS }},"description":{{ site.Params.description | jsonify | safeJS }},"potentialAction":{"@type":"SearchAction","target":"{{ site.Home.Permalink }}?q={search_term_string}","query-input":"required name=search_term_string"}}
 {{ end }}
