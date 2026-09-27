@@ -13,8 +13,9 @@ jobs:
     # contract — test it. A single pinned version proved the opposite: pinned at
     # 0.146.0 this workflow missed 20 releases, and Hugo 0.163.0's
     # imaging.quality deprecation only surfaced after the pin was raised.
-    # Neither end alone is enough — the floor catches 0.146+ syntax creeping in,
-    # the tip catches upstream deprecations before they reach users.
+    # The upper leg is a pin too, so it does not track the tip on its own — bump
+    # it by hand when cutting a release. Dependabot's github-actions ecosystem
+    # only moves `uses:` refs, not a version string inside a matrix.
     strategy:
       fail-fast: false
       matrix:
@@ -34,3 +35,10 @@ jobs:
           mkdir -p exampleSite/themes
           ln -sfn ../.. exampleSite/themes/lumenveil
       - run: cd exampleSite && hugo --minify
+      # exampleSite pins highlight = "hljs", so the build above exercises only
+      # the opt-in branch of the codeblock render hook. The default Chroma branch
+      # is what every non-hljs consumer gets, and it is exactly where the P0
+      # fixed in this PR lived: the hook returned nothing, so code blocks
+      # disappeared while CI stayed green. Build the default path too.
+      - name: Build the default (Chroma) render path
+        run: cd exampleSite && HUGO_PARAMS_HIGHLIGHT= hugo --minify -d /tmp/pub-chroma
