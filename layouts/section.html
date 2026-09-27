@@ -21,22 +21,21 @@
      fix. mainSections widens the set; it must not narrow it below the old
      behaviour. */}}
 {{ $isList := partial "is-list-section.html" . }}
-{{/* The <h1> label is a SEPARATE predicate on purpose, and it must stay one.
-     Deriving the heading from $isList made /archives/ print "文章" instead of its
-     own .Title; gating it on $isList is wrong even though the pill block is
-     right. Follow the primary main section so the heading tracks config.
+{{/* The <h1> label stays on main's EXACT literal test, `eq .Section "posts"`.
 
-     Note the default is "posts", NOT index $mainSections 0: with mainSections
-     unset, $mainSections is the (slice "archives" "posts") fallback above, whose
-     [0] is "archives" — that would silently strip 文章 from /posts/ and hand it
-     to /archives/, a regression against main for exactly the unconfigured sites.
-     `with` on the param (not on the fallback slice) keeps the two apart: unset or
-     empty mainSections -> "posts", which is what main's `eq .Section "posts"`
-     gate did. Pre-existing main behaviour is preserved for every config that
-     does not explicitly choose a different primary section. */}}
-{{ $articleSection := "posts" }}
-{{ with site.Params.mainSections }}{{ $articleSection = index . 0 }}{{ end }}
-{{ $isArticleList := eq .Section $articleSection }}
+     Two review rounds pushed me to generalise this and I was wrong both times.
+     Round 8: deriving it from $isList made /archives/ print 文章. Round 11:
+     deriving it from mainSections[0] narrows to the first entry, so with
+     mainSections = ['notes','posts'] /posts/ falls through to .Title. OCR called
+     that "consistent with the old mainSections[0] behaviour" — it is not. This
+     gate has always been the literal "posts" on main; index [0] was the
+     half-measure I introduced in round 9, and both variants move the heading
+     somewhere main never rendered it.
+
+     Nothing here is broken, so nothing here should move. The real defect this
+     PR fixes is the dead year-filter payload, not the heading. Reverted to the
+     literal: zero behaviour change against main for every config. */}}
+{{ $isArticleList := eq .Section "posts" }}
 {{/* Year-filter base URL. Built from the section's own permalink instead of a
      hardcoded "/posts/" or "/archives/" string, so it stays correct for any
      section name, any permalink config, and any baseURL subpath.

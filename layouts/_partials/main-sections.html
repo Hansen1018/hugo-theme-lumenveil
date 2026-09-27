@@ -15,5 +15,15 @@
   breadcrumb, no post-meta and no post-nav from its own page. One predicate, one
   definition, called from all of them.
 */ -}}
-{{- $mainSections := site.Params.mainSections | default (slice "archives" "posts") -}}
+{{- $mainSections := site.Params.mainSections -}}
+{{- if not $mainSections -}}
+  {{- $mainSections = slice "archives" "posts" -}}
+{{- else if not (reflect.IsSlice $mainSections) -}}
+  {{- /* A scalar mainSections = 'posts' is legal config. Passed through raw it
+       would reach `in $mainSections $section` as a STRING set, and `in` on a
+       string is a substring test, not membership — a section named "post" would
+       match. Coerce to a slice so the invariant holds for every consumer of
+       this partial, not just well-configured sites. */ -}}
+  {{- $mainSections = slice $mainSections -}}
+{{- end -}}
 {{- return $mainSections -}}
