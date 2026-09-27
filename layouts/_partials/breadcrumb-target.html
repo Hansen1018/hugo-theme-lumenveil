@@ -18,18 +18,30 @@
      for the current language. An unresolved target renders href="", which
      reloads the current page instead of navigating anywhere.
 
-     The fallback cannot produce "//": for an empty .Section, `site.GetPage
-     "section" ""` resolves to the home page and returns "/", so the `with`
-     branch wins. The else-branch is reached only for a NON-empty section whose
-     section page is missing, where it synthesises "/<section>/" correctly.
-     Verified on 0.166.0: with .Section empty the partial returns "/", not "//".
+     The empty-section case is handled by an explicit guard rather than by the
+     behaviour of `site.GetPage "section" ""`. That lookup returns the home page
+     on 0.166.0 — verified — but that is a version-specific result, and this
+     partial feeds every breadcrumb and year-pill href on every supported
+     version. The guard makes the guarantee unconditional rather than inherited
+     from a lookup that was only checked on one of the two.
 
   Returns a string, so callers use it directly as the href.
 */ -}}
 {{- $page := . -}}
 {{- $target := "" -}}
-{{- with site.GetPage "section" $page.Section -}}
-  {{- $target = .RelPermalink -}}
+{{- $sectionPage := site.GetPage "section" $page.Section -}}
+{{- /* Hugo's `with` has no `else if` — only `if` nests. Resolve the section
+     page first, then branch on the three outcomes. The empty-section case is
+     guarded explicitly rather than relying on `site.GetPage "section" ""`
+     resolving to the home page: that behaviour is only confirmed on 0.166.0,
+     and this partial is the single source of every breadcrumb and year-pill
+     href on every supported version. Without the guard,
+     `printf "/%s/" "" | relURL` would emit "//" — a protocol-relative href that
+     navigates to a host instead of a page. */ -}}
+{{- if $sectionPage -}}
+  {{- $target = $sectionPage.RelPermalink -}}
+{{- else if eq $page.Section "" -}}
+  {{- $target = site.Home.RelPermalink -}}
 {{- else -}}
   {{- $target = printf "/%s/" $page.Section | relURL -}}
 {{- end -}}

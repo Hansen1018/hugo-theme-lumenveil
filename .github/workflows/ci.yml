@@ -93,19 +93,27 @@ jobs:
           fi
           echo "asserting on ${#POSTS[@]} example post pages"
           saw_pre=0
-          # Tie the two markers to the SAME element in ONE pattern. Chroma emits
-          # exactly:
-          #     <div class=highlight><pre tabindex=0 class=chroma>...
-          # Two independent greps could both be satisfied without either proving
-          # a rendered code block — `class=...highlight...` also matches an
+          # Tie the two markers to the SAME .highlight container. Two
+          # independent greps could both be satisfied without either proving a
+          # rendered code block — `class=...highlight...` also matches an
           # unrelated class merely CONTAINING "highlight", and a bare `<pre`
-          # matches escaped or inlined text. Then a page whose code blocks had
-          # been dropped would still pass, which is the masked failure this step
-          # exists to catch. Quote-insensitive: whether --minify strips the
-          # optional quotes is the minifier's business, not ours to assert on.
+          # matches escaped or inlined text. A page whose code blocks had been
+          # dropped would then still pass, which is the masked failure this step
+          # exists to catch.
+          #
+          # The container is matched with a bounded gap rather than exact
+          # adjacency. Chroma emits
+          #     <div class=highlight><pre tabindex=0 class=chroma>...
+          # by default, but with line numbers it inserts a wrapper first:
+          #     <div class=highlight><div class=chroma><table class=lntable>…<pre…>
+          # Verified on 0.166.0 for all three variants. An exact `><pre` would
+          # false-fail every page of a site that enables lineNos.
+          # Quote-insensitive: whether --minify strips the optional quotes is
+          # the minifier's business, not ours to assert on.
           for p in "${POSTS[@]}"; do
-            if grep -Eq 'class=["'"'"']?highlight["'"'"']?><pre' "$p"; then
-              saw_pre=1
+            if grep -Eq 'class=["'"'"']?highlight["'"'"']?>[^<]{0,40}<(?:div|span|pre)' "$p" \
+               && grep -q '<pre' "$p"; then
+              saw_pre=$((saw_pre + 1))
             elif grep -q '<pre' "$p"; then
               echo "::error::<pre> present but not wrapped in the Chroma .highlight container: $p"
               exit 1
@@ -115,8 +123,8 @@ jobs:
               exit 1
             fi
           done
-          if [ "$saw_pre" -ne 1 ]; then
+          if [ "$saw_pre" -eq 0 ]; then
             echo "::error::no <pre> in any of the ${#POSTS[@]} example posts — the render hook dropped code blocks"
             exit 1
           fi
-          echo "ok: $saw_pre post page(s) rendered code blocks through Chroma"
+          echo "ok: $saw_pre of ${#POSTS[@]} post page(s) rendered code blocks through Chroma"

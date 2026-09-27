@@ -29,8 +29,9 @@
     <h2>最近文章</h2>
     <div class="section-rule"></div>
   </header>
-  {{ $pages := where site.RegularPages "Section" "in" site.Params.mainSections }}
-  {{ $sectionName := index site.Params.mainSections 0 | default "archives" }}
+  {{ $mainSections := partial "main-sections.html" . }}
+  {{ $pages := where site.RegularPages "Section" "in" $mainSections }}
+  {{ $sectionName := index $mainSections 0 }}
   {{ if $pages }}
     <div class="post-grid">
       {{ range first 7 $pages.ByDate.Reverse }}{{ partial "post-card.html" . }}{{ end }}

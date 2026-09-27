@@ -101,6 +101,14 @@ theme = 'lumenveil'
 # there is nothing here for them to inherit. The older `jpegQuality` /
 # `webpQuality` / `pngQuality` keys are themselves deprecated (since v0.83.0) and
 # each cover only one format, leaving the rest on the encoder default.
+#
+# These per-format keys only exist from 0.163.0. On the 0.146.0 CI leg they are
+# unknown keys: Hugo ignores them silently, so the build stays green and the
+# encoder default applies. That is a limitation of the example site's own config
+# on an old Hugo, not a theme defect, and it is the lesser of the two options —
+# the global `[imaging] quality` form this replaced is itself deprecated on
+# 0.163.0+ and will be removed. No single form is clean across the whole
+# 0.146.0+ range, so keep the forward-compatible one.
 [imaging.jpeg]
   quality = 85
 [imaging.webp]

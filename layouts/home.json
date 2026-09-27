@@ -1,4 +1,5 @@
-{{- $pages := where site.RegularPages "Section" "in" site.Params.mainSections -}}
+{{- $mainSections := partial "main-sections.html" . -}}
+{{- $pages := where site.RegularPages "Section" "in" $mainSections -}}
 [
 {{- range $index, $page := $pages -}}
 {{- if $index }},{{ end -}}

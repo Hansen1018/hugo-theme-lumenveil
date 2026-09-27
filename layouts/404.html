@@ -44,7 +44,8 @@
 </section>
 
 {{/* Show the latest writing as a fallback — same pattern as home.html #latest */}}
-{{ $pages := where site.RegularPages "Section" "in" site.Params.mainSections }}
+{{ $mainSections := partial "main-sections.html" . }}
+{{ $pages := where site.RegularPages "Section" "in" $mainSections }}
 {{ if $pages }}
 <section class="section section--compact not-found__suggest" data-reveal>
   <header class="section-head">
@@ -67,7 +68,7 @@
     {{ end }}
   </div>
   <div class="section-action">
-    {{ with site.GetPage "section" (index site.Params.mainSections 0 | default "archives") }}
+    {{ with site.GetPage "section" (index $mainSections 0) }}
       <a class="button button--ghost" href="{{ .RelPermalink }}">浏览全部文章 <span>→</span></a>
     {{ end }}
   </div>
