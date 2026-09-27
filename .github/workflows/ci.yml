@@ -48,7 +48,10 @@ jobs:
           # that is why the original P0 stayed green. Assert the output instead.
           grep -q '<pre' /tmp/pub-chroma/posts/hello-lumenveil/index.html \
             || { echo "::error::no <pre> in default Chroma build"; exit 1; }
-          grep -q 'class=highlight' /tmp/pub-chroma/posts/hello-lumenveil/index.html \
+          # Quote-insensitive: Chroma emits class="highlight", and whether
+          # --minify strips the optional quotes is the minifier's business, not
+          # ours to assert on.
+          grep -Eq 'class=["'"'"']?highlight' /tmp/pub-chroma/posts/hello-lumenveil/index.html \
             || { echo "::error::no Chroma container in default build"; exit 1; }
           ! grep -q 'highlight.min.js' /tmp/pub-chroma/posts/hello-lumenveil/index.html \
             || { echo "::error::hljs CDN loaded despite highlight being unset"; exit 1; }
