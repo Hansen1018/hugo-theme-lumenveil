@@ -2,18 +2,41 @@
 {{ $year := "" }}
 {{ $allList := .RegularPagesRecursive.ByDate.Reverse }}
 {{ $list := $allList }}
-{{/* $isList follows site.Params.mainSections rather than naming "archives" and
-     "posts" literally. A consumer with mainSections = ['blog'] would otherwise get
-     $isList = false, and both the year-pill block and the <template> holding
-     every card would be skipped — main.js would then find no pills and no full
-     card set, which is the same broken state the previous gating had.
+{{/* One resolution of mainSections, shared by every predicate below. The literal
+     pair is the no-config fallback; with mainSections set, that set is the
+     source of truth. Pass the whole slice to `in`, never mainSections[0]: `in` on
+     a *string* SET is a substring test, not membership, so with
+     mainSections = ['posts'] a section literally named "post" matched — and
+     indexing [0] ignores further entries, leaving mainSections =
+     ['posts','notes'] without pills. Both measured on 0.166.0. */}}
+{{ $mainSections := site.Params.mainSections | default (slice "archives" "posts") }}
+{{/* $isList decides only whether this page gets the year-filter UI: the pill
+     row and the <template id="archive-all-cards"> payload.
 
-     Pass the whole slice to `in`, not mainSections[0]. `in` on a string SET is a
-     substring test, not membership: with mainSections = ['posts'] a section
-     literally named "post" matched. And indexing [0] ignores any further
-     sections, so mainSections = ['posts','notes'] left notes unhandled. Both
-     measured on 0.166.0. The literal pair is only the no-config fallback. */}}
-{{ $isList := in (site.Params.mainSections | default (slice "archives" "posts")) .Section }}
+     It is the UNION of mainSections membership and the two section names the
+     pre-existing gate hardcoded. Dropping the literals is a regression, not a
+     cleanup: on the shipped exampleSite config (mainSections = ['posts']) a site
+     with an /archives/ section would drop $isList to false and lose both the
+     pills and the card template — precisely the broken state this file exists to
+     fix. mainSections widens the set; it must not narrow it below the old
+     behaviour. */}}
+{{ $isList := or (in $mainSections .Section) (eq .Section "archives") (eq .Section "posts") }}
+{{/* The <h1> label is a SEPARATE predicate on purpose, and it must stay one.
+     Deriving the heading from $isList made /archives/ print "文章" instead of its
+     own .Title; gating it on $isList is wrong even though the pill block is
+     right. Follow the primary main section so the heading tracks config.
+
+     Note the default is "posts", NOT index $mainSections 0: with mainSections
+     unset, $mainSections is the (slice "archives" "posts") fallback above, whose
+     [0] is "archives" — that would silently strip 文章 from /posts/ and hand it
+     to /archives/, a regression against main for exactly the unconfigured sites.
+     `with` on the param (not on the fallback slice) keeps the two apart: unset or
+     empty mainSections -> "posts", which is what main's `eq .Section "posts"`
+     gate did. Pre-existing main behaviour is preserved for every config that
+     does not explicitly choose a different primary section. */}}
+{{ $articleSection := "posts" }}
+{{ with site.Params.mainSections }}{{ $articleSection = index . 0 }}{{ end }}
+{{ $isArticleList := eq .Section $articleSection }}
 {{/* Year-filter base URL. Built from the section's own permalink instead of a
      hardcoded "/posts/" or "/archives/" string, so it stays correct for any
      section name, any permalink config, and any baseURL subpath.
@@ -29,7 +52,12 @@
 {{ with site.GetPage "section" .Section }}{{ $yearBase = .RelPermalink }}{{ else }}{{ $yearBase = printf "/%s/" .Section | relURL }}{{ end }}
 {{ $yearCount := 0 }}
 {{ if $isList }}
-  {{ $yearCount = len ((where site.RegularPages "Section" "in" site.Params.mainSections).GroupByDate "2006") }}
+  {{/* Uses $mainSections, not site.Params.mainSections: $isList above is now
+       reachable with mainSections unset (the literal fallback keeps /posts/ and
+       /archives/ list sections), and `where … "in" nil` silently matches
+       nothing, which would report "0 个年份" on exactly those sites. Same slice,
+       same semantics, both branches now agree on what a list section is. */}}
+  {{ $yearCount = len ((where site.RegularPages "Section" "in" $mainSections).GroupByDate "2006") }}
   {{ $query := urls.Parse .Permalink }}
   {{ with $query.RawQuery }}
     {{ range split . "&" }}
@@ -41,7 +69,7 @@
 <section class="page-hero">
   <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><span>{{ .Title }}</span></div>
   <span class="eyebrow">Writing Archive</span>
-  <h1>{{ if $isList }}文章{{ else if eq .Section "categories" }}分类{{ else if eq .Section "tags" }}标签{{ else }}{{ .Title }}{{ end }}</h1>
+  <h1>{{ if $isArticleList }}文章{{ else if eq .Section "categories" }}分类{{ else if eq .Section "tags" }}标签{{ else }}{{ .Title }}{{ end }}</h1>
   <p>{{ .Description | default "所有文章，按时间倒序排列。" }}</p>
   <div class="page-hero__stats">
     <span>{{ len .RegularPagesRecursive }} 篇文章</span>

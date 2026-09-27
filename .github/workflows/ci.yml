@@ -40,10 +40,16 @@ jobs:
       # is what every non-hljs consumer gets, and it is exactly where the P0
       # fixed in this PR lived: the hook returned nothing, so code blocks
       # disappeared while CI stayed green. Build the default path too.
+      #
+      # The override lives in a real config file, not an empty
+      # HUGO_PARAMS_HIGHLIGHT= environment variable. Hugo can merge configs but
+      # not subtract keys, so "unset the pin" has to be stated; whether an empty
+      # env var clears a [params] value is version-sensitive behaviour a future
+      # Hugo bump could silently break.
       - name: Build the default (Chroma) render path
         run: |
           cd exampleSite
-          HUGO_PARAMS_HIGHLIGHT= hugo --minify -d /tmp/pub-chroma
+          hugo --minify --config hugo.toml,hugo-chroma.toml -d /tmp/pub-chroma
           # `hugo` exits 0 even when a render hook silently drops a code block —
           # that is why the original P0 stayed green. Assert the output instead.
           grep -q '<pre' /tmp/pub-chroma/posts/hello-lumenveil/index.html \
@@ -54,4 +60,4 @@ jobs:
           grep -Eq 'class=["'"'"']?highlight' /tmp/pub-chroma/posts/hello-lumenveil/index.html \
             || { echo "::error::no Chroma container in default build"; exit 1; }
           ! grep -q 'highlight.min.js' /tmp/pub-chroma/posts/hello-lumenveil/index.html \
-            || { echo "::error::hljs CDN loaded despite highlight being unset"; exit 1; }
+            || { echo "::error::hljs CDN loaded despite highlight being chroma"; exit 1; }

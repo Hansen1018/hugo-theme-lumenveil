@@ -1,10 +1,11 @@
 {{ define "main" }}
 {{/* Fallback single template — used by any section without its own
-     layouts/<section>/single.html. The breadcrumb link follows mainSections the
-     same way posts/single.html and archives/single.html do; see the note there
-     for why the hardcoded "/archives/" this replaced was a 404 waiting to
-     happen. */}}
-{{ $listSection := site.GetPage "section" (index site.Params.mainSections 0 | default "archives") }}
+     layouts/<section>/single.html. This is the one template where .Section is
+     NOT constant, so resolving from .Section is what makes the link correct for
+     secondary main sections: with mainSections = ['posts','notes'] a notes post
+     is admitted by the gate below but mainSections[0] resolves to posts, so the
+     文章 link would point at /posts/. See the note in posts/single.html. */}}
+{{ $listSection := site.GetPage "section" .Section }}
 <article class="article fade-up">
   <header class="article-header">
     <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a>{{ if in (site.Params.mainSections | default (slice "archives" "posts")) .Section }}<span>/</span><a href="{{ with $listSection }}{{ .RelPermalink }}{{ else }}{{ printf "/%s/" .Section | relURL }}{{ end }}">文章</a>{{ end }}<span>/</span><span>{{ .Title }}</span></div>
