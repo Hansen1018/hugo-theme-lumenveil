@@ -37,9 +37,13 @@
 {{/* Year-filter base URL. Built from the section's own permalink instead of a
      hardcoded "/posts/" or "/archives/" string, so it stays correct for any
      section name, any permalink config, and any baseURL subpath.
-     relURL is idempotent in Hugo (it no-ops on a path that already carries the
-     base path), so piping the already-prefixed RelPermalink through it below is
-     safe — do not "simplify" it away without re-measuring subpath builds.
+     relURL is idempotent in Hugo — it no-ops on a path that already carries the
+     base path. Verified with a subpath baseURL (https://example.com/blog/),
+     which exampleSite does not otherwise exercise: the pills render as
+     /blog/posts/ and /blog/posts/?year=2026, with no doubled prefix. The value
+     from breadcrumb-target.html is therefore already URL-safe and is used
+     directly below, matching the four other call sites. The second relURL that
+     used to sit here was dead code that made this the only consumer to differ.
      The with/else mirrors posts/single.html: on a multilingual site the section
      can be absent for the current language, and an empty $yearBase would emit
      href="" (reloads the current page) instead of a real target. The fallback is
@@ -89,8 +93,8 @@
   {{ $pages := $allList }}
   {{ if $pages }}
     <div class="tag-list tag-list--archive" role="list">
-<a href="{{ $yearBase | relURL }}" data-archive-all{{ if eq $year "" }} class="is-active"{{ end }} role="listitem">全部<span class="archive-count">{{ len $pages }}</span></a>
-      {{ range sort ($pages.GroupByDate "2006") "Key" "desc" }}<a href="{{ printf "%s?year=%s" $yearBase .Key | relURL }}" data-year="{{ .Key }}"{{ if eq $year .Key }} class="is-active"{{ end }} role="listitem">{{ .Key }}<span class="archive-count">{{ len .Pages }}</span></a>{{ end }}
+<a href="{{ $yearBase }}" data-archive-all{{ if eq $year "" }} class="is-active"{{ end }} role="listitem">全部<span class="archive-count">{{ len $pages }}</span></a>
+      {{ range sort ($pages.GroupByDate "2006") "Key" "desc" }}<a href="{{ printf "%s?year=%s" $yearBase .Key }}" data-year="{{ .Key }}"{{ if eq $year .Key }} class="is-active"{{ end }} role="listitem">{{ .Key }}<span class="archive-count">{{ len .Pages }}</span></a>{{ end }}
     </div>
   {{ end }}
 </section>

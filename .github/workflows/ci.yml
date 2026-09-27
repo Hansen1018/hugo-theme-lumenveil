@@ -125,8 +125,15 @@ jobs:
           saw_pre=0
           out_boxes=0
           for p in "${POSTS[@]}"; do
-            n_pre=$(grep -o '<pre' "$p" | wc -l)
-            n_box=$(grep -oE 'class=["'"'"']?highlight["'"'"']?' "$p" | wc -l)
+            # `|| true` is REQUIRED, not defensive noise. This step runs under
+            # `bash --noprofile --norc -eo pipefail`, so a pipeline's status is
+            # its last non-zero command: `grep -o '<pre' F` exits 1 on no match,
+            # `| wc -l` exits 0, and with pipefail the assignment inherits the
+            # grep failure — set -e then kills the step before any ::error::
+            # line. a page with 0 <pre> (the-aurora-background) therefore failed
+            # the build on a correct tree.
+            n_pre=$(grep -o '<pre' "$p" | wc -l || true)
+            n_box=$(grep -oE 'class=["'"'"']?highlight["'"'"']?' "$p" | wc -l || true)
             out_boxes=$((out_boxes + n_box))
             if [ "$n_pre" -gt 0 ] && [ "$n_box" -eq 0 ]; then
               echo "::error::$n_pre <pre> on the page but no Chroma .highlight container: $p"
@@ -148,12 +155,27 @@ jobs:
             exit 1
           fi
           # Fenced blocks in the example content, counted from the source.
+          #
+          # The set must match the POSTS set above exactly. _index.md is
+          # excluded because its output is posts/index.html, which -mindepth 2
+          # deliberately drops — counting it here would false-fail the moment a
+          # section index gained a code block. Nested page bundles
+          # (content/posts/foo/index.md) DO render into the output set, so `find`
+          # rather than a flat glob, or they would be silently missed.
+          #
+          # Open/close parity is tracked with awk instead of dividing a fence
+          # line count by 2. The divisor was wrong for a tilde fence (~~~), a
+          # longer fence (````), an indented fence inside a list item, and it
+          # silently truncated an odd count. Anything opening a fence counts once.
           src_boxes=0
-          for md in exampleSite/content/posts/*.md; do
-            [ -e "$md" ] || continue
-            n=$(grep -c '^```' "$md" || true)
-            src_boxes=$((src_boxes + n / 2))
-          done
+          while IFS= read -r md; do
+            n=$(awk '
+              /^[[:space:]]*(```|~~~)/ {
+                if (!open) { open=1; c++ } else { open=0 }
+              }
+              END { print c+0 }' "$md")
+            src_boxes=$((src_boxes + n))
+          done < <(find content/posts -name '*.md' ! -name '_index.md' | sort)
           if [ "$out_boxes" -ne "$src_boxes" ]; then
             echo "::error::rendered $out_boxes Chroma containers but the source has $src_boxes fenced code blocks — the render hook dropped $((src_boxes - out_boxes))"
             exit 1
