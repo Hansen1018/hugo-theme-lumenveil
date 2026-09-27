@@ -8,6 +8,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # A hung step (an unresponsive action download, a wedged Hugo build)
+    # otherwise burns runner minutes up to the 6h GitHub default. These are
+    # two plain builds; anything past 15 minutes is broken, not slow.
+    timeout-minutes: 15
     # theme.toml declares min_version = "0.146.0" and README promises
     # "Hugo Extended 0.146.0 or newer", so that floor is part of the public
     # contract — test it. A single pinned version proved the opposite: pinned at

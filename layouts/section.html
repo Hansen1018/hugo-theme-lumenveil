@@ -2,14 +2,6 @@
 {{ $year := "" }}
 {{ $allList := .RegularPagesRecursive.ByDate.Reverse }}
 {{ $list := $allList }}
-{{/* One resolution of mainSections, shared by every predicate below. The literal
-     pair is the no-config fallback; with mainSections set, that set is the
-     source of truth. Pass the whole slice to `in`, never mainSections[0]: `in` on
-     a *string* SET is a substring test, not membership, so with
-     mainSections = ['posts'] a section literally named "post" matched — and
-     indexing [0] ignores further entries, leaving mainSections =
-     ['posts','notes'] without pills. Both measured on 0.166.0. */}}
-{{ $mainSections := partial "main-sections.html" . }}
 {{/* $isList decides only whether this page gets the year-filter UI: the pill
      row and the <template id="archive-all-cards"> payload.
 
@@ -19,22 +11,28 @@
      with an /archives/ section would drop $isList to false and lose both the
      pills and the card template — precisely the broken state this file exists to
      fix. mainSections widens the set; it must not narrow it below the old
-     behaviour. */}}
+     behaviour.
+
+     The definition lives in _partials/is-list-section.html so this file, the
+     two generic single templates and their list pages share one predicate. */}}
 {{ $isList := partial "is-list-section.html" . }}
-{{/* The <h1> label stays on main's EXACT literal test, `eq .Section "posts"`.
+{{/* The <h1> label stays on the exact literal test, `eq .Section "posts"`.
 
-     Two review rounds pushed me to generalise this and I was wrong both times.
-     Round 8: deriving it from $isList made /archives/ print 文章. Round 11:
-     deriving it from mainSections[0] narrows to the first entry, so with
-     mainSections = ['notes','posts'] /posts/ falls through to .Title. OCR called
-     that "consistent with the old mainSections[0] behaviour" — it is not. This
-     gate has always been the literal "posts" on main; index [0] was the
-     half-measure I introduced in round 9, and both variants move the heading
-     somewhere main never rendered it.
+     Deliberately NOT derived from $isList, and NOT from mainSections[0]. Both
+     have been tried and both move the heading somewhere this theme has never
+     rendered it:
 
-     Nothing here is broken, so nothing here should move. The real defect this
-     PR fixes is the dead year-filter payload, not the heading. Reverted to the
-     literal: zero behaviour change against main for every config. */}}
+       $isList          is true for /archives/ — the predicate unions
+                        mainSections with the literal "archives"/"posts" names —
+                        so it would label the archive page 文章.
+       mainSections[0]  narrows to the first configured entry, so with
+                        mainSections = ['notes','posts'] the /posts/ heading
+                        falls through to .Title.
+
+     The heading is not the defect this theme is fixing, so it does not move.
+     Keep it literal. If a site ever needs a configurable article-list label,
+     read it from an explicit param — a section predicate answers a different
+     question. */}}
 {{ $isArticleList := eq .Section "posts" }}
 {{/* Year-filter base URL. Built from the section's own permalink instead of a
      hardcoded "/posts/" or "/archives/" string, so it stays correct for any
@@ -51,12 +49,22 @@
 {{ with site.GetPage "section" .Section }}{{ $yearBase = .RelPermalink }}{{ else }}{{ $yearBase = printf "/%s/" .Section | relURL }}{{ end }}
 {{ $yearCount := 0 }}
 {{ if $isList }}
-  {{/* Uses $mainSections, not site.Params.mainSections: $isList above is now
-       reachable with mainSections unset (the literal fallback keeps /posts/ and
-       /archives/ list sections), and `where … "in" nil` silently matches
-       nothing, which would report "0 个年份" on exactly those sites. Same slice,
-       same semantics, both branches now agree on what a list section is. */}}
-  {{ $yearCount = len ((where site.RegularPages "Section" "in" $mainSections).GroupByDate "2006") }}
+  {{/* Counted from $allList — the SAME page set the year pills below enumerate
+       and the same set #archive-all-cards ships.
+
+       It used to be `where site.RegularPages "Section" "in" $mainSections`,
+       which counts years across every main section regardless of which one is
+       being viewed, while the pills count this section only. The two disagree
+       whenever the sections span different years, and the header then
+       advertises a year count the pill row has no entry for.
+
+       That divergence was already reachable before the predicate was widened:
+       $isList is a union of mainSections and the literal "archives"/"posts"
+       names, so a section carrying no mainSections entry still got the whole
+       year-filter UI while this count ignored it entirely. On the shipped
+       exampleSite config (mainSections = ['posts']) an /archives/ page reported
+       the posts year count directly above its own archives year pills. */}}
+  {{ $yearCount = len ($allList.GroupByDate "2006") }}
   {{ $query := urls.Parse .Permalink }}
   {{ with $query.RawQuery }}
     {{ range split . "&" }}

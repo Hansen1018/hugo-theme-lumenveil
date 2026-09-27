@@ -14,10 +14,18 @@
   the year pills and #archive-all-cards. mainSections is allowed to WIDEN the set;
   it must not narrow it below the previous behaviour.
 
-  Every consumer — section.html (year pills, #archive-all-cards, year stats) and
-  the single templates (breadcrumb, post-meta, post-nav) — goes through here, so
-  a post page and its list page can never disagree about whether the section is
-  a list section.
+  Callers: section.html (year pills, #archive-all-cards, year stats) plus
+  single.html and posts/single.html, which gate the breadcrumb, post-meta and
+  post-nav on it — so a post page and its list page cannot disagree about
+  whether the section is a list section.
+
+  layouts/archives/single.html and layouts/ja/single.html deliberately do NOT
+  call this. Both are section-scoped — .Section is fixed by which template
+  renders — so each resolves its own breadcrumb from its own section and renders
+  post-meta unconditionally. Do not "unify" them onto this predicate: for ja,
+  "ja" is a section name for page-style content and is never a main section, so
+  a membership gate there is permanently false and silently kills the whole
+  date / reading-time / word-count bar.
 */ -}}
 {{- $page := . -}}
 {{- $mainSections := partial "main-sections.html" $page -}}
