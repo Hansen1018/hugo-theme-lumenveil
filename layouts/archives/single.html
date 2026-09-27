@@ -1,7 +1,16 @@
 {{ define "main" }}
+{{/* This template is only ever reached for section=archives, so unlike
+     layouts/posts/single.html it needs no mainSections guard — a guard here
+     would either always pass or always hide the breadcrumb, and hiding it is
+     worse than the bug this fixes. The link itself follows the site config, so
+     it still resolves when mainSections names something other than archives.
+     The with/else also covers a multilingual site where the section is absent
+     for the current language, where an empty target would emit href="" and
+     reload the current page instead. */}}
+{{ $listSection := site.GetPage "section" (index site.Params.mainSections 0 | default "archives") }}
 <article class="article fade-up">
   <header class="article-header">
-    <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><a href="{{ "/archives/" | relURL }}">文章</a><span>/</span><span>{{ .Title }}</span></div>
+    <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><a href="{{ with $listSection }}{{ .RelPermalink }}{{ else }}{{ printf "/%s/" .Section | relURL }}{{ end }}">文章</a><span>/</span><span>{{ .Title }}</span></div>
     <div class="post-meta">
       <time datetime="{{ .Date.Format "2006-01-02" }}">发布于 {{ .Date.Format "2006 年 01 月 02 日" }}</time>
       {{ partial "lastmod-meta.html" . }}

@@ -1,7 +1,13 @@
 {{ define "main" }}
+{{/* Fallback single template — used by any section without its own
+     layouts/<section>/single.html. The breadcrumb link follows mainSections the
+     same way posts/single.html and archives/single.html do; see the note there
+     for why the hardcoded "/archives/" this replaced was a 404 waiting to
+     happen. */}}
+{{ $listSection := site.GetPage "section" (index site.Params.mainSections 0 | default "archives") }}
 <article class="article fade-up">
   <header class="article-header">
-    <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a>{{ if eq .Section (index site.Params.mainSections 0 | default "archives") }}<span>/</span><a href="{{ "/archives/" | relURL }}">文章</a>{{ end }}<span>/</span><span>{{ .Title }}</span></div>
+    <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a>{{ if eq .Section (index site.Params.mainSections 0 | default "archives") }}<span>/</span><a href="{{ with $listSection }}{{ .RelPermalink }}{{ else }}{{ printf "/%s/" .Section | relURL }}{{ end }}">文章</a>{{ end }}<span>/</span><span>{{ .Title }}</span></div>
     {{ if eq .Section (index site.Params.mainSections 0 | default "archives") }}<div class="post-meta"><time datetime="{{ .Date.Format "2006-01-02" }}">发布于 {{ .Date.Format "2006 年 01 月 02 日" }}</time>{{ partial "lastmod-meta.html" . }}<span>{{ .ReadingTime }} 分钟阅读</span><span>{{ .WordCount }} 字</span><span class="page-views">阅读 <span id="busuanzi_value_page_pv">0</span> 次</span>
 {{ partial "busuanzi.html" . }}</div>{{ end }}
     <h1>{{ .Title }}</h1>
