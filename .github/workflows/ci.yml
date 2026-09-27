@@ -65,6 +65,13 @@ jobs:
       # not subtract keys, so "unset the pin" has to be stated; whether an empty
       # env var clears a [params] value is version-sensitive behaviour a future
       # Hugo bump could silently break.
+      # The Chroma assertion below counts fenced blocks with an inline awk
+      # state machine. This test exercises that state machine against every
+      # fence form it claims to support, so the claim is enforced rather than
+      # asserted in a comment.
+      - name: Test the fence counter
+        run: scripts/test-fence-count.sh
+
       - name: Build the default (Chroma) render path
         # This step uses `mapfile` and process substitution, which are bash
         # builtins. ubuntu-latest happens to default `run:` to `bash -e`, but
@@ -108,7 +115,12 @@ jobs:
           #     `…>[^<]{0,40}<(div|span|pre)` tracked Chroma's exact wrapper
           #     shape and false-failed on any site that changed it.
           #     Quote-insensitive: whether --minify strips the optional quotes
-          #     is the minifier's business, not ours to assert on.
+          #     is the minifier's business, not ours to assert on. The trailing
+          #     [ />] is a class-token boundary, not decoration: without it,
+          #     class="highlight-wrapper" / "highlight-copy" / "highlightjs"
+          #     each count as a container, inflating out_boxes and masking the
+          #     very drop this step exists to catch. Chroma emits `highlight` as
+          #     a standalone token, so the boundary costs nothing.
           #
           # (b) In aggregate: rendered containers must equal fenced blocks in
           #     the source. This is what actually catches a DROPPED block. An
@@ -133,7 +145,7 @@ jobs:
             # line. a page with 0 <pre> (the-aurora-background) therefore failed
             # the build on a correct tree.
             n_pre=$(grep -o '<pre' "$p" | wc -l || true)
-            n_box=$(grep -oE 'class=["'"'"']?highlight["'"'"']?' "$p" | wc -l || true)
+            n_box=$(grep -oE 'class=["'"'"']?highlight["'"'"']?[ />]' "$p" | wc -l || true)
             out_boxes=$((out_boxes + n_box))
             if [ "$n_pre" -gt 0 ] && [ "$n_box" -eq 0 ]; then
               echo "::error::$n_pre <pre> on the page but no Chroma .highlight container: $p"

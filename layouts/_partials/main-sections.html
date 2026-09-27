@@ -1,53 +1,37 @@
 {{- /*
   main-sections.html — the single resolution of site.Params.mainSections.
+  Returns a lowercased, whitespace-trimmed slice: the configured value, or
+  (slice "archives" "posts") when the site configures none.
 
-  Returns the configured slice, or the literal (slice "archives" "posts") when
-  the site sets none.
+  Guarantees, each of which a consumer may rely on:
+    - always a slice (a scalar `mainSections = 'posts'` is legal config and is
+      coerced; `in` against a STRING set is a substring test, not membership);
+    - every entry lowercased and trimmed, because Hugo reports .Section
+      lowercased — `['Notes']` and `[' notes ']` would otherwise compile fine
+      and then match nothing, silently costing a section its year pills;
+    - an empty value is treated as unset, which is what a site with no main
+      sections wants: the union in is-list-section.html still treats /posts/ and
+      /archives/ as list sections regardless of this param, so [] could never
+      have meant "no list sections". `isset` cannot distinguish the two here —
+      it returns false for a configured ['posts'] as well as for [].
 
-  "Sets none" is decided by truthiness, and that is deliberate. Switching to
-  `isset site.Params "mainSections"` to tell an unset param from an explicitly
-  empty one does not work: on 0.166.0, isset returns false for BOTH
-  mainSections = ['posts'] and mainSections = [], so it would send every
-  configured site down the default branch. There is also nothing to preserve — an
-  empty mainSections could never have meant "no list sections", because the
-  union in is-list-section.html treats /posts/ and /archives/ as list sections
-  regardless of this param. Treat [] and unset as the same thing: a site with no
-  main sections configured still wants the built-in article sections.
-
-  Why this exists: `site.Params.mainSections` was read in five places
-  (section.html, posts/single.html, single.html, ja/single.html, plus the
-  per-template fallbacks) and every copy carried its own `default`. That is not
-  a style preference — the copies already diverged once, and the divergence
-  shipped: section.html widened the list set to include the literal
-  "archives"/"posts" names so /archives/ keeps its year pills, while the single
-  templates gated on plain membership, so on mainSections = ['notes'] a post
-  under /posts/ got year pills and a card template from its list page but no
-  breadcrumb, no post-meta and no post-nav from its own page. One predicate, one
+  It exists because this param was read in five places, each with its own
+  `default`, and the copies had already diverged in a way that shipped: the
+  list page widened its set to the literal "archives"/"posts" names while the
+  single templates gated on plain membership, so a post under /posts/ got year
+  pills from one page and no breadcrumb or post-meta from the other. One
   definition, called from all of them.
+
+  Measurements behind the above were taken on Hugo 0.146.0 and 0.166.0; re-run
+  them before changing this partial rather than trusting the numbers in the PR
+  history, which rot as Hugo moves.
 */ -}}
 {{- $mainSections := site.Params.mainSections -}}
 {{- if not $mainSections -}}
   {{- $mainSections = slice "archives" "posts" -}}
 {{- else if not (reflect.IsSlice $mainSections) -}}
-  {{- /* A scalar mainSections = 'posts' is legal config. Passed through raw it
-       would reach `in $mainSections $section` as a STRING set, and `in` on a
-       string is a substring test, not membership — a section named "post" would
-       match. */ -}}
   {{- $mainSections = slice $mainSections -}}
 {{- end -}}
-{{- /* Normalise every entry against how Hugo actually reports sections: .Section
-       is always lowercased. So mainSections = ['Notes'] or [' notes '] compiles
-       fine and then silently matches nothing — the section keeps no year pills
-       and no card template, with nothing in the build log. Measured on 0.166.0
-       against a /notes/ section: ['notes'] -> list, ['Notes'] and [' notes '] ->
-       not a list section. Lower/trim here, once, so the predicate can stay a
-       plain `in`.
-
-       No type guard is needed for the elements. Hugo stringifies config scalars
-       before a template ever sees them, so mainSections = [2024] arrives here as
-       []string{"2024"}, and trim/lower are safe. A nested slice arrives as
-       []string{} — empty, so the documented default branch above applies and
-       `in` never sees a non-string. Verified on 0.166.0. */ -}}
 {{- $normalized := slice -}}
 {{- range $mainSections -}}
   {{- $normalized = $normalized | append (lower (trim . " \t")) -}}
