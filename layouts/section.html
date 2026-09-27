@@ -11,9 +11,11 @@
      safe — do not "simplify" it away without re-measuring subpath builds.
      The with/else mirrors posts/single.html: on a multilingual site the section
      can be absent for the current language, and an empty $yearBase would emit
-     href="" (reloads the current page) instead of a real target. */}}
+     href="" (reloads the current page) instead of a real target. The fallback is
+     derived from .Section, never hardcoded — a fixed "/archives/" here would
+     reintroduce the exact 404 this replaces whenever the section is "posts". */}}
 {{ $yearBase := "" }}
-{{ with site.GetPage "section" .Section }}{{ $yearBase = .RelPermalink }}{{ else }}{{ $yearBase = "/archives/" | relURL }}{{ end }}
+{{ with site.GetPage "section" .Section }}{{ $yearBase = .RelPermalink }}{{ else }}{{ $yearBase = printf "/%s/" .Section | relURL }}{{ end }}
 {{ $yearCount := 0 }}
 {{ if $isList }}
   {{ $yearCount = len ((where site.RegularPages "Section" "in" site.Params.mainSections).GroupByDate "2006") }}
