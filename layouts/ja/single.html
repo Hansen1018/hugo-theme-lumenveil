@@ -5,11 +5,13 @@
      site.Params.mainSections[0] made the 記事 link point at the main article
      list (/posts/ on a typical site) instead of the JA one (/ja/).
 
-     post-meta is rendered unconditionally, as in archives/single.html. It used to
-     be gated on mainSections membership, but .Section is "ja" here and "ja" is a
-     section name for page-style content, never a main section — so that test was
-     permanently false and the whole date/reading-time/word-count bar was dead
-     markup that could never render on any site. */}}
+     post-meta renders whenever the page has a date or body content, and not at
+     all otherwise. It used to be gated on mainSections membership, but .Section
+     is "ja" here and "ja" is a section name for page-style content, never a main
+     section — so that test was permanently false and the whole bar was dead
+     markup on every site. Removing that gate is not enough on its own: a stub
+     page with neither a date nor a body would then render an empty div, so each
+     value is guarded and the div itself is gated on having something to show. */}}
 {{ $listTarget := partial "breadcrumb-target.html" . }}
 <article class="article fade-up">
   <header class="article-header">

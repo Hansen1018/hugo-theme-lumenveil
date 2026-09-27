@@ -9,7 +9,7 @@
 # program had no END block and printed nothing — all 10 cases reported
 # `got=` empty. That was a broken test, not a broken counter. The extractor now
 # takes everything between `n=$(awk '` and `' "$md")`, END included.
-set -uo pipefail
+set -euo pipefail
 REPO=$(cd "$(dirname "$0")/.." && pwd)
 d=$(mktemp -d)
 rm -rf "$d"; mkdir -p "$d"
@@ -77,18 +77,46 @@ expect "mixed forms" 4 "$d/j.md"
 
 # The real example content, which is what CI actually counts.
 echo
-echo "### against the shipped example content"
-tot=0
-while IFS= read -r md; do
-  n=$(count "$md")
-  tot=$((tot+n))
-  printf '  %-32s %s\n' "$(basename "$md")" "$n"
-done < <(find "$REPO/exampleSite/content/posts" -name '*.md' ! -name '_index.md' | sort)
-echo "  total=$tot  (CI's correct-build expectation is 3)"
-if [ "$tot" = "3" ]; then
-  pass=$((pass+1)); echo "  PASS  example content total == 3"
+echo "### cross-check against what Hugo actually rendered"
+# No magic constant. An earlier version asserted total == 3, which meant any
+# edit to the example content broke this test for reasons that had nothing to
+# do with the counter — and, worse, a coincidental miscount could have matched
+# 3 and hidden a real regression. The useful invariant is that the counter
+# agrees with the containers in a real build; that stays true as content is
+# added or removed, and fails precisely when the two disagree.
+TREE=${TREE:-}
+if [ -z "$TREE" ] || [ ! -d "$TREE" ]; then
+  echo "  SKIP  no rendered tree given (set TREE=/tmp/pub-chroma to run this)"
 else
-  fail=$((fail+1)); echo "  FAIL  example content total expected 3 got $tot"
+  tot=0
+  while IFS= read -r md; do
+    # $md is already an absolute path from find — do not re-prefix it. The
+    # first version of this block did, producing paths like
+    # /repo/exampleSite//repo/exampleSite/content/posts/aurora.md.
+    n=$(count "$md")
+    tot=$((tot+n))
+    printf '  %-32s %s\n' "$(basename "$md")" "$n"
+  done < <(find "$REPO/exampleSite/content/posts" -name '*.md' ! -name '_index.md' | sort)
+
+  rendered=0
+  for p in "$TREE"/posts/*/index.html; do
+    [ -e "$p" ] || continue
+    case "$p" in */page/*) continue ;; esac
+    # `|| true` for the same reason ci.yml needs it: under `set -euo pipefail` a
+    # grep that matches nothing exits 1, the pipeline inherits that through
+    # pipefail, and the script dies here — on a page with no code blocks, which
+    # is a normal page, not a failure. (I added -e for review reason 3 and then
+    # immediately wrote the very bug that -e exposes.)
+    k=$(grep -oE 'class=["'"'"']?highlight["'"'"']?[ />]' "$p" | wc -l || true)
+    rendered=$((rendered+k))
+  done
+  echo "  source blocks (counter) = $tot"
+  echo "  containers (rendered)   = $rendered"
+  if [ "$tot" = "$rendered" ]; then
+    pass=$((pass+1)); echo "  PASS  counter agrees with the rendered build"
+  else
+    fail=$((fail+1)); echo "  FAIL  counter=$tot but the build rendered $rendered"
+  fi
 fi
 
 echo

@@ -168,12 +168,50 @@ jobs:
           fi
           # Fenced blocks in the example content, counted from the source.
           #
-          # The set must match the POSTS set above exactly. _index.md is
-          # excluded because its output is posts/index.html, which -mindepth 2
-          # deliberately drops — counting it here would false-fail the moment a
-          # section index gained a code block. Nested page bundles
-          # (content/posts/foo/index.md) DO render into the output set, so `find`
-          # rather than a flat glob, or they would be silently missed.
+          # The source set MUST be the same page set as POSTS above, or the
+          # equality is meaningless. A glob over content/posts cannot do that:
+          # a draft, future-dated or expired post exists in source and never
+          # renders, so one fenced block in a draft turned this step red with a
+          # message blaming the render hook. Measured — baseline out=3 src=3;
+          # after adding a draft post, out=3 src=4.
+          #
+          # So the set comes from `hugo list all` joined against the output that
+          # actually exists. The join is on the last path segment of the
+          # permalink, NOT the filename: output names follow slug/url front
+          # matter (douban-card-demo.md renders as douban-card-shortcode), so a
+          # filename map would miss real posts. Joining on what rendered also
+          # absorbs build exclusions Hugo does not surface in any column.
+          # `hugo list all` includes drafts, future and expired pages by design —
+          # verified on 0.146.0 and 0.166.0 — which is exactly why the join,
+          # rather than a filter on those columns, is what makes the sets agree.
+          #
+          # _index.md drops out on its own: its output is posts/index.html, which
+          # the -mindepth 2 POSTS find excludes, so no segment ever matches.
+          # Nested page bundles need no special case either.
+          # mktemp rather than $RUNNER_TEMP: that variable only exists on the
+          # GitHub runner, so any local run of this step wrote to "/fence-src.txt"
+          # and died. The step should not depend on the environment it runs in.
+          SRC_LIST=$(mktemp)
+          trap 'rm -f "$SRC_LIST"' EXIT
+          : > "$SRC_LIST"
+          for p in "${POSTS[@]}"; do
+            seg=$(basename "$(dirname "$p")")
+            hugo list all | awk -F, -v want="$seg" -v out="$SRC_LIST" '
+              /^content\/posts\// && !/_index\.md$/ {
+                path = $1
+                if (match($0, /https?:\/\/[^ ,]+/)) {
+                  u = substr($0, RSTART, RLENGTH)
+                  sub(/\/+$/, "", u)
+                  n = split(u, a, "\/")
+                  if (a[n] == want) print path >> out
+                }
+              }'
+          done
+          if [ ! -s "$SRC_LIST" ]; then
+            echo "::error::could not map any rendered post back to a source file — hugo list all returned nothing usable"
+            hugo list all | head -3
+            exit 1
+          fi
           #
           # Fence counting follows CommonMark's open/close rules rather than
           # toggling on any ``` or ~~~ line:
@@ -210,7 +248,7 @@ jobs:
               }
               END { print c+0 }' "$md")
             src_boxes=$((src_boxes + n))
-          done < <(find content/posts -name '*.md' ! -name '_index.md' | sort)
+          done < "$SRC_LIST"
           if [ "$out_boxes" -ne "$src_boxes" ]; then
             echo "::error::rendered $out_boxes Chroma containers but the source has $src_boxes fenced code blocks — the render hook dropped $((src_boxes - out_boxes))"
             exit 1
