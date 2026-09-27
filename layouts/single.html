@@ -5,14 +5,14 @@
      secondary main sections: with mainSections = ['posts','notes'] a notes post
      is admitted by the gate below but mainSections[0] resolves to posts, so the
      文章 link would point at /posts/. See the note in posts/single.html. */}}
-{{ $listSection := site.GetPage "section" .Section }}
+{{ $listTarget := partial "breadcrumb-target.html" . }}
 {{ $isList := partial "is-list-section.html" . }}
 {{/* Breadcrumb / post-meta / post-nav visibility all share one predicate, so this
      page and its list page can never disagree about whether the section is a list
      section. See _partials/is-list-section.html. */}}
 <article class="article fade-up">
   <header class="article-header">
-    <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a>{{ if $isList }}<span>/</span><a href="{{ with $listSection }}{{ .RelPermalink }}{{ else }}{{ printf "/%s/" .Section | relURL }}{{ end }}">文章</a>{{ end }}<span>/</span><span>{{ .Title }}</span></div>
+    <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a>{{ if $isList }}<span>/</span><a href="{{ $listTarget }}">文章</a>{{ end }}<span>/</span><span>{{ .Title }}</span></div>
     {{ if $isList }}<div class="post-meta"><time datetime="{{ .Date.Format "2006-01-02" }}">发布于 {{ .Date.Format "2006 年 01 月 02 日" }}</time>{{ partial "lastmod-meta.html" . }}<span>{{ .ReadingTime }} 分钟阅读</span><span>{{ .WordCount }} 字</span><span class="page-views">阅读 <span id="busuanzi_value_page_pv">0</span> 次</span>
 {{ partial "busuanzi.html" . }}</div>{{ end }}
     <h1>{{ .Title }}</h1>

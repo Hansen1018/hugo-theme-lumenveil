@@ -45,8 +45,7 @@
      href="" (reloads the current page) instead of a real target. The fallback is
      derived from .Section, never hardcoded — a fixed "/archives/" here would
      reintroduce the exact 404 this replaces whenever the section is "posts". */}}
-{{ $yearBase := "" }}
-{{ with site.GetPage "section" .Section }}{{ $yearBase = .RelPermalink }}{{ else }}{{ $yearBase = printf "/%s/" .Section | relURL }}{{ end }}
+{{ $yearBase := partial "breadcrumb-target.html" . }}
 {{ $yearCount := 0 }}
 {{ if $isList }}
   {{/* Counted from $allList — the SAME page set the year pills below enumerate

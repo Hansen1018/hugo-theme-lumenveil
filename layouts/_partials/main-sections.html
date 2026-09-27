@@ -22,8 +22,18 @@
   {{- /* A scalar mainSections = 'posts' is legal config. Passed through raw it
        would reach `in $mainSections $section` as a STRING set, and `in` on a
        string is a substring test, not membership — a section named "post" would
-       match. Coerce to a slice so the invariant holds for every consumer of
-       this partial, not just well-configured sites. */ -}}
+       match. */ -}}
   {{- $mainSections = slice $mainSections -}}
 {{- end -}}
-{{- return $mainSections -}}
+{{- /* Normalise every entry against how Hugo actually reports sections: .Section
+       is always lowercased. So mainSections = ['Notes'] or [' notes '] compiles
+       fine and then silently matches nothing — the section keeps no year pills
+       and no card template, with nothing in the build log. Measured on 0.166.0
+       against a /notes/ section: ['notes'] -> list, ['Notes'] and [' notes '] ->
+       not a list section. Lower/trim here, once, so the predicate can stay a
+       plain `in`. */ -}}
+{{- $normalized := slice -}}
+{{- range $mainSections -}}
+  {{- $normalized = $normalized | append (lower (trim . " \t")) -}}
+{{- end -}}
+{{- return $normalized -}}

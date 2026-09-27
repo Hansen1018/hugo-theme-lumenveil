@@ -1,0 +1,30 @@
+{{- /*
+  breadcrumb-target.html — the URL a post breadcrumb should link to as its
+  parent: the list page for the post's OWN section.
+
+  Usage: {{ $target := partial "breadcrumb-target.html" . }}
+         <a href="{{ $target }}">文章</a>
+
+  Two rules are encoded here, and both were previously copy-pasted into four
+  templates (single.html, posts/single.html, archives/single.html,
+  ja/single.html) with the same drift risk the shared is-list-section predicate
+  had:
+
+  1. Resolve from the page's own .Section, never from mainSections. A site with
+     mainSections = ['posts'] would otherwise point an /archives/ or /ja/ post
+     at /posts/ — a regression that shipped once already.
+
+  2. Fall back to a synthesised "/<section>/" when the section page is absent
+     for the current language. An unresolved target renders href="", which
+     reloads the current page instead of navigating anywhere.
+
+  Returns a string, so callers use it directly as the href.
+*/ -}}
+{{- $page := . -}}
+{{- $target := "" -}}
+{{- with site.GetPage "section" $page.Section -}}
+  {{- $target = .RelPermalink -}}
+{{- else -}}
+  {{- $target = printf "/%s/" $page.Section | relURL -}}
+{{- end -}}
+{{- return $target -}}
