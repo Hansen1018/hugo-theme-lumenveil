@@ -65,13 +65,6 @@ jobs:
       # not subtract keys, so "unset the pin" has to be stated; whether an empty
       # env var clears a [params] value is version-sensitive behaviour a future
       # Hugo bump could silently break.
-      # The Chroma assertion below counts fenced blocks with an inline awk
-      # state machine. This test exercises that state machine against every
-      # fence form it claims to support, so the claim is enforced rather than
-      # asserted in a comment.
-      - name: Test the fence counter
-        run: scripts/test-fence-count.sh
-
       - name: Build the default (Chroma) render path
         # This step uses `mapfile` and process substitution, which are bash
         # builtins. ubuntu-latest happens to default `run:` to `bash -e`, but
@@ -194,9 +187,14 @@ jobs:
           SRC_LIST=$(mktemp)
           trap 'rm -f "$SRC_LIST"' EXIT
           : > "$SRC_LIST"
+          # Generated ONCE. The listing does not depend on the page being
+          # matched, only the filter does, so running it per post re-does a full
+          # site listing for every page in the output.
+          LIST=$(mktemp)
+          hugo list all > "$LIST"
           for p in "${POSTS[@]}"; do
             seg=$(basename "$(dirname "$p")")
-            hugo list all | awk -F, -v want="$seg" -v out="$SRC_LIST" '
+            awk -F, -v want="$seg" -v out="$SRC_LIST" '
               /^content\/posts\// && !/_index\.md$/ {
                 path = $1
                 if (match($0, /https?:\/\/[^ ,]+/)) {
@@ -205,8 +203,9 @@ jobs:
                   n = split(u, a, "\/")
                   if (a[n] == want) print path >> out
                 }
-              }'
+              }' "$LIST"
           done
+          rm -f "$LIST"
           if [ ! -s "$SRC_LIST" ]; then
             echo "::error::could not map any rendered post back to a source file — hugo list all returned nothing usable"
             hugo list all | head -3
@@ -254,3 +253,15 @@ jobs:
             exit 1
           fi
           echo "ok: $out_boxes of $src_boxes fenced code blocks rendered through Chroma across ${#POSTS[@]} post pages"
+
+      # The Chroma step above counts fenced blocks with an inline awk state
+      # machine. This exercises that state machine against every fence form it
+      # claims to support, AND cross-checks it against the tree the step just
+      # rendered. It runs here rather than before the build precisely because it
+      # needs that tree: invoked earlier it took the skip branch, so in CI only
+      # the synthetic cases ran and the cross-check — the assertion that actually
+      # ties the counter to Hugo's output — never executed.
+      - name: Test the fence counter
+        run: scripts/test-fence-count.sh
+        env:
+          TREE: /tmp/pub-chroma

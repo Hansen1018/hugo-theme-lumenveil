@@ -12,7 +12,10 @@
 set -euo pipefail
 REPO=$(cd "$(dirname "$0")/.." && pwd)
 d=$(mktemp -d)
-rm -rf "$d"; mkdir -p "$d"
+# EXIT trap, not just a trailing rm: an early abort (the FATAL exit 2, or
+# set -e tripping on an assertion) would otherwise leave the temp dir and
+# the extracted awk program behind on every failed run.
+trap 'rm -rf "$d"' EXIT
 
 # The repo path is passed as argv, not derived from __file__: this python runs
 # from a heredoc on stdin, where __file__ does not exist and `here` would
@@ -88,15 +91,45 @@ TREE=${TREE:-}
 if [ -z "$TREE" ] || [ ! -d "$TREE" ]; then
   echo "  SKIP  no rendered tree given (set TREE=/tmp/pub-chroma to run this)"
 else
+  # Same set rule as ci.yml: count only files that actually rendered. A
+  # find over all of content/posts included drafts and future-dated posts,
+  # which are in source and never in the build — so the cross-check would fail
+  # on a draft post while the CI assertion passed, and the two would disagree
+  # about what they are checking.
+  # Same set rule as ci.yml, by the same mechanism: map each rendered page back
+  # to its source file through `hugo list all`, not by guessing from the
+  # filename. An earlier version of this block did guess, and was wrong twice
+  # over — the example posts carry no `slug:` front matter, so the output name
+  # falls back to the TITLE slug: aurora.md renders as the-aurora-background and
+  # douban-card-demo.md as douban-card-shortcode. It also counted every
+  # content/posts/*.md, which includes drafts and future-dated posts that are in
+  # source and never in the build, so a draft post made this fail while the CI
+  # assertion passed — the two would have been checking different sets.
+  LIST=$(mktemp)
+  ( cd "$REPO/exampleSite" && hugo list all ) > "$LIST" 2>/dev/null
   tot=0
-  while IFS= read -r md; do
-    # $md is already an absolute path from find — do not re-prefix it. The
-    # first version of this block did, producing paths like
-    # /repo/exampleSite//repo/exampleSite/content/posts/aurora.md.
-    n=$(count "$md")
+  for p in "$TREE"/posts/*/index.html; do
+    [ -e "$p" ] || continue
+    case "$p" in */page/*) continue ;; esac
+    seg=$(basename "$(dirname "$p")")
+    md=$(awk -F, -v want="$seg" '
+      /^content\/posts\// && !/_index\.md$/ {
+        if (match($0, /https?:\/\/[^ ,]+/)) {
+          u = substr($0, RSTART, RLENGTH)
+          sub(/\/+$/, "", u)
+          n = split(u, a, "/")
+          if (a[n] == want) { print $1; exit }
+        }
+      }' "$LIST")
+    if [ -z "$md" ]; then
+      fail=$((fail+1)); echo "  FAIL  could not map rendered page $seg back to a source file"
+      continue
+    fi
+    n=$(count "$REPO/exampleSite/$md")
     tot=$((tot+n))
     printf '  %-32s %s\n' "$(basename "$md")" "$n"
-  done < <(find "$REPO/exampleSite/content/posts" -name '*.md' ! -name '_index.md' | sort)
+  done
+  rm -f "$LIST"
 
   rendered=0
   for p in "$TREE"/posts/*/index.html; do

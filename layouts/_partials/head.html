@@ -137,8 +137,9 @@ try {
 {{- /* The article schema is emitted only for pages that actually have a date.
      A BlogPosting with datePublished 0001-01-01 is worse than no BlogPosting:
      it is a false claim to a consumer that cannot tell it apart from a real
-     one. Page-style content has no date by design, so it gets the generic
-     WebSite shape below instead.
+     one. Page-style content has no date by design, so it gets a WebPage
+     object instead — the WebSite shape is a different branch, for pages that
+     are not .IsPage at all.
 
      dateModified needs no guard of its own: Hugo's .Lastmod falls back to
      .Date, so inside this branch — which already implies a non-zero .Date —
