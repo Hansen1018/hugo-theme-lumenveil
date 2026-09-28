@@ -113,8 +113,22 @@
   <p>{{ .Description | default "所有文章，按时间倒序排列。" }}</p>
   <div class="page-hero__stats">
     <span>{{ len .RegularPagesRecursive }} 篇文章</span>
-    <span>{{ len site.Taxonomies.categories }} 个分类</span>
-    <span>{{ len site.Taxonomies.tags }} 个标签</span>
+    {{/* site.Taxonomies is a zero Value, not an empty map, when the taxonomy
+         kinds are disabled. len on it raises
+
+             error calling len: reflect: call of reflect.Value.Type on zero Value
+
+         which aborts the whole build, not just this template — reproduced with
+         disableKinds containing "taxonomy"/"term" and with and without a
+         [taxonomies] block, so declaring the taxonomies is not a workaround.
+         The stat is read once here because it is needed twice on adjacent
+         lines, and `if $tax` is the guard the probe measured as both
+         crash-safe and still-correct (2 categories / 1 tag on a site that has
+         them). Without the else branch the span would render empty rather
+         than as the 0 this stat is supposed to show. */}}
+    {{ $tax := site.Taxonomies }}
+    <span>{{ if $tax }}{{ len $tax.categories }}{{ else }}0{{ end }} 个分类</span>
+    <span>{{ if $tax }}{{ len $tax.tags }}{{ else }}0{{ end }} 个标签</span>
     {{ if $isList }}<span>{{ $yearCount }} 个年份</span>{{ end }}
   </div>
 </section>
