@@ -220,8 +220,31 @@ def make_post(n, count):
     return POST.format(n=n, words=body)
 
 
+def hugo_exe():
+    """Resolve the Hugo binary, or exit with something readable.
+
+    Without this, a missing binary surfaces as a bare FileNotFoundError
+    traceback from subprocess. The friendly "cannot parse `hugo version`"
+    message that used to be the only diagnostic only covered an *unparsable*
+    version string, never an *absent* one — measured: with `hugo` off PATH the
+    script died on a raw traceback and printed nothing of its own.
+    """
+    exe = shutil.which("hugo")
+    if exe is None:
+        print("  FATAL: `hugo` was not found on PATH.")
+        print("  This test builds a real fixture, so it needs a Hugo binary.")
+        print("  Install one, or put its directory at the front of PATH.")
+        sys.exit(2)
+    return exe
+
+
 def hugo_version():
-    out = subprocess.run(["hugo", "version"], capture_output=True, text=True)
+    try:
+        out = subprocess.run([hugo_exe(), "version"],
+                             capture_output=True, text=True)
+    except OSError as e:
+        print("  FATAL: could not run hugo: %s" % e)
+        sys.exit(2)
     m = re.search(r"v(\d+)\.(\d+)\.(\d+)", out.stdout)
     if not m:
         print("  FATAL: cannot parse `hugo version`")
@@ -266,9 +289,19 @@ def main():
         # summaryLength is pinned so the boundary does not move when Hugo
         # changes its default. Without this the test would silently start
         # testing a different truncation point on some future release.
+        #
+        # PREPENDED, not appended. exampleSite/hugo.toml ends with the
+        # [imaging.avif] table, and TOML keys after a table header belong to
+        # that table — appending wrote `imaging.avif.summaryLength`, which Hugo
+        # ignores, leaving the real value at Hugo's default of 70. Confirmed
+        # with tomllib: appended -> no root-level summaryLength and
+        # imaging.avif == {quality: 85, summaryLength: 40}; prepended ->
+        # summaryLength 40 at the root, imaging.avif untouched. So this pin
+        # was dead until now, and the comment above claimed otherwise.
         cfg = os.path.join(site, "hugo.toml")
-        with open(cfg, "a") as fh:
-            fh.write("\nsummaryLength = 40\n")
+        body = open(cfg, encoding="utf-8").read()
+        with open(cfg, "w", encoding="utf-8") as fh:
+            fh.write("summaryLength = 40\n" + body)
 
         posts = os.path.join(site, "content", "posts")
         os.makedirs(posts, exist_ok=True)
@@ -278,7 +311,7 @@ def main():
 
         out = os.path.join(tmp, "pub")
         proc = subprocess.run(
-            ["hugo", "--quiet", "--destination", out],
+            [hugo_exe(), "--quiet", "--destination", out],
             cwd=site, capture_output=True, text=True)
         if proc.returncode != 0:
             print("  FATAL: fixture build failed")

@@ -75,8 +75,31 @@ def check(ok, label, detail=""):
     return ok
 
 
+def hugo_exe():
+    """Resolve the Hugo binary, or exit with something readable.
+
+    Without this, a missing binary surfaces as a bare FileNotFoundError
+    traceback from subprocess. The friendly "cannot parse `hugo version`"
+    message that used to be the only diagnostic only covered an *unparsable*
+    version string, never an *absent* one — measured: with `hugo` off PATH the
+    script died on a raw traceback and printed nothing of its own.
+    """
+    exe = shutil.which("hugo")
+    if exe is None:
+        print("  FATAL: `hugo` was not found on PATH.")
+        print("  This test builds a real fixture, so it needs a Hugo binary.")
+        print("  Install one, or put its directory at the front of PATH.")
+        sys.exit(2)
+    return exe
+
+
 def hugo_version():
-    out = subprocess.run(["hugo", "version"], capture_output=True, text=True)
+    try:
+        out = subprocess.run([hugo_exe(), "version"],
+                             capture_output=True, text=True)
+    except OSError as e:
+        print("  FATAL: could not run hugo: %s" % e)
+        sys.exit(2)
     m = re.search(r"v(\d+)\.(\d+)\.(\d+)", out.stdout)
     if not m:
         print("  FATAL: could not parse `hugo version` output")
@@ -158,7 +181,7 @@ def build(work, name, cfg):
                  "disableKinds = ['taxonomy', 'term', 'rss', 'sitemap']\n")
         fh.write(cfg)
     proc = subprocess.run(
-        ["hugo", "--quiet", "--destination", out],
+        [hugo_exe(), "--quiet", "--destination", out],
         cwd=work, capture_output=True, text=True)
     page = os.path.join(out, "index.html")
     if proc.returncode != 0 or not os.path.exists(page):
@@ -198,7 +221,15 @@ def main():
             for label, e in (("q=20", err), ("q=85", err85), ("none", errn)):
                 if e:
                     print("      build %s failed: %s" % (label, " / ".join(e)))
-            return check(False, "fixture builds on all three per-format cases")
+            # Record the failure, then keep going to the summary below. This
+            # used to `return check(False, ...)`, which had two problems: the
+            # trailing "N FAILED" line never printed, and — worse — check()
+            # returns `ok`, so that return statement handed `False` to
+            # `sys.exit(main())`, and False is falsy: the process exited 0 on a
+            # failed fixture build. A CI job reading the exit code went green
+            # on the one failure this test most needs to report.
+            check(False, "fixture builds on all three per-format cases")
+            return 1
         for f in FMTS:
             print("      %-6s q20=%-9d q85=%-9d none=%-9d"
                   % (f, pf20[f], pf85[f], pfnone[f]))
@@ -215,7 +246,10 @@ def main():
             for label, e in (("q=20", sc_err20), ("q=85", sc_err85)):
                 if e:
                     print("      build %s failed: %s" % (label, " / ".join(e)))
-            return check(False, "scalar fixture builds on both quality settings")
+            # Same reason as the per-format path above: no early return with
+            # check()'s return value, or the script exits 0 on a failure.
+            check(False, "scalar fixture builds on both quality settings")
+            return 1
         for f in FMTS:
             print("      %-6s q20=%-9d q85=%-9d" % (f, sc20[f], sc85[f]))
 
