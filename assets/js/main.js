@@ -191,13 +191,26 @@ menuToggle?.addEventListener('click', () => {
        author and copyright are optional in the same way — theme.toml defaults
        both to '' — so an unconfigured site emitted bare `作者:` and
        `版权说明:[]()`, the identical defect. Guarding only the date was
-       half a fix. */
+       half a fix.
+
+       The copyright line needs THREE states, not two. copyright and
+       copyright_url are independent params, and `hugo config` on a site that
+       sets copyright_url = "" shows the key dropped entirely rather than kept
+       as an empty string, so data-copyright-url arrives empty while
+       data-copyright is populated. Guarding on the name alone then emits
+       `版权说明:[CC BY 4.0]()` — an empty link target, the same malformed paste
+       one step later. So the name decides whether the line exists, and the URL
+       decides whether it is a link or plain text. */
     const lines = []
     if (author) lines.push(`作者:${author}`)
     lines.push(`文章标题:[${title}](${url})`)
     if (date) lines.push(`发表时间:${date}`)
     lines.push(`文章链接:${url}`)
-    if (copyright) lines.push(`版权说明:[${copyright}](${copyrightUrl})`)
+    if (copyright) {
+      lines.push(copyrightUrl
+        ? `版权说明:[${copyright}](${copyrightUrl})`
+        : `版权说明:${copyright}`)
+    }
     const text = lines.join('\n')
     try {
       await navigator.clipboard.writeText(text)
