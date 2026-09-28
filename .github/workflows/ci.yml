@@ -13,8 +13,8 @@ on:
 permissions:
   contents: read
 
-# One build per ref. This workflow runs a two-version matrix, so without a
-# group every push to the same PR branch re-runs both legs and the older run's
+# One build per ref. This workflow runs a multi-version matrix, so without a
+# group every push to the same PR branch re-runs every leg and the older run's
 # result arrives last. Matches the convention in ocr-review.yml.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -25,20 +25,33 @@ jobs:
     runs-on: ubuntu-latest
     # A hung step (an unresponsive action download, a wedged Hugo build)
     # otherwise burns runner minutes up to the 6h GitHub default. These are
-    # two plain builds; anything past 15 minutes is broken, not slow.
+    # plain builds, one per matrix leg; anything past 15 minutes is broken,
+    # not slow.
     timeout-minutes: 15
     # theme.toml declares min_version = "0.146.0" and README promises
     # "Hugo Extended 0.146.0 or newer", so that floor is part of the public
     # contract — test it. A single pinned version proved the opposite: pinned at
     # 0.146.0 this workflow missed 20 releases, and Hugo 0.163.0's
     # imaging.quality deprecation only surfaced after the pin was raised.
-    # The upper leg is a pin too, so it does not track the tip on its own — bump
-    # it by hand when cutting a release. Dependabot's github-actions ecosystem
-    # only moves `uses:` refs, not a version string inside a matrix.
+    # The topmost leg (0.167.0) is a pin too, so the matrix does not track the
+    # Hugo tip on its own — bump THAT one by hand when cutting a release. The
+    # leg below it is a temporary carry, not a release pin, and is dropped on
+    # the next Hugo upgrade. Dependabot's github-actions ecosystem only moves
+    # `uses:` refs, not a version string inside a matrix, so none of this
+    # happens automatically.
+    #
+    # 0.167.0 was added because it is the version the example site's own
+    # consumer runs, and while it was absent the workflow was not testing the
+    # Hugo the project is actually deployed on. That release also carried
+    # d692a243 (#14044), which changed auto-summary truncation — the subject of
+    # the RSS summary test below, which needs a 0.167.0 leg to assert anything.
+    # 0.166.0 is kept for one more cycle: it is the version that was live until
+    # this release, so the pair still brackets the upgrade and would catch a
+    # break introduced by the bump itself. Drop it on the next Hugo upgrade.
     strategy:
       fail-fast: false
       matrix:
-        hugo-version: ['0.146.0', '0.166.0']
+        hugo-version: ['0.146.0', '0.166.0', '0.167.0']
     steps:
       - uses: actions/checkout@v7
         with:
@@ -355,3 +368,37 @@ jobs:
       # see verify.py / dark-check.py, which need Playwright and a served site.
       - name: Test the year-filter contract
         run: python3 scripts/test-year-filter.py
+
+      # A green build does not mean the config was read. exampleSite ships
+      # per-format imaging keys ([imaging.jpeg] / .webp / .avif) that only exist
+      # from 0.163.0; on the 0.146.0 leg Hugo treats them as unknown keys,
+      # ignores them SILENTLY, and still exits 0. So the 0.146.0 leg was
+      # passing while telling you nothing about image quality — the exact
+      # failure mode measured in scripts/test-imaging-config.py.
+      #
+      # This test does not assert a config is "right" — the scalar/per-format
+      # choice is a documented judgement call in exampleSite/hugo.toml. It
+      # asserts the two mechanical facts a future Hugo could invalidate
+      # silently, on whichever version this matrix leg is running.
+      - name: Test the imaging config is actually honoured
+        run: python3 scripts/test-imaging-config.py
+
+      # Hugo 0.167.0 (d692a243, #14044) started expanding auto-summaries past
+      # summaryLength so they cannot end inside an open <blockquote> or list.
+      # Before that fix, 0.166.0 emitted unclosed markup into every feed built
+      # from a post that opens a blockquote before the summary boundary —
+      # measured on this repo's own consumer site, where 5 of 417 output files
+      # changed for exactly this reason and nothing else.
+      #
+      # The theme ships no RSS template — Hugo's embedded one is the only path
+      # the raw summary markup takes, and that is where the unclosed
+      # <blockquote> lands. The theme's own three .Summary call sites all pipe
+      # through `plainify` (home.json, _partials/post-card.html, 404.html), so
+      # they cannot carry the defect: verified, 0 of 3 descriptions in a built
+      # exampleSite/index.json contain any HTML tag. This is a regression guard
+      # on the upgrade, not a claim that the theme templates are involved.
+      #
+      # Asserted from 0.167.0 up; below that the fix does not exist and the test
+      # reports the known-bad shape instead of failing a leg that cannot pass.
+      - name: Test feed summaries are not cut inside a container
+        run: python3 scripts/test-rss-summary.py

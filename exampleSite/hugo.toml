@@ -113,6 +113,30 @@ theme = 'lumenveil'
 # the global `[imaging] quality` form this replaced is itself deprecated on
 # 0.163.0+ and will be removed. No single form is clean across the whole
 # 0.146.0+ range, so keep the forward-compatible one.
+#
+# Measured, not assumed: on 0.146.0 the per-format keys here leave JPEG, WebP
+# and AVIF at the same output size across quality 20, quality 85 and no config
+# at all, while the scalar form moves all of them. On 0.167.0 the two forms
+# agree. That
+# inertness is invisible from a build result, so
+# scripts/test-imaging-config.py asserts the direction that is observable: on a
+# version below 0.163.0 the three cases must come out at the same output size,
+# and on 0.163.0+ quality 20 and 85 must differ. A future Hugo that starts
+# honouring these keys below 0.163.0 therefore fails the test.
+#
+# "Same output size", not "same bytes": the test template emits
+# `{{ $img.Process "jpg" | .Content | len }}` and compares the resulting
+# counts, so two different encodings of identical length would pass. For a
+# noise-image fixture that is a theoretical distinction, but the comment should
+# not claim more than the assertion delivers.
+#
+# Note what the test does NOT claim: it runs Hugo with --quiet and only inspects
+# the exit code and the output page, so it would not notice Hugo starting to
+# WARN about the unknown keys. Measured, both directions: 0.146.0 prints
+# nothing at all for these keys (not even a warning), and the 0.163.0+
+# deprecation warning for the scalar form is suppressed by --quiet. So "the
+# build stayed green" here says nothing either way about warnings — the
+# byte-count comparison is the whole assertion.
 [imaging.jpeg]
   quality = 85
 [imaging.webp]
