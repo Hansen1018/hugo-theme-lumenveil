@@ -122,12 +122,18 @@ try {
      a page carrying neither date: nor lastmod: in a section whose control
      (dated) page emits both tags: the undated page emitted NEITHER article:*
      tag and no 0001 date anywhere, so on this version `with` did suppress the
-     zero time. The mechanism is not documented by Hugo, and this branch also
-     builds on 0.146.0, which was not available to measure. So the guard is
-     applied to both tags explicitly: same shape on both lines, no dependence on
-     which version is running, and the `with` kept inside so a real Lastmod still
-     renders. Verified on 0.166.0 that the explicit guard changes nothing
-     (output byte-identical) — the undated page is still tag-free. */}}
+     zero time. The guard is applied to both tags explicitly anyway: same shape
+     on both lines, no dependence on which version is running, and the `with`
+     kept inside so a real Lastmod still renders.
+
+     The `not .Date.IsZero` wrapper on modified_time looks like it could cost a
+     real lastmod: a page with `lastmod:` but no `date:` would have .Date zero
+     and .Lastmod populated, and the tag would vanish. Measured on BOTH 0.166.0
+     and 0.146.0, that state is unreachable — on such a page .Date falls back to
+     .Lastmod (2026-06-07 for `lastmod: 2026-06-07`), so the guard never
+     misfires and the unguarded merge-base form emits exactly the same meta tag.
+     Both versions agree, which is why the earlier note here about 0.146.0
+     being unmeasurable is gone rather than carried forward. */}}
 {{ if not .Date.IsZero }}<meta property="article:published_time" content="{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}">{{ end }}
 {{ if not .Date.IsZero }}{{ with .Lastmod }}<meta property="article:modified_time" content="{{ .Format "2006-01-02T15:04:05Z07:00" }}">{{ end }}{{ end }}
 {{ end }}
