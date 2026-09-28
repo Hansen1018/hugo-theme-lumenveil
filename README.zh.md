@@ -57,15 +57,15 @@ Lumenveil（光幕）是一款面向个人博客的 Hugo 主题，以通透玻�
 - 基于 Hugo JSON 输出的前端全文搜索
 - 分类、标签、分页、RSS、站点地图与 robots.txt
 - 文章目录、阅读时间、字数统计、最后更新时间与通过 busuanzi partial 显示的实时跨访客阅读次数（第三方 CN 服务）
-- 页脚动态版权（`since` 至今）和 CC BY-NC-SA 4.0 许可链接
+- 页脚动态版权（`since` 至今）和 CC BY-NC-ND 4.0 许可链接
 - 代码高亮、代码复制与文章链接复制
 - **Opt-in 客户端语法高亮（`[params] highlight = 'hljs'`）** —— 设置后主题加载 highlight.js + monokai，并通过 `.hljs { background: transparent !important }` 让容器融入文章底色。`_default/_markup/render-codeblock.html` 输出原始 `<pre><code>`（无 chroma span），hljs 不会重复标记。未设置该参数时零变更 —— 不主动发 chroma 字节。
 - **Opt-in KaTeX 数学渲染（`[params] math = true`）** —— 设置后主题从 jsDelivr 加载 KaTeX 0.16.11（CSS + JS + auto-render），对 `.article` / `.article-main` / `.prose` 容器内的数学公式进行渲染。支持 `$$...$$` / `\[...\]` 块状以及 `\(...\)` 行内数学；决定不注册裸 `$...$` 以避免 KaTeX auto-render 经典的 `$PATH` / "costs $5" 被贪婪匹配为数学 bug。未设置该参数时零变更 —— 不主动发 KaTeX 字节。
 - 由 PhotoSwipe 驱动的相册 shortcode，使用 CSS 网格布局
 - 可选的 Artalk 评论模块 —— 配置驱动的 partial，样式与文章卡片对齐（玻璃卡片、按钮--ghost 等），自动通过现有 CSS Grid 与 .article-main 列对齐，并在评论列表加载时加入逐条 stagger fade-in。**注意：** 默认的 `server` URL 只是占位符；启用 Artalk 但没设置真实 backend 的话，主题会在构建时输出警告。
-- 可选的 `cover` 封面图 — 支持 page-bundle 图片（通过 `Resources.GetMatch` 解析）或 `static/` 静态资源，在文章列表中作为缩略图展示，**并作为 `og:image` / `twitter:image` meta 标签用于社交分享**（未设置时 fallback 到 `/og.svg` —— 带前导 `/` 的路径或 page-bundle 资源会解析到真实 permalink）
+- 可选的 `cover` 封面图 — 支持 page-bundle 图片（通过 `Resources.GetMatch` 解析）或 `static/` 静态资源，在文章列表中作为缩略图展示，**并作为 `og:image` / `twitter:image` meta 标签用于社交分享**（未设置时 fallback 到 `/og.png` —— 带前导 `/` 的路径或 page-bundle 资源会解析到真实 permalink）
 - 可选的 `cover_caption` 封面图说明 —— 设置后在封面图下方渲染深色玻璃药丸（`rgba(15,23,42,.72)` + `border: 1px solid rgba(255,255,255,.08)` + `border-radius: 999px` + `backdrop-filter: blur(8px)` + 近白文字），白底封面也能看清。默认空 → 不渲染 `<figcaption>`。
-- Open Graph、Twitter Card、Canonical 和 JSON-LD
+- Open Graph、Twitter Card、Canonical 和 JSON-LD。站点级社交卡片可用 `[params] ogImage = "https://…/card.png"` 覆盖；单篇文章图片用上面的 `cover`。
 - 响应式导航、键盘焦点和减少动态效果支持
 - Hugo Pipes 自动压缩与资源指纹
 
@@ -111,7 +111,7 @@ toc: true
 ---
 ```
 
-`cover` 可选。设置后会在归档列表页作为文章卡片缩略图，同时作为 `og:image` / `twitter:image` meta 标签用于社交分享（Twitter、Facebook、Discord、Slack 预览）。值先通过 `Resources.GetMatch` 查 page-bundle 资源，找不到时 fallback 到 `static/` 下的路径（例如 `cover: images/foo.png` 解析为 `/images/foo.png`）；无前导 `/` 的相对路径会自动补前导。未设置 `cover` 时 fallback 到 `/og.svg`。
+`cover` 可选。设置后会在归档列表页作为文章卡片缩略图，同时作为 `og:image` / `twitter:image` meta 标签用于社交分享（Twitter、Facebook、Discord、Slack 预览）。值先通过 `Resources.GetMatch` 查 page-bundle 资源，找不到时 fallback 到 `static/` 下的路径（例如 `cover: images/foo.png` 解析为 `/images/foo.png`）；无前导 `/` 的相对路径会自动补前导。未设置 `cover` 时 fallback 到 `/og.png`。
 
 `cover_caption` 可选。设置后在封面图下方以深色玻璃药丸渲染（由 `.article-cover figcaption { text-align: center }` 居中）。留空则不渲染 `<figcaption>`。
 
@@ -204,4 +204,4 @@ toc: true
 
 ## 许可
 
-Lumenveil 主题以 [GNU General Public License v3.0](LICENSE) 发布。站点默认页脚的 CC BY-NC-SA 4.0 链接用于站点文字内容，请按需要替换为适合你的许可协议。
+Lumenveil 主题以 [GNU General Public License v3.0](LICENSE) 发布。站点默认页脚的 CC BY-NC-ND 4.0 链接用于站点文字内容，请按需要替换为适合你的许可协议。

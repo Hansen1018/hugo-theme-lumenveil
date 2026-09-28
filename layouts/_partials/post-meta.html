@@ -1,0 +1,77 @@
+{{- /*
+  post-meta.html — the date / reading-time / word-count / view-count bar shown
+  under the title of a post.
+
+  Usage: {{ partial "post-meta.html" . }}
+
+  This block was byte-for-byte duplicated in layouts/single.html and
+  layouts/posts/single.html — 14 identical lines including the $isList gate and
+  both per-value guards. It was extracted because the drift it invites is the
+  exact one this branch removed everywhere else: breadcrumb-target.html and
+  is-list-section.html exist so the predicate cannot be restated per template,
+  and then the predicate's own use was copied a second time. A later edit —
+  adding .Lastmod, or a third guarded value — would land in one file and leave
+  the other emitting the old markup.
+
+  One gate here:
+
+    $isList   the bar belongs to a list section only; section-scoped templates
+              (ja/, archives/) resolve their own context and do not call this.
+
+  There is deliberately NO outer `or (Date / WordCount)` gate around the div,
+  and it was wrong while it was. Both per-value guards below can be false on a
+  stub page, which is true, but this bar also ends with the view counter — so the
+  div is never empty and the gate protected nothing. It cost something real: the
+  counter carries a fixed element id, so a stub page in a list section rendered
+  NO view counter at all, where single.html at merge base b6b44c4 rendered the
+  whole bar — div and counter — unconditionally inside its section gate. The
+  per-value guards are what stop "0 分钟阅读 / 0 字" reading as real data; the
+  outer gate was redundant with them and suppressed tracking besides.
+
+  layouts/ja/single.html keeps an equivalent gate and SHOULD: its post-meta div
+  has no counter, so on a stub page the guards do leave it empty. The two
+  templates differ for that reason, not by accident.
+
+  The per-value guards matter independently. A single `and` around the whole bar
+  only covers the DATE, so a page with a date but an empty body still rendered
+  "0 分钟阅读 / 0 字" — values that read as real data rather than as absent.
+  layouts/ja/single.html was changed in this branch for that reason; this is the
+  same guard, now shared instead of restated.
+
+  The view counter is unconditional within the bar, and it is not one of the two
+  templates this was extracted from having differed over. It carries a fixed
+  element id, so it must appear at most once per page — do not render it from a
+  second caller on the same page, and do not put it inside a value guard.
+*/ -}}
+{{- $page := . -}}
+{{- $isList := partial "is-list-section.html" $page -}}
+{{- if $isList -}}
+<div class="post-meta">
+  {{- /* One region per line rather than a single 600-character line.
+
+       The formatting is load-bearing, not cosmetic. The bar interleaves two
+       independent conditionals, two nested partial calls and the markup, and a
+       reader cannot see which tokens sit inside which {{ if }} when it is all
+       on one line — so the next edit (adding .Lastmod, or a third guarded
+       value) is far likelier to place it inside the wrong region. The
+       extracted-partial rationale above is about not restating this predicate
+       in two files; a one-line body would hand the drift back in the other
+       direction, as a single unmaintainable expression.
+
+       Whitespace is trimmed on the {{- -}} boundaries, so the rendered HTML
+       is byte-identical to the one-line form. Layout changes are a real risk
+       here and this is the reason it is stated in the template rather than
+       left to a reviewer to assume. */ -}}
+  {{- if not $page.Date.IsZero }}
+    <time datetime="{{ $page.Date.Format "2006-01-02" }}">发布于 {{ $page.Date.Format "2006 年 01 月 02 日" }}</time>
+    {{ partial "lastmod-meta.html" $page }}
+  {{- end }}
+  {{- if gt $page.WordCount 0 }}
+    <span>{{ $page.ReadingTime }} 分钟阅读</span><span>{{ $page.WordCount }} 字</span>
+  {{- end }}
+  {{- /* Outside the two value guards above, and deliberately so: fixed element
+       id, so it may appear at most once. */ -}}
+  <span class="page-views">阅读 <span id="busuanzi_value_page_pv">0</span> 次</span>
+  {{ partial "busuanzi.html" $page }}
+</div>
+{{- end -}}

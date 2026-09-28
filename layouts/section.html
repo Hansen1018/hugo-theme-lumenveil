@@ -2,12 +2,102 @@
 {{ $year := "" }}
 {{ $allList := .RegularPagesRecursive.ByDate.Reverse }}
 {{ $list := $allList }}
-{{ $isList := or (eq .Section "archives") (eq .Section "posts") }}
-{{ $yearBase := "/posts/" }}
-{{ if and $isList (eq .Section "archives") }}{{ $yearBase = "/archives/" }}{{ end }}
+{{/* The year groups, filtered ONCE, and the single source for both the
+     "N 个年份" stat and the pill row below. These two used to hardcode the
+     "0001" sentinel independently, and the whole point of filtering it is
+     that the advertised count agrees with the pills that are actually
+     rendered — so a future edit to one filter and not the other would
+     reintroduce precisely the divergence this filtering removed.
+
+     Declared EMPTY at the top and ASSIGNED inside the $isList block below,
+     because GroupByDate is an O(pages) grouping and this template also serves
+     sections that are not list pages (categories/, tags/, any plain section).
+     On those the result was computed and then thrown away. The assignment has
+     to use `=` and the binding has to exist up here, because Go template `:=`
+     inside `if $isList` would be out of scope again by the time the pill loop
+     runs in the sibling $isList block near the bottom — exactly the scoping
+     hazard the older version of this comment described. So: declare the slot
+     at the top, fill it in the guard. Same trick as $yearCount below.
+
+     GroupByDate is a string grouping, so the undated group is dropped by key
+     value rather than by inspecting .Date.IsZero per page. The undated pages
+     themselves stay in $allList, in the 全部 count and in the
+     #archive-all-cards template, so they remain reachable — only the false
+     year is removed. Verified on 0.146.0 and 0.166.0. */}}
+{{ $yearGroups := slice }}
+{{/* $isList decides only whether this page gets the year-filter UI: the pill
+     row and the <template id="archive-all-cards"> payload.
+
+     It is the UNION of mainSections membership and the two section names the
+     pre-existing gate hardcoded. Dropping the literals is a regression, not a
+     cleanup: on the shipped exampleSite config (mainSections = ['posts']) a site
+     with an /archives/ section would drop $isList to false and lose both the
+     pills and the card template — precisely the broken state this file exists to
+     fix. mainSections widens the set; it must not narrow it below the old
+     behaviour.
+
+     The definition lives in _partials/is-list-section.html so this file, the
+     two generic single templates and their list pages share one predicate. */}}
+{{ $isList := partial "is-list-section.html" . }}
+{{/* The <h1> label stays on the exact literal test, `eq .Section "posts"`.
+
+     Deliberately NOT derived from $isList, and NOT from mainSections[0]. Both
+     have been tried and both move the heading somewhere this theme has never
+     rendered it:
+
+       $isList          is true for /archives/ — the predicate unions
+                        mainSections with the literal "archives"/"posts" names —
+                        so it would label the archive page 文章.
+       mainSections[0]  narrows to the first configured entry, so with
+                        mainSections = ['notes','posts'] the /posts/ heading
+                        falls through to .Title.
+
+     The heading is not the defect this theme is fixing, so it does not move.
+     Keep it literal. If a site ever needs a configurable article-list label,
+     read it from an explicit param — a section predicate answers a different
+     question. */}}
+{{ $isArticleList := eq .Section "posts" }}
+{{/* Year-filter base URL. Built from the section's own permalink instead of a
+     hardcoded "/posts/" or "/archives/" string, so it stays correct for any
+     section name, any permalink config, and any baseURL subpath.
+     relURL is idempotent in Hugo — it no-ops on a path that already carries the
+     base path. Verified with a subpath baseURL (https://example.com/blog/),
+     which exampleSite does not otherwise exercise: the pills render as
+     /blog/posts/ and /blog/posts/?year=2026, with no doubled prefix. The value
+     from breadcrumb-target.html is therefore already URL-safe and is used
+     directly below, matching the four other call sites. The second relURL that
+     used to sit here was dead code that made this the only consumer to differ.
+     The with/else mirrors posts/single.html: on a multilingual site the section
+     can be absent for the current language, and an empty $yearBase would emit
+     href="" (reloads the current page) instead of a real target. The fallback is
+     derived from .Section, never hardcoded — a fixed "/archives/" here would
+     reintroduce the exact 404 this replaces whenever the section is "posts". */}}
+{{ $yearBase := partial "breadcrumb-target.html" . }}
 {{ $yearCount := 0 }}
 {{ if $isList }}
-  {{ $yearCount = len ((where site.RegularPages "Section" "in" site.Params.mainSections).GroupByDate "2006") }}
+  {{/* Filled here, not at the top, so the grouping only runs on pages that
+     actually render the year UI. See the note at the $yearGroups declaration. */}}
+  {{ $yearGroups = where ($allList.GroupByDate "2006") "Key" "!=" "0001" }}
+  {{/* Counted from $allList — the SAME page set the year pills below enumerate
+       and the same set #archive-all-cards ships.
+
+       It used to be `where site.RegularPages "Section" "in" $mainSections`,
+       which counts years across every main section regardless of which one is
+       being viewed, while the pills count this section only. The two disagree
+       whenever the sections span different years, and the header then
+       advertises a year count the pill row has no entry for.
+
+       That divergence was already reachable before the predicate was widened:
+       $isList is a union of mainSections and the literal "archives"/"posts"
+       names, so a section carrying no mainSections entry still got the whole
+       year-filter UI while this count ignored it entirely. On the shipped
+       exampleSite config (mainSections = ['posts']) an /archives/ page reported
+       the posts year count directly above its own archives year pills. */}}
+{{/* Count the years the pill row actually renders, from the same filtered
+     group slice the pills enumerate. Counting the raw GroupByDate here
+     advertised one more year than the page showed whenever a list section
+     held an undated page. */}}
+{{ $yearCount = len $yearGroups }}
   {{ $query := urls.Parse .Permalink }}
   {{ with $query.RawQuery }}
     {{ range split . "&" }}
@@ -19,12 +109,26 @@
 <section class="page-hero">
   <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><span>{{ .Title }}</span></div>
   <span class="eyebrow">Writing Archive</span>
-  <h1>{{ if eq .Section "posts" }}文章{{ else if eq .Section "categories" }}分类{{ else if eq .Section "tags" }}标签{{ else }}{{ .Title }}{{ end }}</h1>
+  <h1>{{ if $isArticleList }}文章{{ else if eq .Section "categories" }}分类{{ else if eq .Section "tags" }}标签{{ else }}{{ .Title }}{{ end }}</h1>
   <p>{{ .Description | default "所有文章，按时间倒序排列。" }}</p>
   <div class="page-hero__stats">
     <span>{{ len .RegularPagesRecursive }} 篇文章</span>
-    <span>{{ len site.Taxonomies.categories }} 个分类</span>
-    <span>{{ len site.Taxonomies.tags }} 个标签</span>
+    {{/* site.Taxonomies is a zero Value, not an empty map, when the taxonomy
+         kinds are disabled. len on it raises
+
+             error calling len: reflect: call of reflect.Value.Type on zero Value
+
+         which aborts the whole build, not just this template — reproduced with
+         disableKinds containing "taxonomy"/"term" and with and without a
+         [taxonomies] block, so declaring the taxonomies is not a workaround.
+         The stat is read once here because it is needed twice on adjacent
+         lines, and `if $tax` is the guard the probe measured as both
+         crash-safe and still-correct (2 categories / 1 tag on a site that has
+         them). Without the else branch the span would render empty rather
+         than as the 0 this stat is supposed to show. */}}
+    {{ $tax := site.Taxonomies }}
+    <span>{{ if $tax }}{{ len $tax.categories }}{{ else }}0{{ end }} 个分类</span>
+    <span>{{ if $tax }}{{ len $tax.tags }}{{ else }}0{{ end }} 个标签</span>
     {{ if $isList }}<span>{{ $yearCount }} 个年份</span>{{ end }}
   </div>
 </section>
@@ -33,8 +137,11 @@
   {{ $pages := $allList }}
   {{ if $pages }}
     <div class="tag-list tag-list--archive" role="list">
-<a href="{{ $yearBase | relURL }}" data-archive-all{{ if eq $year "" }} class="is-active"{{ end }} role="listitem">全部<span class="archive-count">{{ len $pages }}</span></a>
-      {{ range sort ($pages.GroupByDate "2006") "Key" "desc" }}<a href="{{ printf "%s?year=%s" $yearBase .Key }}" data-year="{{ .Key }}"{{ if eq $year .Key }} class="is-active"{{ end }} role="listitem">{{ .Key }}<span class="archive-count">{{ len .Pages }}</span></a>{{ end }}
+<a href="{{ $yearBase }}" data-archive-all{{ if eq $year "" }} class="is-active"{{ end }} role="listitem">全部<span class="archive-count">{{ len $pages }}</span></a>
+      {{/* Enumerates $yearGroups, the same slice that produced "N 个年份" above,
+           so the two cannot disagree. Sorted descending here; the count does
+           not care about order. */}}
+      {{ range sort $yearGroups "Key" "desc" }}<a href="{{ printf "%s?year=%s" $yearBase .Key }}" data-year="{{ .Key }}"{{ if eq $year .Key }} class="is-active"{{ end }} role="listitem">{{ .Key }}<span class="archive-count">{{ len .Pages }}</span></a>{{ end }}
     </div>
   {{ end }}
 </section>
@@ -51,9 +158,15 @@
   {{ if $paginator.Pages }}
     <div class="post-grid" data-post-grid data-per-page="{{ $pageSize }}">{{ range $paginator.Pages }}{{ partial "post-card.html" . }}{{ end }}</div>
     {{ partial "pagination.html" (dict "Paginator" $paginator "Year" $year) }}
-    {{ if and $isList (eq .Section "archives") }}<template id="archive-all-cards">{{ range $allList }}{{ partial "post-card.html" . }}{{ end }}</template>{{ end }}
+    {{/* main.js filters the grid client-side by year. It needs every card in the
+         section, not just the current page, so the full list is shipped once in
+         a <template> and cloned into the grid on filter change. This must be
+         emitted for any list section ($isList) — gating it on
+         .Section == "archives" left the posts section with year pills that could
+         only ever filter the 7 cards already on screen. */}}
+    {{ if $isList }}<template id="archive-all-cards">{{ range $allList }}{{ partial "post-card.html" . }}{{ end }}</template>{{ end }}
   {{ else }}
-    <div class="empty-state"><strong>{{ if $year }}{{ $year }} 年暂无文章{{ else }}暂无文章{{ end }}</strong><p>{{ if $year }}换个年份试试，或<a href="{{ $yearBase | relURL }}">查看全部文章</a>。{{ else }}内容发布后会显示在这里。{{ end }}</p></div>
+    <div class="empty-state"><strong>{{ if $year }}{{ $year }} 年暂无文章{{ else }}暂无文章{{ end }}</strong><p>{{ if $year }}换个年份试试，或<a href="{{ $yearBase }}">查看全部文章</a>。{{ else }}内容发布后会显示在这里。{{ end }}</p></div>
   {{ end }}
 </section>
 {{ end }}

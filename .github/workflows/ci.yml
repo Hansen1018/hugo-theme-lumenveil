@@ -5,16 +5,51 @@ on:
   pull_request:
     branches: [main]
 
+# Least privilege, declared explicitly rather than inherited. This workflow only
+# checks out code and runs Hugo — it never writes to the repo — so a repo-wide
+# default change to a wider GITHUB_TOKEN scope should not silently widen this
+# job. Matches the explicit grant in ocr-review.yml, which additionally needs
+# pull-requests: write to post review comments.
+permissions:
+  contents: read
+
+# One build per ref. This workflow runs a two-version matrix, so without a
+# group every push to the same PR branch re-runs both legs and the older run's
+# result arrives last. Matches the convention in ocr-review.yml.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    # A hung step (an unresponsive action download, a wedged Hugo build)
+    # otherwise burns runner minutes up to the 6h GitHub default. These are
+    # two plain builds; anything past 15 minutes is broken, not slow.
+    timeout-minutes: 15
+    # theme.toml declares min_version = "0.146.0" and README promises
+    # "Hugo Extended 0.146.0 or newer", so that floor is part of the public
+    # contract — test it. A single pinned version proved the opposite: pinned at
+    # 0.146.0 this workflow missed 20 releases, and Hugo 0.163.0's
+    # imaging.quality deprecation only surfaced after the pin was raised.
+    # The upper leg is a pin too, so it does not track the tip on its own — bump
+    # it by hand when cutting a release. Dependabot's github-actions ecosystem
+    # only moves `uses:` refs, not a version string inside a matrix.
+    strategy:
+      fail-fast: false
+      matrix:
+        hugo-version: ['0.146.0', '0.166.0']
     steps:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
-      - uses: peaceiris/actions-hugo@v3
+      # Pinned to a commit SHA, not the @v3 tag: this is a THIRD-PARTY
+      # action, and a tag can be moved to point at different code. Dependabot
+      # does not manage a version string inside a `uses:` ref, so the SHA is
+      # bumped by hand when the action is upgraded.
+      - uses: peaceiris/actions-hugo@2752ce1d29631191ea3f27c23495fa06139a5b78 # v3.2.1
         with:
-          hugo-version: '0.146.0'
+          hugo-version: ${{ matrix.hugo-version }}
           extended: true
       # exampleSite uses theme = 'lumenveil' but doesn't ship the theme
       # itself; create a symlink so Hugo can find it locally.
@@ -23,3 +58,300 @@ jobs:
           mkdir -p exampleSite/themes
           ln -sfn ../.. exampleSite/themes/lumenveil
       - run: cd exampleSite && hugo --minify
+      # exampleSite pins highlight = "hljs", so the build above exercises only
+      # the opt-in branch of the codeblock render hook. The default Chroma branch
+      # is what every non-hljs consumer gets, and it is exactly where the P0
+      # fixed in this PR lived: the hook returned nothing, so code blocks
+      # disappeared while CI stayed green. Build the default path too.
+      #
+      # The override lives in a real config file, not an empty
+      # HUGO_PARAMS_HIGHLIGHT= environment variable. Hugo can merge configs but
+      # not subtract keys, so "unset the pin" has to be stated; whether an empty
+      # env var clears a [params] value is version-sensitive behaviour a future
+      # Hugo bump could silently break.
+      - name: Build the default (Chroma) render path
+        # This step uses `mapfile` and process substitution, which are bash
+        # builtins. ubuntu-latest happens to default `run:` to `bash -e`, but
+        # relying on a runner-image default is not a contract — declare it.
+        id: chroma
+        shell: bash
+        run: |
+          cd exampleSite
+          # The output path is defined ONCE here and published for the steps that
+          # need it. It used to be repeated in the find, in an error message and
+          # again in the fence test's env. Change one and the others drift — and
+          # because the fence test SKIPS when its tree is absent, drift there
+          # turned the cross-check off silently while the step still passed.
+          OUT="$RUNNER_TEMP/pub-chroma"
+          echo "out=$OUT" >> "$GITHUB_OUTPUT"
+          # The fence counter and the container regex live in scripts/ and are
+          # read by this step AND by scripts/test-fence-count.sh. They used to be
+          # inline here and mined back out of this block by string anchors, so a
+          # reformat silently left the test checking a stale pattern. One
+          # definition, two readers, nothing to mine.
+          FENCE_AWK="$GITHUB_WORKSPACE/scripts/fence-counter.awk"
+          BOX_RE_FILE="$GITHUB_WORKSPACE/scripts/container-regex.txt"
+          # Existence checked BEFORE the assignment, and the assignment cannot
+          # inherit a non-zero status. This step runs under
+          # `bash --noprofile --norc -eo pipefail`, so a failing command
+          # substitution in an assignment aborts the step at that line: a
+          # missing container-regex.txt meant `cat` exited non-zero, the
+          # assignment inherited it, and the `::error::` diagnostic on the next
+          # line never ran — the guard was written for the missing-file case and
+          # only ever fired for the empty-file one.
+          [ -f "$FENCE_AWK" ] || { echo "::error::missing $FENCE_AWK"; exit 1; }
+          [ -f "$BOX_RE_FILE" ] || { echo "::error::missing $BOX_RE_FILE"; exit 1; }
+          BOX_RE=$(cat "$BOX_RE_FILE")
+          [ -n "$BOX_RE" ] || { echo "::error::empty $BOX_RE_FILE"; exit 1; }
+          hugo --minify --config hugo.toml,hugo-chroma.toml -d "$OUT"
+          # `hugo` exits 0 even when a render hook silently drops a code block —
+          # that is why the original P0 stayed green. Assert the output instead.
+          #
+          # Assert over EVERY example post, not one page picked by find order.
+          # Two things make a single pick unsafe: find yields directory order,
+          # which is not a guarantee, and the example content includes posts
+          # with no fenced code block at all — the-aurora-background and the
+          # section index itself both render 0 <pre>. Landing on either would
+          # report a false "no <pre>" failure against a render hook that is
+          # working. So: every page that does contain <pre> must also carry the
+          # Chroma container, no page may load the hljs CDN, and at least one
+          # page must contain a code block so the step cannot pass on an empty
+          # set.
+          #
+          # -mindepth 2 keeps the posts section index (posts/index.html) out;
+          # ! -path '*/page/*' keeps paginated pages out.
+          mapfile -t POSTS < <(find "$OUT"/posts -mindepth 2 -name index.html \
+                                 ! -path '*/page/*' | sort)
+          if [ ${#POSTS[@]} -eq 0 ]; then
+            echo "::error::no example post pages under $OUT/posts — did the content or permalink config change?"
+            exit 1
+          fi
+          echo "asserting on ${#POSTS[@]} example post pages"
+          # Two independent checks, because neither alone catches a dropped
+          # block.
+          #
+          # (a) Per page: a rendered <pre> must sit inside a .highlight
+          #     container. This is the theme's own contract — a block that
+          #     escaped the hook's wrapper is a theme bug. The class is matched
+          #     WITHOUT requiring `>` to follow it, so an extra attribute on the
+          #     container (style=, data-*) does not break the count, and no
+          #     bound is placed on anything after it: an earlier
+          #     `…>[^<]{0,40}<(div|span|pre)` tracked Chroma's exact wrapper
+          #     shape and false-failed on any site that changed it.
+          #     Quote-insensitive: whether --minify strips the optional quotes
+          #     is the minifier's business, not ours to assert on. The trailing
+          #     [ />] is a class-token boundary, not decoration: without it,
+          #     class="highlight-wrapper" / "highlight-copy" / "highlightjs"
+          #     each count as a container, inflating out_boxes and masking the
+          #     very drop this step exists to catch. Chroma emits `highlight` as
+          #     a standalone token, so the boundary costs nothing.
+          #
+          # (b) In aggregate: rendered containers must equal fenced blocks in
+          #     the source. This is what actually catches a DROPPED block. An
+          #     earlier per-page container/wrapper equality did not: dropping one
+          #     rendered container decremented both sides together, so they
+          #     stayed equal and the page passed (measured on 0.166.0 — one
+          #     container removed from hello-lumenveil left the counts 0 and 0).
+          #     The aggregate form holds on a correct build (source=3, output=3)
+          #     and breaks on a partial drop (output drops to 2).
+          #     Aggregate rather than per-page on purpose: the slug is not
+          #     always the filename (douban-card-shortcode is rendered from
+          #     douban-card-demo.md), so a per-page source lookup needs a
+          #     mapping this step should not have to maintain.
+          saw_pre=0
+          out_boxes=0
+          for p in "${POSTS[@]}"; do
+            # `|| true` is REQUIRED, not defensive noise. This step runs under
+            # `bash --noprofile --norc -eo pipefail`, so a pipeline's status is
+            # its last non-zero command: `grep -o '<pre' F` exits 1 on no match,
+            # `| wc -l` exits 0, and with pipefail the assignment inherits the
+            # grep failure — set -e then kills the step before any ::error::
+            # line. a page with 0 <pre> (the-aurora-background) therefore failed
+            # the build on a correct tree.
+            n_pre=$(grep -o '<pre' "$p" | wc -l || true)
+            n_box=$(grep -oE "$BOX_RE" "$p" | wc -l || true)
+            out_boxes=$((out_boxes + n_box))
+            if [ "$n_pre" -gt 0 ] && [ "$n_box" -eq 0 ]; then
+              echo "::error::$n_pre <pre> on the page but no Chroma .highlight container: $p"
+              exit 1
+            fi
+            if [ "$n_pre" -gt 0 ]; then
+              saw_pre=$((saw_pre + 1))
+            fi
+            # Anchored to an actual script load. A bare filename match also
+            # fires on prose that merely mentions the CDN — a post documenting
+            # the hljs path would false-fail the whole step.
+            if grep -Eq '<script[^>]+src=["'"'"'][^"'"'"']*highlight\.min\.js' "$p"; then
+              echo "::error::hljs CDN loaded despite highlight being chroma: $p"
+              exit 1
+            fi
+          done
+          if [ "$saw_pre" -eq 0 ]; then
+            echo "::error::no <pre> in any of the ${#POSTS[@]} example posts — the render hook dropped code blocks"
+            exit 1
+          fi
+          # Fenced blocks in the example content, counted from the source.
+          #
+          # The source set MUST be the same page set as POSTS above, or the
+          # equality is meaningless. A glob over content/posts cannot do that:
+          # a draft, future-dated or expired post exists in source and never
+          # renders, so one fenced block in a draft turned this step red with a
+          # message blaming the render hook. Measured — baseline out=3 src=3;
+          # after adding a draft post, out=3 src=4.
+          #
+          # So the set comes from `hugo list all` joined against the output that
+          # actually exists. The join is on the last path segment of the
+          # permalink, NOT the filename: output names follow slug/url front
+          # matter (douban-card-demo.md renders as douban-card-shortcode), so a
+          # filename map would miss real posts. Joining on what rendered also
+          # absorbs build exclusions Hugo does not surface in any column.
+          # `hugo list all` includes drafts, future and expired pages by design —
+          # verified on 0.146.0 and 0.166.0 — which is exactly why the join,
+          # rather than a filter on those columns, is what makes the sets agree.
+          #
+          # _index.md drops out on its own: its output is posts/index.html, which
+          # the -mindepth 2 POSTS find excludes, so no segment ever matches.
+          # Nested page bundles need no special case either.
+          # mktemp rather than $RUNNER_TEMP: that variable only exists on the
+          # GitHub runner, so any local run of this step wrote to "/fence-src.txt"
+          # and died. Scoped to THESE list files, deliberately: OUT above is
+          # still `$RUNNER_TEMP/pub-chroma`, and it cannot become a mktemp
+          # because it is handed to the cross-check step via
+          # steps.chroma.outputs.out — a path from a mktemp would be empty in
+          # the next step's shell. So this step is only partly
+          # environment-independent, and claiming otherwise would be wrong.
+          SRC_LIST=$(mktemp)
+          trap 'rm -f "$SRC_LIST"' EXIT
+          : > "$SRC_LIST"
+          # Generated ONCE. The listing does not depend on the page being
+          # matched, only the filter does, so running it per post re-does a full
+          # site listing for every page in the output.
+          LIST=$(mktemp)
+          # Both temp files in the trap. $LIST was only removed on the success
+          # path, so the two `exit 1` branches below leaked it — the trap around
+          # $SRC_LIST existed for exactly that reason and missed this one.
+          trap 'rm -f "$SRC_LIST" "$LIST"' EXIT
+          # Captured, not bare: under `set -e` a failing `hugo list all`
+          # (missing hugo, bad config) aborted the step with no ::error:: at all,
+          # which is the opposite of what this step exists to do.
+          if ! hugo list all > "$LIST" 2>&1; then
+            echo "::error::'hugo list all' failed; first lines of its output:"
+            head -5 "$LIST" | sed 's/^/        /'
+            exit 1
+          fi
+          for p in "${POSTS[@]}"; do
+            seg=$(basename "$(dirname "$p")")
+            before=$(wc -l < "$SRC_LIST")
+            awk -F, -v want="$seg" -v out="$SRC_LIST" '
+              /^content\/posts\// && !/_index\.md$/ {
+                path = $1
+                if (match($0, /https?:\/\/[^ ,]+/)) {
+                  u = substr($0, RSTART, RLENGTH)
+                  sub(/\/+$/, "", u)
+                  n = split(u, a, "\/")
+                  if (a[n] == want) print path >> out
+                }
+              }' "$LIST"
+            after=$(wc -l < "$SRC_LIST")
+            # Per-page, not just all-or-nothing. A page that fails the join
+            # contributes its containers to out_boxes and nothing to src_boxes,
+            # so the equality below would report "the render hook dropped N" and
+            # blame the hook for a join miss. That message has to be reserved for
+            # an actual render difference.
+            if [ "$after" -eq "$before" ]; then
+              echo "::error::no source file joined to the rendered page $seg — the count below would be asymmetric and would blame the render hook"
+              echo "        rendered: $p"
+              echo "        wanted a content/posts/*.md whose permalink ends in /$seg/"
+              exit 1
+            fi
+          done
+          # There is deliberately NO `if [ ! -s "$SRC_LIST" ]` guard here.
+          # One existed and was provably unreachable, so it could only mislead:
+          # POSTS is already non-empty (checked above), the loop body appends via
+          # awk and `set -e` aborts the step on any awk failure, and the
+          # `after == before` check inside the loop exits 1 on the first
+          # iteration that appends nothing. So reaching this line means the loop
+          # ran at least once and every iteration added a path — SRC_LIST is
+          # non-empty by construction. The empty-mapping case is caught earlier
+          # and with a better message: it names the rendered page, which
+          # "could not map any" could not.
+          # Its old comment is also gone, because it described current code that
+          # no longer exists: it explained why the branch must read $LIST rather
+          # than re-run `hugo list all | head -3` (head exits after 3 lines, the
+          # writer takes SIGPIPE 141, pipefail then kills the step before its own
+          # `exit 1`), and blamed an "earlier rm -f "$LIST" above this branch" —
+          # that rm was removed when the EXIT trap took over temp-file cleanup.
+          # The pipefail/SIGPIPE rule still matters and is still documented, at
+          # the `hugo list all` failure branch above, which is the site that
+          # actually reads $LIST with head today.
+          #
+          # Fence counting follows CommonMark's open/close rules rather than
+          # toggling on any ``` or ~~~ line:
+          #   - a fence may be indented, follow a list marker (`- ```bash`,
+          #     `1. ~~~`) or sit inside a blockquote (`> ```js`). An earlier regex
+          #     allowed only leading whitespace and missed the other two, so
+          #     src_boxes undercounted while the container still rendered. Measured:
+          #     `> ```js` gave counter=0 against containers=1, and the aggregate
+          #     equality then reported that as a dropped code block;
+          #   - a fence opens with 3+ of one marker and closes only on the SAME
+          #     marker, at least as long, with nothing after it. Without the
+          #     length check a 4-backtick outer fence wrapping an inner
+          #     3-backtick block toggled twice per outer pair and miscounted;
+          #   - a closing fence carries no info string.
+          # Verified by ci_fence_test.sh against every form listed above.
+          src_boxes=0
+          while IFS= read -r md; do
+            n=$(awk -f "$FENCE_AWK" "$md")
+            src_boxes=$((src_boxes + n))
+          done < "$SRC_LIST"
+          if [ "$out_boxes" -ne "$src_boxes" ]; then
+          # Signed, so the message names the side that differs. The old
+          # `$((src_boxes - out_boxes))` was negative when the render produced
+          # MORE containers than the source had fences, and then read
+          # "the render hook dropped -1" — pointing a maintainer at the render
+          # hook when the surplus is what needs explaining.
+          if [ "$out_boxes" -gt "$src_boxes" ]; then
+            echo "::error::rendered $out_boxes Chroma containers but the source has only $src_boxes fenced code blocks — the extra $((out_boxes - src_boxes)) came from somewhere other than a fence (a shortcode or page that emits .highlight directly?)"
+          else
+            echo "::error::rendered $out_boxes Chroma containers but the source has $src_boxes fenced code blocks — the render hook dropped $((src_boxes - out_boxes))"
+          fi
+            exit 1
+          fi
+          echo "ok: $out_boxes of $src_boxes fenced code blocks rendered through Chroma across ${#POSTS[@]} post pages"
+
+      # The Chroma step above counts fenced blocks with an inline awk state
+      # machine. This exercises that state machine against every fence form it
+      # claims to support, AND cross-checks it against the tree the step just
+      # rendered. It runs here rather than before the build precisely because it
+      # needs that tree: invoked earlier it took the skip branch, so in CI only
+      # the synthetic cases ran and the cross-check — the assertion that actually
+      # ties the counter to Hugo's output — never executed.
+      - name: Test the fence counter
+        run: scripts/test-fence-count.sh
+        env:
+          TREE: ${{ steps.chroma.outputs.out }}
+          # REQUIRE_TREE makes an absent tree a failure rather than a skip. The
+          # previous wiring had no such signal: a missing TREE took the skip
+          # branch and the step still exited 0, so a stale path turned the
+          # cross-check off without a word.
+          REQUIRE_TREE: "1"
+
+      # The year pills look wired up whether or not they can do anything: the
+      # buttons render from GroupByDate regardless, and the filter falls back
+      # to the cards already on screen when the full listing is missing. That
+      # is exactly the state this branch fixed — the <template> carrying every
+      # card was gated on $isList, so a site without mainSections shipped no
+      # template and clicking a year silently did nothing.
+      #
+      # A test on the shipped exampleSite cannot see that: it has 3 posts, all
+      # in 2026, with pagerSize 7, so a filter that does nothing at all and a
+      # correct one produce the same output. This builds its own fixture —
+      # 20 posts across three years, one of them over pagerSize so the
+      # client-side slicing path is exercised — and asserts the data main.js
+      # reads: pill counts, the full-card template, the page-1 grid, and that
+      # each year yields the number of cards its pill advertises.
+      #
+      # Data side only. main.js mutating a live grid still needs a browser;
+      # see verify.py / dark-check.py, which need Playwright and a served site.
+      - name: Test the year-filter contract
+        run: python3 scripts/test-year-filter.py

@@ -1,0 +1,43 @@
+{{- /*
+  is-list-section.html — is the given page in a section that gets the
+  article-list treatment? Returns a bool.
+
+  Usage: {{ $isList := partial "is-list-section.html" . }}
+
+  The predicate is the UNION of configured mainSections membership and the two
+  section names this theme hardcoded before mainSections was consulted at all
+  (v0.2-era `or (eq .Section "archives") (eq .Section "posts")`).
+
+  These two literals deliberately repeat the same names as the no-config
+  default in main-sections.html, and the two lists must stay independent even
+  though they can drift apart. They answer different questions:
+  main-sections.html answers "which sections are main when this site configures
+  none", while the union below answers "which sections get list treatment no
+  matter how the site configures mainSections". Deriving one from the other
+  would make a site with mainSections = ['blog'] lose the year pills and
+  #archive-all-cards on /posts/ and /archives/ — the back-compat regression the
+  union exists to prevent. Change one list and the other deliberately stays put.
+
+  The literals are load-bearing, not legacy cruft. Dropping them regresses:
+  on the shipped exampleSite config (mainSections = ['posts']) a site that also
+  has an /archives/ section would stop being a list section there and lose both
+  the year pills and #archive-all-cards. mainSections is allowed to WIDEN the set;
+  it must not narrow it below the previous behaviour.
+
+  Callers: section.html (year pills, #archive-all-cards, year stats) plus
+  single.html and posts/single.html, which gate the breadcrumb, post-meta and
+  post-nav on it — so a post page and its list page cannot disagree about
+  whether the section is a list section.
+
+  layouts/archives/single.html and layouts/ja/single.html deliberately do NOT
+  call this. Both are section-scoped — .Section is fixed by which template
+  renders — so each resolves its own breadcrumb from its own section and renders
+  post-meta unconditionally. Do not "unify" them onto this predicate: for ja,
+  "ja" is a section name for page-style content and is never a main section, so
+  a membership gate there is permanently false and silently kills the whole
+  date / reading-time / word-count bar.
+*/ -}}
+{{- $page := . -}}
+{{- $mainSections := partial "main-sections.html" $page -}}
+{{- $section := $page.Section -}}
+{{- return or (in $mainSections $section) (eq $section "archives") (eq $section "posts") -}}

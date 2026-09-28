@@ -1,7 +1,8 @@
-{{- $pages := where site.RegularPages "Section" "in" site.Params.mainSections -}}
+{{- $mainSections := partial "main-sections.html" . -}}
+{{- $pages := where site.RegularPages "Section" "in" $mainSections -}}
 [
 {{- range $index, $page := $pages -}}
 {{- if $index }},{{ end -}}
-{{- dict "title" $page.Title "url" $page.RelPermalink "categories" (.Params.categories | default slice) "description" ($page.Description | default ($page.Summary | plainify)) "content" ($page.Plain | truncate 600) "tags" ($page.Params.tags | default slice) "date" ($page.Date.Format "2006-01-02") | jsonify -}}
+{{- dict "title" $page.Title "url" $page.RelPermalink "categories" (.Params.categories | default slice) "description" ($page.Description | default ($page.Summary | plainify)) "content" ($page.Plain | truncate 600) "tags" ($page.Params.tags | default slice) "date" (cond (not $page.Date.IsZero) ($page.Date.Format "2006-01-02") "") | jsonify -}}
 {{- end -}}
 ]

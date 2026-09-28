@@ -1,6 +1,12 @@
 # Dependencies
 node_modules
 
+# Python bytecode — scripts/ holds the test harness, and `python3 -m
+# py_compile` during local verification leaves a scripts/__pycache__/ that
+# then shows up as untracked in git status.
+__pycache__/
+*.py[cod]
+
 # Build artifacts
 .next
 out

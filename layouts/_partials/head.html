@@ -4,14 +4,15 @@
   Component CSS — explicitly ordered slice (NOT resources.Match, which sorts
   alphabetically and broke cascade order in commit 61b585f).
 
-  Cascade order:
+  Cascade order (must stay in sync with the slice below):
     1. tokens        2. reset         3. utilities      4. aurora
     5. header        6. home          7. page-hero      8. pagination
     9. gallery-prose 10. photoswipe   11. embeds        12. term
     13. article      14. friends      15. like          16. archive
     17. toc          18. 404          19. search        20. footer
-    21. back-to-top  22. responsive   23. motion        24. theme-light
-    25. gallery      26. douban-card   27. sponsor
+    21. back-to-top  22. scroll-progress                23. responsive
+    24. motion       25. theme-light  26. gallery       27. douban-card
+    28. sponsor
 */}}
 {{ $components := slice
     (resources.Get "css/components/tokens.css")
@@ -88,7 +89,17 @@ try {
     {{- $ogImage = . | absURL -}}
   {{- end -}}
 {{- else -}}
-  {{- $ogImage = "og.svg" | absURL -}}
+  {{/* og:image must be a raster format. X, Facebook and Slack do not reliably
+       render SVG previews, so the default points at static/og.png (a 1200x630
+       bitmap of static/og.svg) rather than the vector source.
+       Site-wide override: `[params] ogImage = "https://…/card.png"`.
+       Deliberately site-scoped, unlike `cover` which is read per page — the
+       social card is site branding, a per-post image is `cover`. */}}
+  {{- with site.Params.ogImage -}}
+    {{- $ogImage = . | absURL -}}
+  {{- else -}}
+    {{- $ogImage = "og.png" | absURL -}}
+  {{- end -}}
 {{- end -}}
 <meta property="og:image" content="{{ $ogImage }}">
 <meta name="twitter:image" content="{{ $ogImage }}">
@@ -101,8 +112,30 @@ try {
 <meta name="twitter:description" content="{{ $description }}">
 <meta name="twitter:url" content="{{ .Permalink }}">
 {{ if .IsPage }}
-<meta property="article:published_time" content="{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}">
-{{ with .Lastmod }}<meta property="article:modified_time" content="{{ .Format "2006-01-02T15:04:05Z07:00" }}">{{ end }}
+{{- /* Both tags are guarded on IsZero, and the guard is written the same way on
+     both. Page-style content legitimately has no `date:` front matter, and an
+     unguarded .Date emits 0001-01-01T00:00:00Z to crawlers. A page with no date
+     should carry no published_time, not a false one.
+
+     The old comment here claimed modified_time "already needed `with` for the
+     same reason", implying `with` alone was sufficient. Measured on 0.166.0 with
+     a page carrying neither date: nor lastmod: in a section whose control
+     (dated) page emits both tags: the undated page emitted NEITHER article:*
+     tag and no 0001 date anywhere, so on this version `with` did suppress the
+     zero time. The guard is applied to both tags explicitly anyway: same shape
+     on both lines, no dependence on which version is running, and the `with`
+     kept inside so a real Lastmod still renders.
+
+     The `not .Date.IsZero` wrapper on modified_time looks like it could cost a
+     real lastmod: a page with `lastmod:` but no `date:` would have .Date zero
+     and .Lastmod populated, and the tag would vanish. Measured on BOTH 0.166.0
+     and 0.146.0, that state is unreachable — on such a page .Date falls back to
+     .Lastmod (2026-06-07 for `lastmod: 2026-06-07`), so the guard never
+     misfires and the unguarded merge-base form emits exactly the same meta tag.
+     Both versions agree, which is why the earlier note here about 0.146.0
+     being unmeasurable is gone rather than carried forward. */}}
+{{ if not .Date.IsZero }}<meta property="article:published_time" content="{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}">{{ end }}
+{{ if not .Date.IsZero }}{{ with .Lastmod }}<meta property="article:modified_time" content="{{ .Format "2006-01-02T15:04:05Z07:00" }}">{{ end }}{{ end }}
 {{ end }}
 {{- /* opt-in hljs via [params] highlight = "hljs": cdnjs full bundle (121KB, all langs incl. toml/html) + monokai + auto-highlightAll. common.min.js omitted toml/html so language-toml blocks rendered unstyled. */ -}}
 {{- if eq site.Params.highlight "hljs" -}}
@@ -119,7 +152,22 @@ try {
 {{- end -}}
 <script type="application/ld+json">
 {{ if .IsPage }}
+{{- /* The article schema is emitted only for pages that actually have a date.
+     A BlogPosting with datePublished 0001-01-01 is worse than no BlogPosting:
+     it is a false claim to a consumer that cannot tell it apart from a real
+     one. Page-style content has no date by design, so it gets a WebPage
+     object instead — the WebSite shape is a different branch, for pages that
+     are not .IsPage at all.
+
+     dateModified needs no guard of its own: Hugo's .Lastmod falls back to
+     .Date, so inside this branch — which already implies a non-zero .Date —
+     it is always populated. Verified on 0.166.0 with a post carrying date: and
+     no lastmod: dateModified renders as the date, not 0001-01-01. */}}
+{{- if not .Date.IsZero }}
 {"@context":"https://schema.org","@type":"BlogPosting","headline":{{ .Title | jsonify | safeJS }},"description":{{ $description | jsonify | safeJS }},"datePublished":"{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}","dateModified":"{{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" }}","author":{"@type":"Person","name":{{ site.Params.author | jsonify | safeJS }}},"mainEntityOfPage":{{ .Permalink | jsonify | safeJS }}}
+{{- else }}
+{"@context":"https://schema.org","@type":"WebPage","name":{{ .Title | jsonify | safeJS }},"url":{{ .Permalink | jsonify | safeJS }},"description":{{ $description | jsonify | safeJS }}}
+{{- end }}
 {{ else }}
 {"@context":"https://schema.org","@type":"WebSite","name":{{ site.Title | jsonify | safeJS }},"url":{{ site.BaseURL | jsonify | safeJS }},"description":{{ site.Params.description | jsonify | safeJS }},"potentialAction":{"@type":"SearchAction","target":"{{ site.Home.Permalink }}?q={search_term_string}","query-input":"required name=search_term_string"}}
 {{ end }}

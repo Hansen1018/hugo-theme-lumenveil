@@ -1,12 +1,37 @@
 {{ define "main" }}
+{{/* This template is section-scoped: it only ever renders for section=archives,
+     so .Section is always "archives" here. Resolve the breadcrumb target from
+     the page's own section, NOT from site.Params.mainSections — a site whose
+     mainSections is ['posts'] would otherwise render an archives post with a
+     breadcrumb pointing at /posts/ instead of /archives/. That was a real
+     regression when this was first fixed to follow mainSections.
+     Both rules live in _partials/breadcrumb-target.html, which resolves the
+     target and owns the missing-section-page fallback; this template just
+     uses the returned string. The with/else that used to sit here was moved
+     there, and leaving the description behind would point a reader at logic
+     that no longer exists in this file. */}}
+{{ $listTarget := partial "breadcrumb-target.html" . }}
 <article class="article fade-up">
   <header class="article-header">
-    <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><a href="{{ "/archives/" | relURL }}">文章</a><span>/</span><span>{{ .Title }}</span></div>
-    <div class="post-meta">
-      <time datetime="{{ .Date.Format "2006-01-02" }}">发布于 {{ .Date.Format "2006 年 01 月 02 日" }}</time>
-      {{ partial "lastmod-meta.html" . }}
-      <span>{{ .ReadingTime }} 分钟阅读</span>
-      <span>{{ .WordCount }} 字</span>
+    <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><a href="{{ $listTarget }}">文章</a><span>/</span><span>{{ .Title }}</span></div>
+    {{/* Same guard as single.html and posts/single.html: page-style content has
+         no date by design, and an unguarded .Date renders 发布于 0001 年 01 月 01 日
+         to every reader. */}}
+    {{/* Gated per-value, matching layouts/ja/single.html: a stub page can
+         legitimately have neither a date nor a body, and "0 分钟阅读 / 0 字"
+         reads as real data. Guarding only the date left the two counts
+         unconditional, so the two section-scoped templates disagreed.
+
+         There is deliberately NO outer `or (Date / WordCount)` gate around the
+         div, unlike layouts/ja/single.html. This bar ends with the busuanzi
+         view counter, so the div is never empty and such a gate protected
+         nothing — while it did cost the counter on stub pages. At merge base
+         b6b44c4 the whole div and the counter were unconditional here. */}}
+<div class="post-meta">
+      {{ if not .Date.IsZero }}<time datetime="{{ .Date.Format "2006-01-02" }}">发布于 {{ .Date.Format "2006 年 01 月 02 日" }}</time>
+      {{ partial "lastmod-meta.html" . }}{{ end }}
+      {{ if gt .WordCount 0 }}<span>{{ .ReadingTime }} 分钟阅读</span>
+      <span>{{ .WordCount }} 字</span>{{ end }}
       {{/* Page view count — busuanzi (third-party CN service for CN sites). Per-page real cross-user count. */}}
 <span class="page-views">阅读 <span id="busuanzi_value_page_pv">0</span> 次</span>
 {{ partial "busuanzi.html" . }}
@@ -20,7 +45,7 @@
       {{ partial "cover.html" . }}
       <div class="prose">{{ .Content }}</div>
       {{ partial "like.html" . }}
-      <div class="article-share"><span>这篇文章有帮助？</span><button class="button button--ghost" type="button" data-copy-link data-author="{{ site.Params.author }}" data-title="{{ .Title }}" data-date="{{ .Date.Format "2006 年 1 月 2 日" }}" data-url="{{ .Permalink }}" data-copyright="{{ site.Params.copyright }}" data-copyright-url="{{ site.Params.copyright_url }}">复制文章链接</button></div>
+      <div class="article-share"><span>这篇文章有帮助？</span><button class="button button--ghost" type="button" data-copy-link data-author="{{ site.Params.author }}" data-title="{{ .Title }}" data-date="{{ if not .Date.IsZero }}{{ .Date.Format "2006 年 1 月 2 日" }}{{ end }}" data-url="{{ .Permalink }}" data-copyright="{{ site.Params.copyright }}" data-copyright-url="{{ site.Params.copyright_url }}">复制文章链接</button></div>
       <nav class="post-nav" aria-label="文章导航">{{ with .PrevInSection }}<a href="{{ .RelPermalink }}"><span>上一篇</span><strong>{{ .LinkTitle }}</strong></a>{{ else }}<span></span>{{ end }}{{ with .NextInSection }}<a href="{{ .RelPermalink }}" class="post-nav__next"><span>下一篇</span><strong>{{ .LinkTitle }}</strong></a>{{ end }}</nav>
       <div class="article-comments">{{ partial "comments.html" . }}</div>
     </div>

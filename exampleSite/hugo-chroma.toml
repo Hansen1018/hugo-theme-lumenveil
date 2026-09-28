@@ -1,0 +1,19 @@
+# Merged on top of hugo.toml by the "default (Chroma) render path" CI step:
+#
+#   hugo --minify --config hugo.toml,hugo-chroma.toml
+#
+# exampleSite pins `[params] highlight = 'hljs'` on purpose (the theme ships no
+# Chroma stylesheet), so the plain build only ever exercises the opt-in branch of
+# render-codeblock.html. The Chroma branch is the default every non-hljs consumer
+# gets, and it is where the P0 fixed in this PR lived.
+#
+# This file exists so the override is a declared value rather than an empty
+# `HUGO_PARAMS_HIGHLIGHT=` environment variable. Hugo config merging can add or
+# replace keys but cannot delete one, so "unset the pin" has to be spelled out —
+# and whether an empty environment variable clears a `[params]` value is a
+# version-sensitive Hugo behaviour that a future bump could quietly break.
+#
+# 'chroma' is the same value the theme's own [params] defaults to, so the merge
+# below lands on the documented default instead of inventing a third spelling.
+[params]
+  highlight = 'chroma'

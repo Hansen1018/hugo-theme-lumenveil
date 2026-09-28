@@ -1,8 +1,31 @@
 {{ define "main" }}
+{{/* Same section-scoped reasoning as layouts/archives/single.html: this template
+     only renders for pages under the ja section, so .Section is "ja" here.
+     Resolve the breadcrumb from the page's own section. Resolving it from
+     site.Params.mainSections[0] made the 記事 link point at the main article
+     list (/posts/ on a typical site) instead of the JA one (/ja/).
+
+     post-meta renders whenever the page has a date or body content, and not at
+     all otherwise. It used to be gated on mainSections membership, but .Section
+     is "ja" here and "ja" is a section name for page-style content, never a main
+     section — so that test was permanently false and the whole bar was dead
+     markup on every site. Removing that gate is not enough on its own: a stub
+     page with neither a date nor a body would then render an empty div, so each
+     value is guarded and the div itself is gated on having something to show. */}}
+{{ $listTarget := partial "breadcrumb-target.html" . }}
 <article class="article fade-up">
   <header class="article-header">
-    <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><a href="{{ "/archives/" | relURL }}">記事</a><span>/</span><span>{{ .Title }}</span></div>
-    {{ if eq .Section (index site.Params.mainSections 0 | default "archives") }}<div class="post-meta"><time datetime="{{ .Date.Format "2006-01-02" }}">发表于 {{ .Date.Format "2006 年 01 月 02 日" }}</time>{{ partial "lastmod-meta.html" . }}<span>{{ .ReadingTime }} 分阅读</span><span>{{ .WordCount }} 字</span></div>{{ end }}
+    <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><a href="{{ $listTarget }}">記事</a><span>/</span><span>{{ .Title }}</span></div>
+    {{/* Every value here is guarded, because JA content is page-style and a
+         stub page can legitimately have neither a date nor a body. Unguarded,
+         it renders 0001 年 01 月 01 日 and 0 分阅读 / 0 字, which are worse than
+         absent: they look like real data.
+
+         Note layouts/page/single.html is NOT a precedent here. It renders no
+         meta bar at all, so it says nothing about which individual values are
+         safe to show. */}}
+    {{/* Gated on having any content at all: both inner guards can be false on a stub page, and an empty <div class=post-meta></div> is the same dead markup the guards exist to prevent. */}}
+    {{ if or (not .Date.IsZero) (gt .WordCount 0) }}<div class="post-meta">{{ if not .Date.IsZero }}<time datetime="{{ .Date.Format "2006-01-02" }}">发表于 {{ .Date.Format "2006 年 01 月 02 日" }}</time>{{ partial "lastmod-meta.html" . }}{{ end }}{{ if gt .WordCount 0 }}<span>{{ .ReadingTime }} 分阅读</span><span>{{ .WordCount }} 字</span>{{ end }}</div>{{ end }}
     <h1>{{ .Title }}</h1>
     {{ with .Description }}<p class="article-deck">{{ . }}</p>{{ end }}
   </header>

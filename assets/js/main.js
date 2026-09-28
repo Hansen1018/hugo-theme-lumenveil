@@ -37,7 +37,17 @@
   updateHeader()
   window.addEventListener('scroll', updateHeader, { passive: true })
 
-  document.addEventListener('keydown', (e) => { if (e.key === "Escape" && menu?.classList.contains("is-open")) { menu.classList.remove("is-open"); menuToggle.setAttribute("aria-expanded", "false"); menuToggle.focus(); } });
+  // Escape closes the mobile menu (keyboard a11y) and returns focus to the
+  // toggle that opened it. Previously two separate keydown listeners did this —
+  // the one-liner above and a second block further down — so every Escape press
+  // ran the close path twice.
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && menu?.classList.contains('is-open')) {
+      menu.classList.remove('is-open')
+      menuToggle?.setAttribute('aria-expanded', 'false')
+      menuToggle?.focus()
+    }
+  })
 
 menuToggle?.addEventListener('click', () => {
     const open = menu?.classList.toggle('is-open') ?? false
@@ -48,14 +58,6 @@ menuToggle?.addEventListener('click', () => {
     menu.classList.remove('is-open')
     menuToggle?.setAttribute('aria-expanded', 'false')
   }))
-
-  // Escape closes the mobile menu (keyboard a11y).
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && menu?.classList.contains('is-open')) {
-      menu.classList.remove('is-open')
-      menuToggle?.setAttribute('aria-expanded', 'false')
-    }
-  })
 
   const revealNodes = document.querySelectorAll('[data-reveal]')
   if ('IntersectionObserver' in window) {
@@ -114,7 +116,7 @@ menuToggle?.addEventListener('click', () => {
       return haystack.includes(term)
     }).slice(0, 12)
     searchResults.innerHTML = matches.length
-      ? matches.map((item) => `<a class="search-result" href="${escapeHTML(item.url)}"><strong>${escapeHTML(item.title)}</strong><p>${escapeHTML(item.description || '暂无摘要')}</p><small>${escapeHTML(item.date)}${item.tags?.length ? ` · ${escapeHTML(item.tags.join(' / '))}` : ''}</small></a>`).join('')
+      ? matches.map((item) => `<a class="search-result" href="${escapeHTML(item.url)}"><strong>${escapeHTML(item.title)}</strong><p>${escapeHTML(item.description || '暂无摘要')}</p><small>${[item.date, item.tags?.length ? item.tags.join(' / ') : ''].filter(Boolean).map(escapeHTML).join(' · ')}</small></a>`).join('')
       : '<p class="search-empty">没有匹配的文章，请尝试其他关键词。</p>'
   }
 
@@ -181,13 +183,35 @@ menuToggle?.addEventListener('click', () => {
     const url = btn.dataset.url || window.location.href
     const copyright = btn.dataset.copyright || ''
     const copyrightUrl = btn.dataset.copyrightUrl || ''
-    const text = [
-      `作者:${author}`,
-      `文章标题:[${title}](${url})`,
-      `发表时间:${date}`,
-      `文章链接:${url}`,
-      `版权说明:[${copyright}](${copyrightUrl})`
-    ].join('\n')
+    /* Every line is guarded on its own value. The date line started it: single.html
+       guards data-date on .Date.IsZero, so a page-style page yields an empty
+       attribute rather than 0001 年 1 月 1 日 — correct, but building the line
+       unconditionally left a bare `发表时间:` label in the copied citation,
+       which reads as a truncated paste to whatever the reader feeds it.
+       author and copyright are optional in the same way — theme.toml defaults
+       both to '' — so an unconfigured site emitted bare `作者:` and
+       `版权说明:[]()`, the identical defect. Guarding only the date was
+       half a fix.
+
+       The copyright line needs THREE states, not two. copyright and
+       copyright_url are independent params, and `hugo config` on a site that
+       sets copyright_url = "" shows the key dropped entirely rather than kept
+       as an empty string, so data-copyright-url arrives empty while
+       data-copyright is populated. Guarding on the name alone then emits
+       `版权说明:[CC BY 4.0]()` — an empty link target, the same malformed paste
+       one step later. So the name decides whether the line exists, and the URL
+       decides whether it is a link or plain text. */
+    const lines = []
+    if (author) lines.push(`作者:${author}`)
+    lines.push(`文章标题:[${title}](${url})`)
+    if (date) lines.push(`发表时间:${date}`)
+    lines.push(`文章链接:${url}`)
+    if (copyright) {
+      lines.push(copyrightUrl
+        ? `版权说明:[${copyright}](${copyrightUrl})`
+        : `版权说明:${copyright}`)
+    }
+    const text = lines.join('\n')
     try {
       await navigator.clipboard.writeText(text)
       btn.textContent = '✓ 引用已复制'
@@ -302,24 +326,6 @@ menuToggle?.addEventListener('click', () => {
         next.textContent = '下一页 →'
       }
       pagination.appendChild(next)
-      pagination.dataset.client = '1'
-    }
-    let serverPaginationCache = ''
-    const captureServerPagination = () => {
-      if (!pagination) return
-      let tpl = pagination.querySelector('[data-pagination-template]')
-      if (!tpl) {
-        tpl = document.createElement('template')
-        tpl.setAttribute('data-pagination-template', '')
-        tpl.innerHTML = pagination.innerHTML
-        pagination.appendChild(tpl)
-      }
-      serverPaginationCache = tpl.innerHTML
-    }
-    const restoreServerPagination = () => {
-      if (!pagination || !serverPaginationCache) return
-      pagination.innerHTML = serverPaginationCache
-      pagination.dataset.client = '0'
     }
     const yearPills = Array.from(pills)
     const update = (year) => {
@@ -362,10 +368,10 @@ yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year
       if (emptyNode) emptyNode.hidden = visible !== 0 || !year
       if (pagination) {
         /* Hansen 2026-09-01 fix: always rebuild pagination to match the
-           visible card count. restoreServerPagination() served a stale
-           nav after a "全部" click from a year-filtered state (grid showed
-           18 cards but nav still showed 2 pages from the year-filtered
-           server render). */
+           visible card count. The old restoreServerPagination() path served a
+           stale nav after a "全部" click from a year-filtered state (grid showed
+           18 cards but nav still showed 2 pages from the year-filtered server
+           render). It has been removed — this rebuild is the only path. */
         buildClientPagination(visible)
       }
     }
@@ -392,7 +398,6 @@ yearPills.forEach((pill) => pill.classList.toggle('is-active', pill.dataset.year
       const date = card.querySelector('time[datetime]')
       if (date) card.dataset.year = (date.getAttribute('datetime') || '').slice(0, 4)
     })
-    captureServerPagination()
     /* Hansen 2026-09-01 fix: only invoke update() when the URL has ?year=.
        On initial page load with no year filter, leaving update() alone
        keeps the server-rendered paginated grid (e.g. 7 cards + 3-page
