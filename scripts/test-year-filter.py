@@ -160,22 +160,35 @@ try:
     # does — the template was emitted anyway and the assertions below passed
     # against the very gate that broke them.
     #
-    # It has to be an EMPTY list, not a deleted line. Hugo injects a built-in
-    # default: measured, deleting `mainSections` from the config still leaves
-    # site.Params.mainSections == ["posts"] (gate_probe2.py), so "a site that
-    # never sets mainSections" is not reachable by omission at all. Three gate
-    # mutations left this test green before that was understood.
+    # It has to be a NON-EMPTY value naming another section. Two things had to
+    # be measured to find that, and the obvious choice was wrong:
     #
-    # Measured with mainsections_probe.py, real gate vs a pre-fix gate that is
-    # plain membership in site.Params.mainSections:
-    #     line deleted            real: template  / prefix: template  (identical)
+    #   Deleting the line does not work. Hugo supplies a built-in default:
+    #   measured, omitting mainSections still leaves site.Params.mainSections
+    #   == ["posts"] (gate_probe2.py), so "a site that never sets mainSections"
+    #   is not reachable by omission at all.
+    #
+    #   mainSections = [] does not work either, and that is the one this file
+    #   carried for several rounds. _partials/main-sections.html treats an
+    #   empty value as UNSET and normalises it to (slice "archives" "posts"),
+    #   which contains "posts" — so the gate stayed true for the same reason
+    #   as the default. An OCR review caught it as test·high, and the
+    #   mutation run below confirmed it: with `[]` the suite stayed green even
+    #   when only the `(eq $section "posts")` clause was removed from the real
+    #   gate, i.e. the assertion did not depend on the thing it documents.
+    #
+    # ['blog'] is the value that actually works. Measured with
+    # mainsections_probe.py, real gate vs a pre-fix gate that is plain
+    # membership in site.Params.mainSections:
     #     mainSections = []       real: template  / prefix: NO template, 7 pills
     #     mainSections = ['blog'] real: template  / prefix: NO template, 7 pills
+    # and only the second of those actually isolates the gate, per the mutation
+    # run in the PR description.
     toml = os.path.join(fix, "hugo.toml")
     with open(toml, encoding="utf8") as fh:
         cfg = fh.read()
     replaced, n = re.subn(r"^([ \t]*)mainSections\s*=.*$",
-                          r"\1mainSections = []", cfg, count=1, flags=re.M)
+                          r"\1mainSections = ['blog']", cfg, count=1, flags=re.M)
     if n != 1:
         print("FATAL: expected exactly one mainSections line in the fixture "
               "config, found %d" % n, file=sys.stderr)
