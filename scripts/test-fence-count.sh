@@ -21,36 +21,17 @@ trap 'rm -rf "$d"' EXIT
 # from a heredoc on stdin, where __file__ does not exist and `here` would
 # silently collapse to the cwd — which is how the first in-repo run looked for
 # .github/workflows/ci.yml one directory ABOVE the repo and found nothing.
-# The container regex, mined from the same file for the same reason the awk
-# program is: two copies of one definition drift, and this test exists to check
-# the shipped behaviour rather than a lookalike of it.
-BOX_RE=$(python3 - "$REPO" <<'PY2'
-import io, re, sys
-s = io.open(sys.argv[1] + "/.github/workflows/ci.yml", encoding="utf8").read()
-# Anchor on the line, then take everything between -oE ' and ' "$p".
-# NOT a [^']* scan: in ci.yml the pattern is written in YAML shell-escaped form
-# (class=["'"'"']?highlight...) so a quote-avoiding class hits the embedded
-# quote and fails to match.
-m = re.search(r"n_box=\$\(grep -oE '(.*)' \"\$p\"", s)
-assert m, "could not find the container regex in ci.yml"
-pat = m.group(1)
-assert "highlight" in pat, "mined pattern is not the container regex: %r" % pat
-print(pat)
-PY2
-)
-[ -n "$BOX_RE" ] || { echo "FATAL: could not mine the container regex from ci.yml"; exit 2; }
-echo "container regex mined: $BOX_RE"
+# Both definitions are read from scripts/, the same files the workflow reads.
+# They used to be mined out of the ci.yml run: block by string anchors, so
+# reformatting that block left this test checking a stale pattern or failing
+# with "could not mine". One definition, two readers, nothing to mine.
+FENCE_AWK="$REPO/scripts/fence-counter.awk"
+BOX_RE=$(cat "$REPO/scripts/container-regex.txt")
+[ -f "$FENCE_AWK" ] || { echo "FATAL: missing $FENCE_AWK"; exit 2; }
+[ -n "$BOX_RE" ] || { echo "FATAL: missing scripts/container-regex.txt"; exit 2; }
+echo "container regex from scripts/container-regex.txt: $BOX_RE"
 
-python3 - "$REPO" <<'PY' > "$d/prog.awk"
-import io, sys
-ci = sys.argv[1] + "/.github/workflows/ci.yml"
-s = io.open(ci, encoding="utf8").read()
-start = s.index("n=$(awk '") + len("n=$(awk '")
-end = s.index("' \"$md\")", start)
-prog = s[start:end]
-assert "END { print c+0 }" in prog, "END block missing from extraction"
-print(prog)
-PY
+cp "$FENCE_AWK" "$d/prog.awk"
 
 if ! grep -q 'END { print c+0 }' "$d/prog.awk"; then
   echo "FATAL: extraction produced no END block"; exit 2

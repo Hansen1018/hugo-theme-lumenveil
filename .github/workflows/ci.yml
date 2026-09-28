@@ -43,7 +43,11 @@ jobs:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
-      - uses: peaceiris/actions-hugo@v3
+      # Pinned to a commit SHA, not the @v3 tag: this is a THIRD-PARTY
+      # action, and a tag can be moved to point at different code. Dependabot
+      # does not manage a version string inside a `uses:` ref, so the SHA is
+      # bumped by hand when the action is upgraded.
+      - uses: peaceiris/actions-hugo@2752ce1d29631191ea3f27c23495fa06139a5b78 # v3.2.1
         with:
           hugo-version: ${{ matrix.hugo-version }}
           extended: true
@@ -80,6 +84,15 @@ jobs:
           # turned the cross-check off silently while the step still passed.
           OUT="$RUNNER_TEMP/pub-chroma"
           echo "out=$OUT" >> "$GITHUB_OUTPUT"
+          # The fence counter and the container regex live in scripts/ and are
+          # read by this step AND by scripts/test-fence-count.sh. They used to be
+          # inline here and mined back out of this block by string anchors, so a
+          # reformat silently left the test checking a stale pattern. One
+          # definition, two readers, nothing to mine.
+          FENCE_AWK="$GITHUB_WORKSPACE/scripts/fence-counter.awk"
+          BOX_RE=$(cat "$GITHUB_WORKSPACE/scripts/container-regex.txt")
+          [ -f "$FENCE_AWK" ] || { echo "::error::missing $FENCE_AWK"; exit 1; }
+          [ -n "$BOX_RE" ] || { echo "::error::missing scripts/container-regex.txt"; exit 1; }
           hugo --minify --config hugo.toml,hugo-chroma.toml -d "$OUT"
           # `hugo` exits 0 even when a render hook silently drops a code block —
           # that is why the original P0 stayed green. Assert the output instead.
@@ -146,7 +159,7 @@ jobs:
             # line. a page with 0 <pre> (the-aurora-background) therefore failed
             # the build on a correct tree.
             n_pre=$(grep -o '<pre' "$p" | wc -l || true)
-            n_box=$(grep -oE 'class=["'"'"']?highlight["'"'"']?[ />]' "$p" | wc -l || true)
+            n_box=$(grep -oE "$BOX_RE" "$p" | wc -l || true)
             out_boxes=$((out_boxes + n_box))
             if [ "$n_pre" -gt 0 ] && [ "$n_box" -eq 0 ]; then
               echo "::error::$n_pre <pre> on the page but no Chroma .highlight container: $p"
@@ -203,7 +216,14 @@ jobs:
           # path, so the two `exit 1` branches below leaked it — the trap around
           # $SRC_LIST existed for exactly that reason and missed this one.
           trap 'rm -f "$SRC_LIST" "$LIST"' EXIT
-          hugo list all > "$LIST"
+          # Captured, not bare: under `set -e` a failing `hugo list all`
+          # (missing hugo, bad config) aborted the step with no ::error:: at all,
+          # which is the opposite of what this step exists to do.
+          if ! hugo list all > "$LIST" 2>&1; then
+            echo "::error::'hugo list all' failed; first lines of its output:"
+            head -5 "$LIST" | sed 's/^/        /'
+            exit 1
+          fi
           for p in "${POSTS[@]}"; do
             seg=$(basename "$(dirname "$p")")
             before=$(wc -l < "$SRC_LIST")
@@ -233,7 +253,12 @@ jobs:
           rm -f "$LIST"
           if [ ! -s "$SRC_LIST" ]; then
             echo "::error::could not map any rendered post back to a source file — hugo list all returned nothing usable"
-            hugo list all | head -3
+            # Read $LIST, do not re-run `hugo list all | head -3`. Under pipefail a
+            # pipe into head dies: head exits after 3 lines, the writer takes
+            # SIGPIPE (141), and set -e kills the step HERE — before the exit 1 —
+            # losing the very diagnostic this branch exists to print. $LIST already
+            # holds the listing.
+            head -3 "$LIST" | sed 's/^/        /'
             exit 1
           fi
           #
@@ -253,28 +278,7 @@ jobs:
           # Verified by ci_fence_test.sh against every form listed above.
           src_boxes=0
           while IFS= read -r md; do
-            n=$(awk '
-              {
-                if (!open) {
-                  if (match($0, /^[[:space:]]*([-*+]|[0-9]+[.)])?[[:space:]]*(>[[:space:]]*)*(```+|~~~+)/)) {
-                    s = substr($0, RSTART, RLENGTH)
-                    ch = (index(s, "`") > 0) ? "`" : "~"
-                    if (length(substr(s, index(s, ch))) >= 3) {
-                      open = 1; c++
-                      clen = length(substr(s, index(s, ch)))
-                      cch = ch
-                    }
-                  }
-                } else {
-                  if (match($0, /^[[:space:]]*(>[[:space:]]*)*(```+|~~~+)[[:space:]]*$/)) {
-                    s = substr($0, RSTART, RLENGTH)
-                    if (index(s, cch) > 0 && length(substr(s, index(s, cch))) >= clen) {
-                      open = 0
-                    }
-                  }
-                }
-              }
-              END { print c+0 }' "$md")
+            n=$(awk -f "$FENCE_AWK" "$md")
             src_boxes=$((src_boxes + n))
           done < "$SRC_LIST"
           if [ "$out_boxes" -ne "$src_boxes" ]; then

@@ -5,9 +5,11 @@
      mainSections is ['posts'] would otherwise render an archives post with a
      breadcrumb pointing at /posts/ instead of /archives/. That was a real
      regression when this was first fixed to follow mainSections.
-     The with/else covers a multilingual site where the section page is absent
-     for the current language: an empty target would emit href="" and reload
-     the current page instead. */}}
+     Both rules live in _partials/breadcrumb-target.html, which resolves the
+     target and owns the missing-section-page fallback; this template just
+     uses the returned string. The with/else that used to sit here was moved
+     there, and leaving the description behind would point a reader at logic
+     that no longer exists in this file. */}}
 {{ $listTarget := partial "breadcrumb-target.html" . }}
 <article class="article fade-up">
   <header class="article-header">
