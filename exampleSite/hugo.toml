@@ -40,7 +40,11 @@ theme = 'lumenveil'
   description = 'Demo site for the Lumenveil Hugo theme — glass surfaces, aurora ambience, light and dark modes.'
   author = 'Hansen'
   initial = 'H'
-  avatar = '/images/avatar.png'
+  # avatar = '/images/avatar.png'  # uncomment once you drop an image at
+  #                                 exampleSite/static/images/avatar.png
+  # Left off on purpose: pointing at a file the demo site does not ship
+  # renders a broken <img>, and because a non-empty string is truthy to
+  # `with`, the `initial` letter fallback below can never take over.
   role = 'Writer · Developer'
   tagline = 'A luminous reading-first experience.'
   location = 'Your City'
