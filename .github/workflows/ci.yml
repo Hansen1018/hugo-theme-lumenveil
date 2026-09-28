@@ -303,3 +303,23 @@ jobs:
           # branch and the step still exited 0, so a stale path turned the
           # cross-check off without a word.
           REQUIRE_TREE: "1"
+
+      # The year pills look wired up whether or not they can do anything: the
+      # buttons render from GroupByDate regardless, and the filter falls back
+      # to the cards already on screen when the full listing is missing. That
+      # is exactly the state this branch fixed — the <template> carrying every
+      # card was gated on $isList, so a site without mainSections shipped no
+      # template and clicking a year silently did nothing.
+      #
+      # A test on the shipped exampleSite cannot see that: it has 3 posts, all
+      # in 2026, with pagerSize 7, so a filter that does nothing at all and a
+      # correct one produce the same output. This builds its own fixture —
+      # 20 posts across three years, one of them over pagerSize so the
+      # client-side slicing path is exercised — and asserts the data main.js
+      # reads: pill counts, the full-card template, the page-1 grid, and that
+      # each year yields the number of cards its pill advertises.
+      #
+      # Data side only. main.js mutating a live grid still needs a browser;
+      # see verify.py / dark-check.py, which need Playwright and a served site.
+      - name: Test the year-filter contract
+        run: python3 scripts/test-year-filter.py
