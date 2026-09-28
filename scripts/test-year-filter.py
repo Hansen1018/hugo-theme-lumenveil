@@ -195,7 +195,8 @@ try:
         sys.exit(2)
     with open(toml, "w", encoding="utf8") as fh:
         fh.write(replaced)
-    print("fixture: mainSections = [] (does not contain 'posts')")
+    print("fixture: mainSections = ['blog'] (does not contain 'posts' or "
+          "'archives', so the gate rests on membership alone)")
 
     posts = os.path.join(fix, "content", "posts")
     shutil.rmtree(posts, ignore_errors=True)

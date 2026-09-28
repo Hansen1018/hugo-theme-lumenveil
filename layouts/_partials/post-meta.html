@@ -34,5 +34,35 @@
 */ -}}
 {{- $page := . -}}
 {{- $isList := partial "is-list-section.html" $page -}}
-{{- if $isList }}{{ if or (not $page.Date.IsZero) (gt $page.WordCount 0) }}<div class="post-meta">{{ if not $page.Date.IsZero }}<time datetime="{{ $page.Date.Format "2006-01-02" }}">发布于 {{ $page.Date.Format "2006 年 01 月 02 日" }}</time>{{ partial "lastmod-meta.html" $page }}{{ end }}{{ if gt $page.WordCount 0 }}<span>{{ $page.ReadingTime }} 分钟阅读</span><span>{{ $page.WordCount }} 字</span>{{ end }}<span class="page-views">阅读 <span id="busuanzi_value_page_pv">0</span> 次</span>
-{{ partial "busuanzi.html" $page }}</div>{{ end }}{{ end -}}
+{{- if $isList -}}
+  {{- if or (not $page.Date.IsZero) (gt $page.WordCount 0) -}}
+<div class="post-meta">
+  {{- /* One region per line rather than a single 600-character line.
+
+       The formatting is load-bearing, not cosmetic. The bar interleaves two
+       independent conditionals, two nested partial calls and the markup, and a
+       reader cannot see which tokens sit inside which {{ if }} when it is all
+       on one line — so the next edit (adding .Lastmod, or a third guarded
+       value) is far likelier to place it inside the wrong region. The
+       extracted-partial rationale above is about not restating this predicate
+       in two files; a one-line body would hand the drift back in the other
+       direction, as a single unmaintainable expression.
+
+       Whitespace is trimmed on the {{- -}} boundaries, so the rendered HTML
+       is byte-identical to the one-line form. Layout changes are a real risk
+       here and this is the reason it is stated in the template rather than
+       left to a reviewer to assume. */ -}}
+  {{- if not $page.Date.IsZero }}
+    <time datetime="{{ $page.Date.Format "2006-01-02" }}">发布于 {{ $page.Date.Format "2006 年 01 月 02 日" }}</time>
+    {{ partial "lastmod-meta.html" $page }}
+  {{- end }}
+  {{- if gt $page.WordCount 0 }}
+    <span>{{ $page.ReadingTime }} 分钟阅读</span><span>{{ $page.WordCount }} 字</span>
+  {{- end }}
+  {{- /* Unconditional inside the bar, and deliberately NOT part of the
+       guarded regions: fixed element id, so it may appear at most once. */ -}}
+  <span class="page-views">阅读 <span id="busuanzi_value_page_pv">0</span> 次</span>
+  {{ partial "busuanzi.html" $page }}
+</div>
+  {{- end -}}
+{{- end -}}

@@ -9,18 +9,22 @@
      rendered — so a future edit to one filter and not the other would
      reintroduce precisely the divergence this filtering removed.
 
-     Declared here at the top of the template rather than next to the count
-     that first uses it, because Go template `:=` binds to the current block:
-     a variable declared inside `if $isList` is out of scope again by the time
-     the pill loop runs in a sibling block. `=` is used for the assignment so
-     it updates the top-level binding instead of shadowing it.
+     Declared EMPTY at the top and ASSIGNED inside the $isList block below,
+     because GroupByDate is an O(pages) grouping and this template also serves
+     sections that are not list pages (categories/, tags/, any plain section).
+     On those the result was computed and then thrown away. The assignment has
+     to use `=` and the binding has to exist up here, because Go template `:=`
+     inside `if $isList` would be out of scope again by the time the pill loop
+     runs in the sibling $isList block near the bottom — exactly the scoping
+     hazard the older version of this comment described. So: declare the slot
+     at the top, fill it in the guard. Same trick as $yearCount below.
 
      GroupByDate is a string grouping, so the undated group is dropped by key
      value rather than by inspecting .Date.IsZero per page. The undated pages
      themselves stay in $allList, in the 全部 count and in the
      #archive-all-cards template, so they remain reachable — only the false
      year is removed. Verified on 0.146.0 and 0.166.0. */}}
-{{ $yearGroups := where ($allList.GroupByDate "2006") "Key" "!=" "0001" }}
+{{ $yearGroups := slice }}
 {{/* $isList decides only whether this page gets the year-filter UI: the pill
      row and the <template id="archive-all-cards"> payload.
 
@@ -71,6 +75,9 @@
 {{ $yearBase := partial "breadcrumb-target.html" . }}
 {{ $yearCount := 0 }}
 {{ if $isList }}
+  {{/* Filled here, not at the top, so the grouping only runs on pages that
+     actually render the year UI. See the note at the $yearGroups declaration. */}}
+  {{ $yearGroups = where ($allList.GroupByDate "2006") "Key" "!=" "0001" }}
   {{/* Counted from $allList — the SAME page set the year pills below enumerate
        and the same set #archive-all-cards ships.
 

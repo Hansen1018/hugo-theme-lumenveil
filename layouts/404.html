@@ -58,7 +58,7 @@
     <a class="suggest-card" href="{{ .RelPermalink }}">
       <div class="post-meta">
         {{ if not .Date.IsZero }}<time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006.01.02" }}</time>{{ end }}
-        <span>{{ .ReadingTime }} 分钟阅读</span>
+        {{ if gt .WordCount 0 }}<span>{{ .ReadingTime }} 分钟阅读</span>{{ end }}
         {{ with .Params.views }}<span>{{ . }} 次阅读</span>{{ end }}
       </div>
       <strong>{{ .LinkTitle }}</strong>
