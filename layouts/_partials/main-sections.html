@@ -65,8 +65,24 @@
        int, or a nested slice -- is coerced silently by those, producing a
        garbage entry like "1" or "[a b]" that matches no section, and this
        partial feeds 404.html, home.html, home.json and every single/section
-       template, so one bad value degrades the whole site. Rendering the value
-       makes the failure visible in the entry itself. */ -}}
+       template, so one bad value degrades the whole site.
+
+       An earlier version of this comment claimed the printf "makes the failure
+       visible in the entry itself". That was not true and was not tested: no
+       consumer validates or reports the entries, and html/json output shows
+       the consumer, not this partial's return value. Measured with
+       mainSections = [["a", "b"]]: the build SUCCEEDS, and /notes/ simply
+       renders with no "browse all articles" link at all, because
+       home.html:34 and 404.html:71 both do `index $mainSections 0` and hand
+       it to site.GetPage "section", which finds nothing for "a b" or "[a b]".
+       The failure is silent and its most visible symptom is a missing link,
+       which is not obviously a config problem at all.
+
+       So this stays a coercion, not a validation. Making it loud means a
+       warnf or an errorf here, which would change build behaviour for sites
+       that currently ship a broken-but-quiet config -- a bigger call than this
+       branch makes on its own. Recorded instead, so the next reader knows the
+       silent failure is a known consequence rather than a mystery. */ -}}
   {{- $normalized = $normalized | append (lower (trim (printf "%v" .) " \t\n\r")) -}}
 {{- end -}}
 {{- return $normalized -}}

@@ -90,9 +90,19 @@ jobs:
           # reformat silently left the test checking a stale pattern. One
           # definition, two readers, nothing to mine.
           FENCE_AWK="$GITHUB_WORKSPACE/scripts/fence-counter.awk"
-          BOX_RE=$(cat "$GITHUB_WORKSPACE/scripts/container-regex.txt")
+          BOX_RE_FILE="$GITHUB_WORKSPACE/scripts/container-regex.txt"
+          # Existence checked BEFORE the assignment, and the assignment cannot
+          # inherit a non-zero status. This step runs under
+          # `bash --noprofile --norc -eo pipefail`, so a failing command
+          # substitution in an assignment aborts the step at that line: a
+          # missing container-regex.txt meant `cat` exited non-zero, the
+          # assignment inherited it, and the `::error::` diagnostic on the next
+          # line never ran — the guard was written for the missing-file case and
+          # only ever fired for the empty-file one.
           [ -f "$FENCE_AWK" ] || { echo "::error::missing $FENCE_AWK"; exit 1; }
-          [ -n "$BOX_RE" ] || { echo "::error::missing scripts/container-regex.txt"; exit 1; }
+          [ -f "$BOX_RE_FILE" ] || { echo "::error::missing $BOX_RE_FILE"; exit 1; }
+          BOX_RE=$(cat "$BOX_RE_FILE")
+          [ -n "$BOX_RE" ] || { echo "::error::empty $BOX_RE_FILE"; exit 1; }
           hugo --minify --config hugo.toml,hugo-chroma.toml -d "$OUT"
           # `hugo` exits 0 even when a render hook silently drops a code block —
           # that is why the original P0 stayed green. Assert the output instead.
@@ -204,7 +214,12 @@ jobs:
           # Nested page bundles need no special case either.
           # mktemp rather than $RUNNER_TEMP: that variable only exists on the
           # GitHub runner, so any local run of this step wrote to "/fence-src.txt"
-          # and died. The step should not depend on the environment it runs in.
+          # and died. Scoped to THESE list files, deliberately: OUT above is
+          # still `$RUNNER_TEMP/pub-chroma`, and it cannot become a mktemp
+          # because it is handed to the cross-check step via
+          # steps.chroma.outputs.out — a path from a mktemp would be empty in
+          # the next step's shell. So this step is only partly
+          # environment-independent, and claiming otherwise would be wrong.
           SRC_LIST=$(mktemp)
           trap 'rm -f "$SRC_LIST"' EXIT
           : > "$SRC_LIST"

@@ -104,8 +104,26 @@ expect "blockquote + list-item + blockquote" 1 "$d/eg.md"
 printf '1. ~~~\n   y\n   ~~~\n' > "$d/f.md"
 expect "ordered-list tilde fence" 1 "$d/f.md"
 
-printf '    ```\n    indented\n    ```\n' > "$d/g.md"
-expect "indented fence" 1 "$d/g.md"
+# Indent boundary. 3 spaces is the CommonMark maximum for a fenced block and
+# is the case that actually reaches the render hook: measured on 0.166.0, a
+# 3-space fence emits 1 Chroma .highlight container, a 4-space one emits 0
+# because it is an indented code block. ci.yml compares this counter against
+# that container count and fails the build on a mismatch, so counting a 4-space
+# fence as a fence produced a false "render hook dropped N". These two cases
+# pin both sides of the boundary; the earlier single case asserted 4 spaces
+# counted as 1 and would have kept that failure alive.
+printf '   ```\n   indented 3\n   ```\n' > "$d/g.md"
+expect "fence indented 3 spaces (max)" 1 "$d/g.md"
+
+printf '    ```\n    indented 4\n    ```\n' > "$d/g4.md"
+expect "fence indented 4 spaces is an indented code block" 0 "$d/g4.md"
+
+# The cap covers the line's own indent only. The gap after a list or blockquote
+# marker is the container's content indent and is NOT capped, so a two-digit
+# ordered marker — which needs four spaces of gap — is still a fence. Capping
+# the wrong one of the two would reject this valid case.
+printf '10. ```bash\n    body\n    ```\n' > "$d/g10.md"
+expect "two-digit ordered marker with 4-space gap" 1 "$d/g10.md"
 
 printf '```\n```py\n' > "$d/h.md"
 expect "unclosed fence counts once" 1 "$d/h.md"
@@ -146,7 +164,13 @@ else
   # carry no `slug:` front matter, so Hugo falls back to the TITLE slug and
   # aurora.md renders as the-aurora-background, douban-card-demo.md as
   # douban-card-shortcode.
-  LIST=$(mktemp)
+  # Under $d, so the EXIT trap owns it. It used to be `LIST=$(mktemp)`, created
+  # outside $d and removed only on the two success paths below — so a `set -e`
+  # trip between its creation and those removals (awk failing inside either
+  # loop) leaked the file. $d and UNMAPPED were both already covered; this was
+  # the one temp file the script leaked. With the two explicit `rm -f "$LIST"`
+  # calls kept, cleanup happens early on the success paths too.
+  LIST="$d/list"
   # Status captured rather than inherited: under `set -e` a failing subshell
   # (hugo missing from PATH, a bad config) killed the run with stderr discarded,
   # so the user saw the "### cross-check" header and nothing else.
