@@ -116,7 +116,7 @@ menuToggle?.addEventListener('click', () => {
       return haystack.includes(term)
     }).slice(0, 12)
     searchResults.innerHTML = matches.length
-      ? matches.map((item) => `<a class="search-result" href="${escapeHTML(item.url)}"><strong>${escapeHTML(item.title)}</strong><p>${escapeHTML(item.description || '暂无摘要')}</p><small>${escapeHTML(item.date)}${item.tags?.length ? ` · ${escapeHTML(item.tags.join(' / '))}` : ''}</small></a>`).join('')
+      ? matches.map((item) => `<a class="search-result" href="${escapeHTML(item.url)}"><strong>${escapeHTML(item.title)}</strong><p>${escapeHTML(item.description || '暂无摘要')}</p><small>${[item.date, item.tags?.length ? item.tags.join(' / ') : ''].filter(Boolean).map(escapeHTML).join(' · ')}</small></a>`).join('')
       : '<p class="search-empty">没有匹配的文章，请尝试其他关键词。</p>'
   }
 

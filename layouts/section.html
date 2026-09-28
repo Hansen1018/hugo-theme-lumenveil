@@ -94,7 +94,14 @@
   {{ if $pages }}
     <div class="tag-list tag-list--archive" role="list">
 <a href="{{ $yearBase }}" data-archive-all{{ if eq $year "" }} class="is-active"{{ end }} role="listitem">全部<span class="archive-count">{{ len $pages }}</span></a>
-      {{ range sort ($pages.GroupByDate "2006") "Key" "desc" }}<a href="{{ printf "%s?year=%s" $yearBase .Key }}" data-year="{{ .Key }}"{{ if eq $year .Key }} class="is-active"{{ end }} role="listitem">{{ .Key }}<span class="archive-count">{{ len .Pages }}</span></a>{{ end }}
+      {{/* Pages with no date group under the key "0001", and that key was
+           rendered as a real year pill: an `?year=0001` button that filters to
+           the undated pages. GroupByDate is a string grouping, so the key is
+           dropped by value rather than by inspecting .Date.IsZero per page.
+           The undated pages themselves stay in $pages and in the full-card
+           template, so they remain reachable through the 全部 view — only the
+           false year is removed. Verified on 0.146.0 and 0.166.0. */}}
+      {{ range sort (where ($pages.GroupByDate "2006") "Key" "!=" "0001") "Key" "desc" }}<a href="{{ printf "%s?year=%s" $yearBase .Key }}" data-year="{{ .Key }}"{{ if eq $year .Key }} class="is-active"{{ end }} role="listitem">{{ .Key }}<span class="archive-count">{{ len .Pages }}</span></a>{{ end }}
     </div>
   {{ end }}
 </section>
