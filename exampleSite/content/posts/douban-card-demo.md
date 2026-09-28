@@ -38,9 +38,9 @@ Douban's public API was closed in 2022, so all metadata is passed as parameters 
 If a `cover.jpg` lives next to this `index.md`, reference it by filename:
 
 ```go-html-template
-{{< douban-card id="36154853" title="好东西" year="2024"
+{{</* douban-card id="36154853" title="好东西" year="2024"
                  director="邵艺辉" rating="8.9"
-                 cover="cover.jpg" >}}
+                 cover="cover.jpg" */>}}
 ```
 
 ## Style notes
