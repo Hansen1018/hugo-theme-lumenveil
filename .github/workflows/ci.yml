@@ -13,8 +13,8 @@ on:
 permissions:
   contents: read
 
-# One build per ref. This workflow runs a two-version matrix, so without a
-# group every push to the same PR branch re-runs both legs and the older run's
+# One build per ref. This workflow runs a multi-version matrix, so without a
+# group every push to the same PR branch re-runs every leg and the older run's
 # result arrives last. Matches the convention in ocr-review.yml.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -25,16 +25,20 @@ jobs:
     runs-on: ubuntu-latest
     # A hung step (an unresponsive action download, a wedged Hugo build)
     # otherwise burns runner minutes up to the 6h GitHub default. These are
-    # two plain builds; anything past 15 minutes is broken, not slow.
+    # plain builds, one per matrix leg; anything past 15 minutes is broken,
+    # not slow.
     timeout-minutes: 15
     # theme.toml declares min_version = "0.146.0" and README promises
     # "Hugo Extended 0.146.0 or newer", so that floor is part of the public
     # contract — test it. A single pinned version proved the opposite: pinned at
     # 0.146.0 this workflow missed 20 releases, and Hugo 0.163.0's
     # imaging.quality deprecation only surfaced after the pin was raised.
-    # The upper leg is a pin too, so it does not track the tip on its own — bump
-    # it by hand when cutting a release. Dependabot's github-actions ecosystem
-    # only moves `uses:` refs, not a version string inside a matrix.
+    # The topmost leg (0.167.0) is a pin too, so the matrix does not track the
+    # Hugo tip on its own — bump THAT one by hand when cutting a release. The
+    # leg below it is a temporary carry, not a release pin, and is dropped on
+    # the next Hugo upgrade. Dependabot's github-actions ecosystem only moves
+    # `uses:` refs, not a version string inside a matrix, so none of this
+    # happens automatically.
     #
     # 0.167.0 was added because it is the version the example site's own
     # consumer runs, and while it was absent the workflow was not testing the
