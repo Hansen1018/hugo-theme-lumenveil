@@ -29,20 +29,27 @@
 */ -}}
 {{- $page := . -}}
 {{- $target := "" -}}
-{{- $sectionPage := site.GetPage "section" $page.Section -}}
-{{- /* Hugo's `with` has no `else if` — only `if` nests. Resolve the section
-     page first, then branch on the three outcomes. The empty-section case is
-     guarded explicitly rather than relying on `site.GetPage "section" ""`
-     resolving to the home page: that behaviour is only confirmed on 0.166.0,
-     and this partial is the single source of every breadcrumb and year-pill
-     href on every supported version. Without the guard,
+{{- /* The empty-section case is tested FIRST, before any lookup.
+
+     Checking it last was wrong. `site.GetPage "section" ""` returns the home
+     page on 0.166.0 — measured, LOOKUP_HIT=yes:/ — so the section-page branch
+     won and the empty-section branch never ran. The result was therefore still
+     inherited from exactly the version-specific lookup the comment claimed to
+     avoid depending on, and the guard was dead code on the version it named.
+     Only the ordering here makes the guarantee hold on any version.
+
      `printf "/%s/" "" | relURL` would emit "//" — a protocol-relative href that
-     navigates to a host instead of a page. */ -}}
-{{- if $sectionPage -}}
-  {{- $target = $sectionPage.RelPermalink -}}
-{{- else if eq $page.Section "" -}}
-  {{- $target = site.Home.RelPermalink -}}
+     navigates to a host instead of a page. site.Home.RelPermalink is guarded
+     too, so a site with no home permalink falls back to "/" rather than
+     reintroducing the href="" this partial exists to prevent. */ -}}
+{{- if eq $page.Section "" -}}
+  {{- $target = site.Home.RelPermalink | default "/" -}}
 {{- else -}}
-  {{- $target = printf "/%s/" $page.Section | relURL -}}
+  {{- $sectionPage := site.GetPage "section" $page.Section -}}
+  {{- if $sectionPage -}}
+    {{- $target = $sectionPage.RelPermalink -}}
+  {{- else -}}
+    {{- $target = printf "/%s/" $page.Section | relURL -}}
+  {{- end -}}
 {{- end -}}
 {{- return $target -}}

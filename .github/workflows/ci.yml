@@ -202,6 +202,7 @@ jobs:
           hugo list all > "$LIST"
           for p in "${POSTS[@]}"; do
             seg=$(basename "$(dirname "$p")")
+            before=$(wc -l < "$SRC_LIST")
             awk -F, -v want="$seg" -v out="$SRC_LIST" '
               /^content\/posts\// && !/_index\.md$/ {
                 path = $1
@@ -212,6 +213,18 @@ jobs:
                   if (a[n] == want) print path >> out
                 }
               }' "$LIST"
+            after=$(wc -l < "$SRC_LIST")
+            # Per-page, not just all-or-nothing. A page that fails the join
+            # contributes its containers to out_boxes and nothing to src_boxes,
+            # so the equality below would report "the render hook dropped N" and
+            # blame the hook for a join miss. That message has to be reserved for
+            # an actual render difference.
+            if [ "$after" -eq "$before" ]; then
+              echo "::error::no source file joined to the rendered page $seg — the count below would be asymmetric and would blame the render hook"
+              echo "        rendered: $p"
+              echo "        wanted a content/posts/*.md whose permalink ends in /$seg/"
+              exit 1
+            fi
           done
           rm -f "$LIST"
           if [ ! -s "$SRC_LIST" ]; then

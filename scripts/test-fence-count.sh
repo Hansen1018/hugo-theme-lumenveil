@@ -60,7 +60,10 @@ echo "extracted $(wc -l < "$d/prog.awk") lines, END present"
 count() { awk -f "$d/prog.awk" "$1"; }
 pass=0; fail=0
 expect() { # name, expected, file
-  got=$(count "$3")
+  # `|| got=ERR`: under `set -e` a non-zero awk (a syntax error in the extracted
+  # program, say) would abort the whole suite, so a counter regression surfaced
+  # as a crash with no indication of which case broke.
+  got=$(count "$3") || got=ERR
   if [ "$got" = "$2" ]; then
     pass=$((pass+1)); echo "PASS  $1 (=$got)"
   else
@@ -133,7 +136,14 @@ else
   # source and never in the build, so a draft post made this fail while the CI
   # assertion passed — the two would have been checking different sets.
   LIST=$(mktemp)
-  ( cd "$REPO/exampleSite" && hugo list all ) > "$LIST" 2>/dev/null
+  # Status captured rather than inherited: under `set -e` a failing subshell
+  # (hugo missing from PATH, a bad config) killed the run with stderr discarded,
+  # so the user saw the "### cross-check" header and nothing else.
+  if ! ( cd "$REPO/exampleSite" && hugo list all ) > "$LIST" 2>&1; then
+    fail=$((fail+1))
+    echo "  FAIL  could not run 'hugo list all' in $REPO/exampleSite (is hugo on PATH?)"
+    head -5 "$LIST" | sed 's/^/        /'
+  fi
   tot=0
   for p in "$TREE"/posts/*/index.html; do
     [ -e "$p" ] || continue
