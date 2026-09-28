@@ -1,7 +1,24 @@
 {{- /*
   main-sections.html — the single resolution of site.Params.mainSections.
   Returns a lowercased, whitespace-trimmed slice: the configured value, or
-  (slice "archives" "posts") when the site configures none.
+  (slice "archives" "posts") when the configured value is EMPTY.
+
+  "empty", not "none" — those are different cases and only one of them reaches
+  the fallback branch. Measured on 0.166.0:
+
+      mainSections omitted, content/posts/ only
+        -> site.Params.mainSections == [posts]   Hugo's built-in default
+        -> `not $mainSections` is FALSE, branch not taken
+      mainSections = [], same content
+        -> site.Params.mainSections == []
+        -> branch taken, returns (slice "archives" "posts")
+
+  Hugo fills the default in whenever the site has any top-level section, so
+  OMITTING the key does not reach the fallback — an earlier version of this
+  comment said "when the site configures none", which is wrong and invited
+  reading the branch as dead. It is not dead: an explicit [] reaches it, and an
+  empty slice is the only way to express that intent. Deleting the branch would
+  silently change what [] means.
 
   Guarantees, each of which a consumer may rely on:
     - always a slice (a scalar `mainSections = 'posts'` is legal config and is
@@ -13,7 +30,9 @@
       sections wants: the union in is-list-section.html still treats /posts/ and
       /archives/ as list sections regardless of this param, so [] could never
       have meant "no list sections". `isset` cannot distinguish the two here —
-      it returns false for a configured ['posts'] as well as for [].
+      it returns false for a configured ['posts'] as well as for []. Note the
+      scope, per the measurement at the top: this covers an explicit [] only.
+      Omitting the key never gets here, because Hugo supplies its own default.
 
   It exists because this param was read in five places, each with its own
   `default`, and the copies had already diverged in a way that shipped: the

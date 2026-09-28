@@ -19,7 +19,7 @@
   <div class="post-card__body">
     <div class="post-meta">
       {{ if not .Date.IsZero }}<time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006.01.02" }}</time>{{ end }}
-      <span>{{ .ReadingTime }} 分钟阅读</span>
+      {{ if gt .WordCount 0 }}<span>{{ .ReadingTime }} 分钟阅读</span>{{ end }}
       {{ with .Params.views }}<span class="post-meta__views">{{ . }} 次阅读</span>{{ end }}
       {{ with index .Params.categories 0 }}{{ $term := . | urlize }}{{ $termPage := $.Site.GetPage (printf "/categories/%s" $term) }}{{ $display := "" }}{{ if $termPage }}{{ $display = $termPage.Title }}{{ else }}{{ if eq $term "webdev" }}{{ $display = "建站" }}{{ end }}{{ end }}{{ if not $display }}{{ $display = $term }}{{ end }}<a href="{{ printf "/categories/%s/" $term | relURL }}">{{ $display }}</a>{{ end }}
     </div>

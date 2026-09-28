@@ -306,15 +306,20 @@ try:
     print()
     print("replay of main.js update(year) against this build")
     for year in [""] + [str(y) for y in sorted(PLAN, reverse=True)]:
+        # No `pages` here. An earlier revision computed
+        # `pages = max(1, -(-visible // per_page))` in both branches and never
+        # read it — dead code. Pagination is asserted where it actually
+        # constrains output: the 2024 two-page check below, against the real
+        # slice. Recomputing the page count here would test the arithmetic of
+        # the test rather than the site, so the variable is gone rather than
+        # wired into an assertion that would pass either way.
         if year:
             matches = [y for y in tpl_years if y == year]
             visible = pills.get(year, 0)
-            pages = max(1, -(-visible // per_page))
             grid_len = len(matches[:per_page])  # one page of the slice
         else:
             matches = tpl_years
             visible = all_pill or 0
-            pages = max(1, -(-visible // per_page))
             grid_len = len(matches)  # 'all' is unsliced
         expect = PLAN[int(year)] if year else total
         check(visible == expect and len(matches) == expect,
