@@ -49,7 +49,15 @@
   {{- if $sectionPage -}}
     {{- $target = $sectionPage.RelPermalink -}}
   {{- else -}}
-    {{- $target = printf "/%s/" $page.Section | relURL -}}
+    {{- /* urlize, not the raw name. Hugo's own section URL is the slugified,
+         encoded form: measured with content/Ünïcode and content/a&b, the
+         section-page lookup returned /%C3%BCn%C3%AFcode/ and /ab/ while a raw
+         printf produced /ünïcode/ and /a&b/. relURL prepends the base path but
+         does not percent-encode, so the raw name emitted an href disagreeing
+         with the canonical URL. The lookup branch normally runs — this
+         fallback only fires for a section page absent in the current language
+         — but when it does, it must not contradict Hugo. */ -}}
+    {{- $target = printf "/%s/" ($page.Section | urlize) | relURL -}}
   {{- end -}}
 {{- end -}}
 {{- return $target -}}

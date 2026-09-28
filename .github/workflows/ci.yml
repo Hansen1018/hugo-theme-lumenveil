@@ -199,6 +199,10 @@ jobs:
           # matched, only the filter does, so running it per post re-does a full
           # site listing for every page in the output.
           LIST=$(mktemp)
+          # Both temp files in the trap. $LIST was only removed on the success
+          # path, so the two `exit 1` branches below leaked it — the trap around
+          # $SRC_LIST existed for exactly that reason and missed this one.
+          trap 'rm -f "$SRC_LIST" "$LIST"' EXIT
           hugo list all > "$LIST"
           for p in "${POSTS[@]}"; do
             seg=$(basename "$(dirname "$p")")
@@ -235,8 +239,12 @@ jobs:
           #
           # Fence counting follows CommonMark's open/close rules rather than
           # toggling on any ``` or ~~~ line:
-          #   - a fence may be indented, or follow a list marker (`- ```bash`,
-          #     `1. ~~~`) — a leading-whitespace-only regex missed those entirely;
+          #   - a fence may be indented, follow a list marker (`- ```bash`,
+          #     `1. ~~~`) or sit inside a blockquote (`> ```js`). An earlier regex
+          #     allowed only leading whitespace and missed the other two, so
+          #     src_boxes undercounted while the container still rendered. Measured:
+          #     `> ```js` gave counter=0 against containers=1, and the aggregate
+          #     equality then reported that as a dropped code block;
           #   - a fence opens with 3+ of one marker and closes only on the SAME
           #     marker, at least as long, with nothing after it. Without the
           #     length check a 4-backtick outer fence wrapping an inner
@@ -248,7 +256,7 @@ jobs:
             n=$(awk '
               {
                 if (!open) {
-                  if (match($0, /^[[:space:]]*([-*+]|[0-9]+[.)])?[[:space:]]*(```+|~~~+)/)) {
+                  if (match($0, /^[[:space:]]*([-*+]|[0-9]+[.)])?[[:space:]]*(>[[:space:]]*)*(```+|~~~+)/)) {
                     s = substr($0, RSTART, RLENGTH)
                     ch = (index(s, "`") > 0) ? "`" : "~"
                     if (length(substr(s, index(s, ch))) >= 3) {
@@ -258,7 +266,7 @@ jobs:
                     }
                   }
                 } else {
-                  if (match($0, /^[[:space:]]*(```+|~~~+)[[:space:]]*$/)) {
+                  if (match($0, /^[[:space:]]*(>[[:space:]]*)*(```+|~~~+)[[:space:]]*$/)) {
                     s = substr($0, RSTART, RLENGTH)
                     if (index(s, cch) > 0 && length(substr(s, index(s, cch))) >= clen) {
                       open = 0

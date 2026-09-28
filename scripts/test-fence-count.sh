@@ -86,6 +86,19 @@ expect "outer 4 wrapping inner 3" 1 "$d/d.md"
 printf -- '- ```bash\n  x\n  ```\n' > "$d/e.md"
 expect "list-item fence" 1 "$d/e.md"
 
+# Blockquote fences, added with the regex that started accepting `>` prefixes.
+printf '> ```js\n> x\n> ```\n' > "$d/eb.md"
+expect "blockquote fence" 1 "$d/eb.md"
+
+printf '> ```js\n>\n> some text\n>\n> ```\n' > "$d/ec.md"
+expect "blockquote fence with text" 1 "$d/ec.md"
+
+printf '  > ```js\n  > x\n  > ```\n' > "$d/ed.md"
+expect "indented blockquote fence" 1 "$d/ed.md"
+
+printf '> - ```go\n>   y\n>   ```\n' > "$d/ee.md"
+expect "blockquote + list-item fence" 1 "$d/ee.md"
+
 printf '1. ~~~\n   y\n   ~~~\n' > "$d/f.md"
 expect "ordered-list tilde fence" 1 "$d/f.md"
 
@@ -121,20 +134,16 @@ if [ -z "$TREE" ] || [ ! -d "$TREE" ]; then
   fi
   echo "  SKIP  no rendered tree given (set TREE=/path/to/pub to run this)"
 else
-  # Same set rule as ci.yml: count only files that actually rendered. A
-  # find over all of content/posts included drafts and future-dated posts,
-  # which are in source and never in the build — so the cross-check would fail
-  # on a draft post while the CI assertion passed, and the two would disagree
-  # about what they are checking.
   # Same set rule as ci.yml, by the same mechanism: map each rendered page back
   # to its source file through `hugo list all`, not by guessing from the
-  # filename. An earlier version of this block did guess, and was wrong twice
-  # over — the example posts carry no `slug:` front matter, so the output name
-  # falls back to the TITLE slug: aurora.md renders as the-aurora-background and
-  # douban-card-demo.md as douban-card-shortcode. It also counted every
+  # filename. Two earlier versions of this block got it wrong. One counted every
   # content/posts/*.md, which includes drafts and future-dated posts that are in
-  # source and never in the build, so a draft post made this fail while the CI
-  # assertion passed — the two would have been checking different sets.
+  # source and never in the build — so a draft post made this fail while the CI
+  # assertion passed, and the two were checking different sets. The other guessed
+  # the mapping from filenames, which is wrong twice over: the example posts
+  # carry no `slug:` front matter, so Hugo falls back to the TITLE slug and
+  # aurora.md renders as the-aurora-background, douban-card-demo.md as
+  # douban-card-shortcode.
   LIST=$(mktemp)
   # Status captured rather than inherited: under `set -e` a failing subshell
   # (hugo missing from PATH, a bad config) killed the run with stderr discarded,
@@ -143,11 +152,18 @@ else
     fail=$((fail+1))
     echo "  FAIL  could not run 'hugo list all' in $REPO/exampleSite (is hugo on PATH?)"
     head -5 "$LIST" | sed 's/^/        /'
-  fi
+    # Stop here. Falling through ran the mapping and container loops against a
+    # file holding stderr text instead of CSV, so every page also reported
+    # "could not map" and buried the one failure that matters.
+    rm -f "$LIST"
+  else
   tot=0
-  for p in "$TREE"/posts/*/index.html; do
-    [ -e "$p" ] || continue
-    case "$p" in */page/*) continue ;; esac
+  # find -mindepth 2, the same rule ci.yml uses. A posts/*/ glob matches one
+  # level only, so a nested page bundle (posts/a/b/index.html) was counted by
+  # the CI assertion and silently skipped here — the two sets diverged while
+  # the comment claimed they were identical.
+  while IFS= read -r p; do
+    [ -n "$p" ] || continue
     seg=$(basename "$(dirname "$p")")
     md=$(awk -F, -v want="$seg" '
       /^content\/posts\// && !/_index\.md$/ {
@@ -165,13 +181,13 @@ else
     n=$(count "$REPO/exampleSite/$md")
     tot=$((tot+n))
     printf '  %-32s %s\n' "$(basename "$md")" "$n"
-  done
+  done < <(find "$TREE/posts" -mindepth 2 -name index.html ! -path '*/page/*' | sort)
   rm -f "$LIST"
 
   rendered=0
-  for p in "$TREE"/posts/*/index.html; do
-    [ -e "$p" ] || continue
-    case "$p" in */page/*) continue ;; esac
+  pages_seen=0
+  while IFS= read -r p; do
+    [ -n "$p" ] || continue
     # BOX_RE is mined from ci.yml, not repeated here. This test asks whether
     # the fence counter agrees with the build; if it counted containers by its
     # own regex, a change to the CI regex would leave the two comparing
@@ -180,7 +196,15 @@ else
     # script on a page with no code blocks — a normal page, not a failure.
     k=$(grep -oE "$BOX_RE" "$p" | wc -l || true)
     rendered=$((rendered+k))
-  done
+    pages_seen=$((pages_seen+1))
+  done < <(find "$TREE/posts" -mindepth 2 -name index.html ! -path '*/page/*' | sort)
+  # Empty-set guard. With TREE present but holding no post pages, both loops
+  # iterated zero times, 0 == 0, and the cross-check reported PASS — a green
+  # assertion that checked nothing. ci.yml guards the same way with saw_pre.
+  if [ "$pages_seen" -eq 0 ]; then
+    fail=$((fail+1))
+    echo "  FAIL  no post pages under $TREE/posts — the cross-check would pass on an empty set"
+  fi
   echo "  source blocks (counter) = $tot"
   echo "  containers (rendered)   = $rendered"
   if [ "$tot" = "$rendered" ]; then
@@ -188,6 +212,7 @@ else
   else
     fail=$((fail+1)); echo "  FAIL  counter=$tot but the build rendered $rendered"
   fi
+  fi   # end of: hugo list all succeeded (the else branch above was the failure)
 fi
 
 echo
