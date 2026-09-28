@@ -69,10 +69,18 @@ jobs:
         # This step uses `mapfile` and process substitution, which are bash
         # builtins. ubuntu-latest happens to default `run:` to `bash -e`, but
         # relying on a runner-image default is not a contract — declare it.
+        id: chroma
         shell: bash
         run: |
           cd exampleSite
-          hugo --minify --config hugo.toml,hugo-chroma.toml -d /tmp/pub-chroma
+          # The output path is defined ONCE here and published for the steps that
+          # need it. It used to be repeated in the find, in an error message and
+          # again in the fence test's env. Change one and the others drift — and
+          # because the fence test SKIPS when its tree is absent, drift there
+          # turned the cross-check off silently while the step still passed.
+          OUT="$RUNNER_TEMP/pub-chroma"
+          echo "out=$OUT" >> "$GITHUB_OUTPUT"
+          hugo --minify --config hugo.toml,hugo-chroma.toml -d "$OUT"
           # `hugo` exits 0 even when a render hook silently drops a code block —
           # that is why the original P0 stayed green. Assert the output instead.
           #
@@ -89,10 +97,10 @@ jobs:
           #
           # -mindepth 2 keeps the posts section index (posts/index.html) out;
           # ! -path '*/page/*' keeps paginated pages out.
-          mapfile -t POSTS < <(find /tmp/pub-chroma/posts -mindepth 2 -name index.html \
+          mapfile -t POSTS < <(find "$OUT"/posts -mindepth 2 -name index.html \
                                  ! -path '*/page/*' | sort)
           if [ ${#POSTS[@]} -eq 0 ]; then
-            echo "::error::no example post pages under /tmp/pub-chroma/posts — did the content or permalink config change?"
+            echo "::error::no example post pages under $OUT/posts — did the content or permalink config change?"
             exit 1
           fi
           echo "asserting on ${#POSTS[@]} example post pages"
@@ -264,4 +272,9 @@ jobs:
       - name: Test the fence counter
         run: scripts/test-fence-count.sh
         env:
-          TREE: /tmp/pub-chroma
+          TREE: ${{ steps.chroma.outputs.out }}
+          # REQUIRE_TREE makes an absent tree a failure rather than a skip. The
+          # previous wiring had no such signal: a missing TREE took the skip
+          # branch and the step still exited 0, so a stale path turned the
+          # cross-check off without a word.
+          REQUIRE_TREE: "1"

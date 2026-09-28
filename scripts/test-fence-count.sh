@@ -21,6 +21,26 @@ trap 'rm -rf "$d"' EXIT
 # from a heredoc on stdin, where __file__ does not exist and `here` would
 # silently collapse to the cwd — which is how the first in-repo run looked for
 # .github/workflows/ci.yml one directory ABOVE the repo and found nothing.
+# The container regex, mined from the same file for the same reason the awk
+# program is: two copies of one definition drift, and this test exists to check
+# the shipped behaviour rather than a lookalike of it.
+BOX_RE=$(python3 - "$REPO" <<'PY2'
+import io, re, sys
+s = io.open(sys.argv[1] + "/.github/workflows/ci.yml", encoding="utf8").read()
+# Anchor on the line, then take everything between -oE ' and ' "$p".
+# NOT a [^']* scan: in ci.yml the pattern is written in YAML shell-escaped form
+# (class=["'"'"']?highlight...) so a quote-avoiding class hits the embedded
+# quote and fails to match.
+m = re.search(r"n_box=\$\(grep -oE '(.*)' \"\$p\"", s)
+assert m, "could not find the container regex in ci.yml"
+pat = m.group(1)
+assert "highlight" in pat, "mined pattern is not the container regex: %r" % pat
+print(pat)
+PY2
+)
+[ -n "$BOX_RE" ] || { echo "FATAL: could not mine the container regex from ci.yml"; exit 2; }
+echo "container regex mined: $BOX_RE"
+
 python3 - "$REPO" <<'PY' > "$d/prog.awk"
 import io, sys
 ci = sys.argv[1] + "/.github/workflows/ci.yml"
@@ -88,8 +108,15 @@ echo "### cross-check against what Hugo actually rendered"
 # agrees with the containers in a real build; that stays true as content is
 # added or removed, and fails precisely when the two disagree.
 TREE=${TREE:-}
+REQUIRE_TREE=${REQUIRE_TREE:-}
 if [ -z "$TREE" ] || [ ! -d "$TREE" ]; then
-  echo "  SKIP  no rendered tree given (set TREE=/tmp/pub-chroma to run this)"
+  if [ -n "$REQUIRE_TREE" ]; then
+    # Asked for a tree and did not get one. Skipping here is exactly how the
+    # cross-check went green without running when the build output path moved.
+    echo "::error::REQUIRE_TREE is set but TREE='${TREE}' is not a directory"
+    exit 1
+  fi
+  echo "  SKIP  no rendered tree given (set TREE=/path/to/pub to run this)"
 else
   # Same set rule as ci.yml: count only files that actually rendered. A
   # find over all of content/posts included drafts and future-dated posts,
@@ -135,12 +162,13 @@ else
   for p in "$TREE"/posts/*/index.html; do
     [ -e "$p" ] || continue
     case "$p" in */page/*) continue ;; esac
-    # `|| true` for the same reason ci.yml needs it: under `set -euo pipefail` a
-    # grep that matches nothing exits 1, the pipeline inherits that through
-    # pipefail, and the script dies here — on a page with no code blocks, which
-    # is a normal page, not a failure. (I added -e for review reason 3 and then
-    # immediately wrote the very bug that -e exposes.)
-    k=$(grep -oE 'class=["'"'"']?highlight["'"'"']?[ />]' "$p" | wc -l || true)
+    # BOX_RE is mined from ci.yml, not repeated here. This test asks whether
+    # the fence counter agrees with the build; if it counted containers by its
+    # own regex, a change to the CI regex would leave the two comparing
+    # different notions of "container" and still pass. `|| true` because under
+    # `set -euo pipefail` a grep matching nothing exits 1 and would kill the
+    # script on a page with no code blocks — a normal page, not a failure.
+    k=$(grep -oE "$BOX_RE" "$p" | wc -l || true)
     rendered=$((rendered+k))
   done
   echo "  source blocks (counter) = $tot"
