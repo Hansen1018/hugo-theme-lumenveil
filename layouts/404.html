@@ -57,7 +57,7 @@
     {{ range first 3 $pages.ByDate.Reverse }}
     <a class="suggest-card" href="{{ .RelPermalink }}">
       <div class="post-meta">
-        <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006.01.02" }}</time>
+        {{ if not .Date.IsZero }}<time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006.01.02" }}</time>{{ end }}
         <span>{{ .ReadingTime }} 分钟阅读</span>
         {{ with .Params.views }}<span>{{ . }} 次阅读</span>{{ end }}
       </div>
