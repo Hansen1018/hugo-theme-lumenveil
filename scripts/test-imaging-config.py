@@ -134,8 +134,14 @@ SCALAR = "[imaging]\nquality = {q}"
 FMTS = ("JPEG", "WEBP", "AVIF")
 
 
-def build(work, name, cfg, fmt):
-    """Render the fixture and return {FMT: bytes} or {} if the build failed."""
+def build(work, name, cfg):
+    """Render the fixture and return a (sizes, err) pair.
+
+    sizes maps FMT -> output byte count, and is {} when the build failed.
+    err is None on success, or the first few lines of Hugo's own output on
+    failure — kept so a caller can say WHICH case broke instead of only that
+    something did.
+    """
     out = os.path.join(work, "out-" + name)
     shutil.rmtree(out, ignore_errors=True)
     with open(os.path.join(work, "hugo.toml"), "w") as fh:
@@ -177,9 +183,9 @@ def main():
             fh.write("---\ntitle: probe\n---\n")
 
         print("\nper-format spelling (what exampleSite ships)")
-        pf20, err = build(work, "pf20", PER_FORMAT.format(q=20), "per-format q=20")
-        pf85, err85 = build(work, "pf85", PER_FORMAT.format(q=85), "per-format q=85")
-        pfnone, errn = build(work, "pfnone", "", "no imaging config")
+        pf20, err = build(work, "pf20", PER_FORMAT.format(q=20))
+        pf85, err85 = build(work, "pf85", PER_FORMAT.format(q=85))
+        pfnone, errn = build(work, "pfnone", "")
         if not pf20 or not pf85 or not pfnone:
             for label, e in (("q=20", err), ("q=85", err85), ("none", errn)):
                 if e:
@@ -190,9 +196,17 @@ def main():
                   % (f, pf20[f], pf85[f], pfnone[f]))
 
         print("\nscalar spelling (works on 0.146.0, deprecated on 0.163.0+)")
-        sc20, _ = build(work, "sc20", SCALAR.format(q=20), "scalar q=20")
-        sc85, _ = build(work, "sc85", SCALAR.format(q=85), "scalar q=85")
+        sc20, sc_err20 = build(work, "sc20", SCALAR.format(q=20))
+        sc85, sc_err85 = build(work, "sc85", SCALAR.format(q=85))
         if not sc20 or not sc85:
+            # The per-format path above prints Hugo's captured output on
+            # failure. This one used to discard it (`sc20, _ = build(...)`) and
+            # report only that a build failed, which is the one case where the
+            # reason is most worth having: a scalar-form failure here is usually
+            # a config key that no longer exists at all.
+            for label, e in (("q=20", sc_err20), ("q=85", sc_err85)):
+                if e:
+                    print("      build %s failed: %s" % (label, " / ".join(e)))
             return check(False, "scalar fixture builds on both quality settings")
         for f in FMTS:
             print("      %-6s q20=%-9d q85=%-9d" % (f, sc20[f], sc85[f]))

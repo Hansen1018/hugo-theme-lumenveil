@@ -221,7 +221,6 @@ def main():
         print("  descriptions: %d" % len(descs))
 
         offenders = []
-        opened_by = {}
         for d in descs:
             text = d
             # Strip the CDATA wrapper if present, then unescape.
