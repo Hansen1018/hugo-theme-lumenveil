@@ -352,9 +352,19 @@ def main():
             # a line that read like coverage of the version gate while
             # verifying nothing. A permanently green entry is worse than no
             # entry: it invites the next reader to trust it.
+            #
+            # The two versions are passed as six explicit values, not as
+            # `ver + FIXED_FROM`. That expression concatenates two 3-tuples
+            # into a 6-tuple, which happens to line up with the six %d
+            # placeholders today — but nothing ties the tuple length to the
+            # format string, so editing the wording would silently shift every
+            # field. (`"%s" % (ver, FIXED_FROM)` is a different trap: % is
+            # left-associative, so it would swallow the whole tuple into the
+            # first %s and raise on the second.)
             print("      NOTE: this is Hugo %d.%d.%d, below %d.%d.%d, so the"
                   " balanced-summary assertion is skipped here by design."
-                  % (ver + FIXED_FROM))
+                  % (ver[0], ver[1], ver[2],
+                     FIXED_FROM[0], FIXED_FROM[1], FIXED_FROM[2]))
 
         # Independent of the fix: the probe posts must actually reach the feed,
         # otherwise the check above is comparing zero interesting descriptions.
