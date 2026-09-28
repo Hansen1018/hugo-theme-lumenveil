@@ -250,20 +250,25 @@ jobs:
               exit 1
             fi
           done
-          if [ ! -s "$SRC_LIST" ]; then
-            echo "::error::could not map any rendered post back to a source file — hugo list all returned nothing usable"
-            # Read $LIST, do not re-run `hugo list all | head -3`. Under pipefail a
-            # pipe into head dies: head exits after 3 lines, the writer takes
-            # SIGPIPE (141), and set -e kills the step HERE — before the exit 1 —
-            # losing the very diagnostic this branch exists to print. $LIST already
-            # holds the listing, and the EXIT trap at the top removes it, so
-            # there is nothing to clean up here: an earlier `rm -f "$LIST"`
-            # above this branch deleted the file out from under the head below,
-            # and `head` on a missing file returns non-zero, which under
-            # pipefail aborts the step before the `exit 1` on the next line.
-            head -3 "$LIST" | sed 's/^/        /'
-            exit 1
-          fi
+          # There is deliberately NO `if [ ! -s "$SRC_LIST" ]` guard here.
+          # One existed and was provably unreachable, so it could only mislead:
+          # POSTS is already non-empty (checked above), the loop body appends via
+          # awk and `set -e` aborts the step on any awk failure, and the
+          # `after == before` check inside the loop exits 1 on the first
+          # iteration that appends nothing. So reaching this line means the loop
+          # ran at least once and every iteration added a path — SRC_LIST is
+          # non-empty by construction. The empty-mapping case is caught earlier
+          # and with a better message: it names the rendered page, which
+          # "could not map any" could not.
+          # Its old comment is also gone, because it described current code that
+          # no longer exists: it explained why the branch must read $LIST rather
+          # than re-run `hugo list all | head -3` (head exits after 3 lines, the
+          # writer takes SIGPIPE 141, pipefail then kills the step before its own
+          # `exit 1`), and blamed an "earlier rm -f "$LIST" above this branch" —
+          # that rm was removed when the EXIT trap took over temp-file cleanup.
+          # The pipefail/SIGPIPE rule still matters and is still documented, at
+          # the `hugo list all` failure branch above, which is the site that
+          # actually reads $LIST with head today.
           #
           # Fence counting follows CommonMark's open/close rules rather than
           # toggling on any ``` or ~~~ line:
