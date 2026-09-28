@@ -17,15 +17,19 @@
     {{/* Same guard as single.html and posts/single.html: page-style content has
          no date by design, and an unguarded .Date renders 发布于 0001 年 01 月 01 日
          to every reader. */}}
-    <div class="post-meta">
+    {{/* Gated per-value, matching layouts/ja/single.html: a stub page can
+         legitimately have neither a date nor a body, and "0 分钟阅读 / 0 字"
+         reads as real data. Guarding only the date left the two counts
+         unconditional, so the two section-scoped templates disagreed. */}}
+    {{ if or (not .Date.IsZero) (gt .WordCount 0) }}<div class="post-meta">
       {{ if not .Date.IsZero }}<time datetime="{{ .Date.Format "2006-01-02" }}">发布于 {{ .Date.Format "2006 年 01 月 02 日" }}</time>
       {{ partial "lastmod-meta.html" . }}{{ end }}
-      <span>{{ .ReadingTime }} 分钟阅读</span>
-      <span>{{ .WordCount }} 字</span>
+      {{ if gt .WordCount 0 }}<span>{{ .ReadingTime }} 分钟阅读</span>
+      <span>{{ .WordCount }} 字</span>{{ end }}
       {{/* Page view count — busuanzi (third-party CN service for CN sites). Per-page real cross-user count. */}}
 <span class="page-views">阅读 <span id="busuanzi_value_page_pv">0</span> 次</span>
 {{ partial "busuanzi.html" . }}
-    </div>
+    </div>{{ end }}
     <h1>{{ .Title }}</h1>
     {{ with .Description }}<p class="article-deck">{{ . }}</p>{{ end }}
     {{ if or .Params.categories .Params.tags }}<div class="meta-pills">{{ with .Params.categories }}<div class="category-list tag-list--large">{{ range . }}{{ $term := . | urlize }}{{ $catPage := $.Site.GetPage (printf "/categories/%s/" $term) }}<a href="{{ printf "/categories/%s/" $term | relURL }}">{{ with $catPage }}{{ .Title }}{{ else }}{{ $term }}{{ end }}</a>{{ end }}</div>{{ end }}{{ with .Params.tags }}<div class="tag-list tag-list--large">{{ range . }}<a href="{{ printf "/tags/%s/" (. | urlize) | relURL }}">#{{ . }}</a>{{ end }}</div>{{ end }}</div>{{ end }}

@@ -250,14 +250,17 @@ jobs:
               exit 1
             fi
           done
-          rm -f "$LIST"
           if [ ! -s "$SRC_LIST" ]; then
             echo "::error::could not map any rendered post back to a source file — hugo list all returned nothing usable"
             # Read $LIST, do not re-run `hugo list all | head -3`. Under pipefail a
             # pipe into head dies: head exits after 3 lines, the writer takes
             # SIGPIPE (141), and set -e kills the step HERE — before the exit 1 —
             # losing the very diagnostic this branch exists to print. $LIST already
-            # holds the listing.
+            # holds the listing, and the EXIT trap at the top removes it, so
+            # there is nothing to clean up here: an earlier `rm -f "$LIST"`
+            # above this branch deleted the file out from under the head below,
+            # and `head` on a missing file returns non-zero, which under
+            # pipefail aborts the step before the `exit 1` on the next line.
             head -3 "$LIST" | sed 's/^/        /'
             exit 1
           fi
@@ -282,7 +285,16 @@ jobs:
             src_boxes=$((src_boxes + n))
           done < "$SRC_LIST"
           if [ "$out_boxes" -ne "$src_boxes" ]; then
+          # Signed, so the message names the side that differs. The old
+          # `$((src_boxes - out_boxes))` was negative when the render produced
+          # MORE containers than the source had fences, and then read
+          # "the render hook dropped -1" — pointing a maintainer at the render
+          # hook when the surplus is what needs explaining.
+          if [ "$out_boxes" -gt "$src_boxes" ]; then
+            echo "::error::rendered $out_boxes Chroma containers but the source has only $src_boxes fenced code blocks — the extra $((out_boxes - src_boxes)) came from somewhere other than a fence (a shortcode or page that emits .highlight directly?)"
+          else
             echo "::error::rendered $out_boxes Chroma containers but the source has $src_boxes fenced code blocks — the render hook dropped $((src_boxes - out_boxes))"
+          fi
             exit 1
           fi
           echo "ok: $out_boxes of $src_boxes fenced code blocks rendered through Chroma across ${#POSTS[@]} post pages"

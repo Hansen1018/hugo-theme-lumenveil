@@ -16,7 +16,7 @@
 #   - a closing fence carries no info string.
 {
   if (!open) {
-    if (match($0, /^[[:space:]]*([-*+]|[0-9]+[.)])?[[:space:]]*(>[[:space:]]*)*(```+|~~~+)/)) {
+    if (match($0, /^[[:space:]]*([[:space:]]*([-*+]|[0-9]+[.)]|>))*[[:space:]]*(```+|~~~+)/)) {
       s = substr($0, RSTART, RLENGTH)
       ch = (index(s, "`") > 0) ? "`" : "~"
       if (length(substr(s, index(s, ch))) >= 3) {
@@ -26,7 +26,7 @@
       }
     }
   } else {
-    if (match($0, /^[[:space:]]*(>[[:space:]]*)*(```+|~~~+)[[:space:]]*$/)) {
+    if (match($0, /^[[:space:]]*([[:space:]]*([-*+]|[0-9]+[.)]|>))*[[:space:]]*(```+|~~~+)[[:space:]]*$/)) {
       s = substr($0, RSTART, RLENGTH)
       if (index(s, cch) > 0 && length(substr(s, index(s, cch))) >= clen) {
         open = 0

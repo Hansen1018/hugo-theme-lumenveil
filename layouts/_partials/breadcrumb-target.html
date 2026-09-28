@@ -43,7 +43,13 @@
      too, so a site with no home permalink falls back to "/" rather than
      reintroducing the href="" this partial exists to prevent. */ -}}
 {{- if eq $page.Section "" -}}
-  {{- $target = site.Home.RelPermalink | default "/" -}}
+  {{- /* relURL, not a bare "/". Every other href this partial produces goes
+       through relURL and carries the base path, so a hardcoded "/" is the one
+       value that silently escapes a subpath install. This branch is the
+       empty-site.Home edge case, and a fallback that only breaks under
+       baseURL = "https://host/blog/" is a fallback that is wrong exactly when
+       it is hard to notice. */ -}}
+  {{- $target = site.Home.RelPermalink | default (relURL "/") -}}
 {{- else -}}
   {{- $sectionPage := site.GetPage "section" $page.Section -}}
   {{- if $sectionPage -}}

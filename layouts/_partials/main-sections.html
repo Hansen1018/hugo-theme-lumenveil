@@ -34,6 +34,12 @@
 {{- end -}}
 {{- $normalized := slice -}}
 {{- range $mainSections -}}
-  {{- $normalized = $normalized | append (lower (trim . " \t")) -}}
+  {{- /* printf "%v", not a bare lower/trim. A malformed config value -- an
+       int, or a nested slice -- is coerced silently by those, producing a
+       garbage entry like "1" or "[a b]" that matches no section, and this
+       partial feeds 404.html, home.html, home.json and every single/section
+       template, so one bad value degrades the whole site. Rendering the value
+       makes the failure visible in the entry itself. */ -}}
+  {{- $normalized = $normalized | append (lower (trim (printf "%v" .) " \t")) -}}
 {{- end -}}
 {{- return $normalized -}}

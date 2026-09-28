@@ -67,7 +67,11 @@
        year-filter UI while this count ignored it entirely. On the shipped
        exampleSite config (mainSections = ['posts']) an /archives/ page reported
        the posts year count directly above its own archives year pills. */}}
-  {{ $yearCount = len ($allList.GroupByDate "2006") }}
+{{/* Count the years the pill row actually renders. The pills filter the
+     undated "0001" group out (see below), so counting the raw GroupByDate
+     advertised one more year than the page showed whenever a list section
+     held an undated page. */}}
+{{ $yearCount = len (where ($allList.GroupByDate "2006") "Key" "!=" "0001") }}
   {{ $query := urls.Parse .Permalink }}
   {{ with $query.RawQuery }}
     {{ range split . "&" }}

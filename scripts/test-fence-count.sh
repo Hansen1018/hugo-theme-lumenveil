@@ -12,6 +12,12 @@
 set -euo pipefail
 REPO=$(cd "$(dirname "$0")/.." && pwd)
 d=$(mktemp -d)
+# Segments whose rendered page could not be joined back to a source file.
+# Declared here rather than at first use: under `set -u` a reference to an
+# unset variable aborts the script, and the first use is inside the loop that
+# records the miss. It lives under $d, so the trap below already cleans it up.
+UNMAPPED="$d/unmapped"
+: > "$UNMAPPED"
 # EXIT trap, not just a trailing rm: an early abort (the FATAL exit 2, or
 # set -e tripping on an assertion) would otherwise leave the temp dir and
 # the extracted awk program behind on every failed run.
@@ -79,6 +85,23 @@ expect "indented blockquote fence" 1 "$d/ed.md"
 
 printf '> - ```go\n>   y\n>   ```\n' > "$d/ee.md"
 expect "blockquote + list-item fence" 1 "$d/ee.md"
+
+# A SECOND block in the same form. The single-block case above passed even
+# while the counter was wrong, and that is the whole reason this one exists.
+# The opening regex allowed a list marker only BEFORE the blockquote markers,
+# so it could not match `> - ```go`. On a single block the count still came out
+# 1 — but by accident: the closing line `>   ``` ` was then re-read as a NEW
+# opening fence, which cancelled the 0 it should have found. One block hides
+# the bug; two expose it, and the pre-fix counter reports 1 instead of 2.
+printf '> - ```go\n> y\n>   ```\n> - ```py\n> z\n> ```\n' > "$d/ee2.md"
+expect "blockquote + list-item, two blocks" 2 "$d/ee2.md"
+
+# The markers may also appear in the other order, and nest.
+printf -- '- > ```go\n  > y\n  > ```\n' > "$d/ef.md"
+expect "list-item then blockquote fence" 1 "$d/ef.md"
+
+printf '> - > ```go\n>   > y\n>   > ```\n' > "$d/eg.md"
+expect "blockquote + list-item + blockquote" 1 "$d/eg.md"
 
 printf '1. ~~~\n   y\n   ~~~\n' > "$d/f.md"
 expect "ordered-list tilde fence" 1 "$d/f.md"
@@ -157,6 +180,7 @@ else
       }' "$LIST")
     if [ -z "$md" ]; then
       fail=$((fail+1)); echo "  FAIL  could not map rendered page $seg back to a source file"
+      printf '%s\n' "$seg" >> "$UNMAPPED"
       continue
     fi
     n=$(count "$REPO/exampleSite/$md")
@@ -169,7 +193,19 @@ else
   pages_seen=0
   while IFS= read -r p; do
     [ -n "$p" ] || continue
-    # BOX_RE is mined from ci.yml, not repeated here. This test asks whether
+    # A page that failed the join above has no source file, so it added
+    # nothing to `tot` while this loop still added its containers. The
+    # equality at the end then compared sums over two different sets, and a
+    # mismatch blamed the fence state machine for what was a join miss. Skip
+    # the same pages here so both sums cover the same set. The run still fails
+    # — the join miss is already recorded above — this only fixes the
+    # DIAGNOSIS.
+    if grep -qxF "$(basename "$(dirname "$p")")" "$UNMAPPED"; then
+      continue
+    fi
+    # BOX_RE comes from scripts/container-regex.txt — the same file ci.yml
+    # reads — not from a copy inlined here, and not mined out of the workflow.
+    # This test asks whether
     # the fence counter agrees with the build; if it counted containers by its
     # own regex, a change to the CI regex would leave the two comparing
     # different notions of "container" and still pass. `|| true` because under
@@ -179,6 +215,11 @@ else
     rendered=$((rendered+k))
     pages_seen=$((pages_seen+1))
   done < <(find "$TREE/posts" -mindepth 2 -name index.html ! -path '*/page/*' | sort)
+  if [ -s "$UNMAPPED" ]; then
+    echo "  note  $(wc -l < "$UNMAPPED") page(s) counted in neither total:"\
+" no source file to compare against"
+  fi
+  rm -f "$UNMAPPED"
   # Empty-set guard. With TREE present but holding no post pages, both loops
   # iterated zero times, 0 == 0, and the cross-check reported PASS — a green
   # assertion that checked nothing. ci.yml guards the same way with saw_pre.
@@ -199,4 +240,7 @@ fi
 echo
 echo "fence tests: $pass passed, $fail failed"
 rm -rf "$d"
-exit $fail
+# Not `exit $fail`: a POSIX exit status is masked to 8 bits, so 256 failures
+# wrap to 0 and the CI step would report success with every check failing.
+if [ "$fail" -ne 0 ]; then exit 1; fi
+exit 0

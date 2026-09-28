@@ -153,6 +153,37 @@ try:
     os.makedirs(os.path.join(fix, "themes"))
     os.symlink(REPO, os.path.join(fix, "themes", "lumenveil"))
 
+    # The fixture must configure a mainSections value that does NOT contain
+    # "posts", or it cannot reproduce the bug this test exists for.
+    # exampleSite/hugo.toml sets mainSections = ['posts'], and with that value
+    # present $isList is true no matter what _partials/is-list-section.html
+    # does — the template was emitted anyway and the assertions below passed
+    # against the very gate that broke them.
+    #
+    # It has to be an EMPTY list, not a deleted line. Hugo injects a built-in
+    # default: measured, deleting `mainSections` from the config still leaves
+    # site.Params.mainSections == ["posts"] (gate_probe2.py), so "a site that
+    # never sets mainSections" is not reachable by omission at all. Three gate
+    # mutations left this test green before that was understood.
+    #
+    # Measured with mainsections_probe.py, real gate vs a pre-fix gate that is
+    # plain membership in site.Params.mainSections:
+    #     line deleted            real: template  / prefix: template  (identical)
+    #     mainSections = []       real: template  / prefix: NO template, 7 pills
+    #     mainSections = ['blog'] real: template  / prefix: NO template, 7 pills
+    toml = os.path.join(fix, "hugo.toml")
+    with open(toml, encoding="utf8") as fh:
+        cfg = fh.read()
+    replaced, n = re.subn(r"^([ \t]*)mainSections\s*=.*$",
+                          r"\1mainSections = []", cfg, count=1, flags=re.M)
+    if n != 1:
+        print("FATAL: expected exactly one mainSections line in the fixture "
+              "config, found %d" % n, file=sys.stderr)
+        sys.exit(2)
+    with open(toml, "w", encoding="utf8") as fh:
+        fh.write(replaced)
+    print("fixture: mainSections = [] (does not contain 'posts')")
+
     posts = os.path.join(fix, "content", "posts")
     shutil.rmtree(posts, ignore_errors=True)
     os.makedirs(posts)
