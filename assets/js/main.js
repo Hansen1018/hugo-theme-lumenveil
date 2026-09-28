@@ -183,13 +183,21 @@ menuToggle?.addEventListener('click', () => {
     const url = btn.dataset.url || window.location.href
     const copyright = btn.dataset.copyright || ''
     const copyrightUrl = btn.dataset.copyrightUrl || ''
-    const text = [
+    /* The date line is included only when there is a date. single.html guards
+       data-date on .Date.IsZero, so a page-style page yields an empty
+       attribute rather than 0001 年 1 月 1 日 — correct, but building the line
+       unconditionally left a bare `发表时间:` label in the copied citation,
+       which reads as a truncated paste to whatever the reader feeds it. */
+    const lines = [
       `作者:${author}`,
-      `文章标题:[${title}](${url})`,
-      `发表时间:${date}`,
+      `文章标题:[${title}](${url})`
+    ]
+    if (date) lines.push(`发表时间:${date}`)
+    lines.push(
       `文章链接:${url}`,
       `版权说明:[${copyright}](${copyrightUrl})`
-    ].join('\n')
+    )
+    const text = lines.join('\n')
     try {
       await navigator.clipboard.writeText(text)
       btn.textContent = '✓ 引用已复制'
