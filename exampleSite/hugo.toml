@@ -113,6 +113,14 @@ theme = 'lumenveil'
 # the global `[imaging] quality` form this replaced is itself deprecated on
 # 0.163.0+ and will be removed. No single form is clean across the whole
 # 0.146.0+ range, so keep the forward-compatible one.
+#
+# Measured, not assumed: on 0.146.0 the per-format keys here leave JPEG, WebP
+# and AVIF byte-identical across quality 20, quality 85 and no config at all,
+# while the scalar form moves all of them. On 0.167.0 the two forms agree. That
+# inertness is invisible from a build result, so
+# scripts/test-imaging-config.py asserts it in both directions — a future Hugo
+# that starts honouring these below 0.163.0, or that starts warning on unknown
+# keys, fails the build instead of quietly changing what the example site emits.
 [imaging.jpeg]
   quality = 85
 [imaging.webp]
