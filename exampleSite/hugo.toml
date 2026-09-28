@@ -118,9 +118,18 @@ theme = 'lumenveil'
 # and AVIF byte-identical across quality 20, quality 85 and no config at all,
 # while the scalar form moves all of them. On 0.167.0 the two forms agree. That
 # inertness is invisible from a build result, so
-# scripts/test-imaging-config.py asserts it in both directions — a future Hugo
-# that starts honouring these below 0.163.0, or that starts warning on unknown
-# keys, fails the build instead of quietly changing what the example site emits.
+# scripts/test-imaging-config.py asserts the direction that is observable: on a
+# version below 0.163.0 the three cases must come out byte-identical, and on
+# 0.163.0+ quality 20 and 85 must differ. A future Hugo that starts honouring
+# these keys below 0.163.0 therefore fails the test.
+#
+# Note what the test does NOT claim: it runs Hugo with --quiet and only inspects
+# the exit code and the output page, so it would not notice Hugo starting to
+# WARN about the unknown keys. Measured, both directions: 0.146.0 prints
+# nothing at all for these keys (not even a warning), and the 0.163.0+
+# deprecation warning for the scalar form is suppressed by --quiet. So "the
+# build stayed green" here says nothing either way about warnings — the
+# byte-count comparison is the whole assertion.
 [imaging.jpeg]
   quality = 85
 [imaging.webp]

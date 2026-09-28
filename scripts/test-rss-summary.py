@@ -9,17 +9,17 @@ element." Before that fix, Hugo truncated an auto-summary at a word boundary
 and could stop in the middle of a `<blockquote>` or list, so the summary
 embedded in the feed carried unbalanced markup.
 
-Why this is the theme's problem and not just Hugo's
----------------------------------------------------
-The theme ships no RSS template — Hugo's embedded one is used — but it does
-decide what gets into a feed:
-
-  layouts/home.json   .Summary, straight into the JSON search/feed payload
-  layouts/_partials/post-card.html
-  layouts/404.html
-
-So a truncated summary is not a Hugo-internal detail; it is published bytes
-that subscribers and the search payload read.
+Why this is worth a regression guard
+------------------------------------
+The theme ships no RSS template — Hugo's embedded one is the only path the raw
+summary markup takes, and that is where an unclosed <blockquote> lands. The
+theme's own three .Summary call sites all pipe through `plainify`
+(home.json, _partials/post-card.html, 404.html), so they cannot carry the
+defect: measured, 0 of 3 descriptions in a built exampleSite/index.json
+contain any HTML tag at all. So this is not "the theme templates ship broken
+markup" — it is a guard on the Hugo upgrade, and the theme is merely the
+package that would have to absorb the regression if Hugo's summary handling
+moved underneath it.
 
 Measured on a real site before/after the upgrade
 ------------------------------------------------
@@ -79,9 +79,44 @@ def check(ok, label, detail=""):
     return ok
 
 
+# HTML5 lets a few elements be closed implicitly — `<li>a<li>b` and
+# `<p>a<p>b` are well-formed with no close tag at all. HTMLParser emits raw
+# events and implements none of that, so such a document reaches this class as
+# stack [ul, li, li] followed by a </ul> that must discard two <li> to reach
+# its match. Both rules below exist so that discarding a tag that HTML5 lets
+# be implicitly closed is not reported as mis-nesting — without them, valid
+# markup reads as broken and the test fails on a good build.
+IMPLICIT_START_CLOSE = {
+    "li": {"li"},
+    "dt": {"dt", "dd"},
+    "dd": {"dt", "dd"},
+    "p": {"p", "div", "blockquote", "ul", "ol", "li", "section", "article",
+          "aside", "header", "footer", "main", "nav", "figure", "figcaption",
+          "details", "summary", "h1", "h2", "h3", "h4", "h5", "h6", "pre",
+          "table", "dl", "form", "hr", "address", "fieldset", "hgroup"},
+}
+# The mirror image: which open element a given end tag is allowed to close.
+IMPLICIT_END_CLOSE = {
+    "li": {"ul", "ol", "menu"},
+    "dt": {"dl"},
+    "dd": {"dl"},
+    "p": {"div", "blockquote", "ul", "ol", "li", "section", "article", "aside",
+          "header", "footer", "main", "nav", "figure", "figcaption", "details",
+          "summary", "body", "html", "td", "th", "dd", "dt", "dl"},
+}
+
+
 class Balance(HTMLParser):
     """Track open tags. The point is not to render anything, only to notice a
-    container left open at the end of the description."""
+    container left open at the end of the description.
+
+    Two kinds of imbalance are recorded, and the second one used to be
+    silently dropped: when a close tag matched something deeper in the stack,
+    the loop discarded everything above it without comment, so
+    `<blockquote><div>x</blockquote>` finished with an empty stack and read as
+    balanced. For a checker whose only job is spotting unbalanced markup,
+    that was the wrong way to fail.
+    """
 
     def __init__(self):
         super().__init__(convert_charrefs=True)
@@ -89,8 +124,12 @@ class Balance(HTMLParser):
         self.unbalanced = []
 
     def handle_starttag(self, tag, attrs):
-        if tag not in VOID:
-            self.stack.append(tag)
+        if tag in VOID:
+            return
+        # This start tag may implicitly close the element on top of the stack.
+        if self.stack and tag in IMPLICIT_START_CLOSE.get(self.stack[-1], ()):
+            self.stack.pop()
+        self.stack.append(tag)
 
     def handle_startendtag(self, tag, attrs):
         pass
@@ -98,16 +137,58 @@ class Balance(HTMLParser):
     def handle_endtag(self, tag):
         if tag in VOID:
             return
-        if tag in self.stack:
-            while self.stack:
-                top = self.stack.pop()
-                if top == tag:
-                    return
+        if tag not in self.stack:
+            self.unbalanced.append(("stray-close", tag))
             return
-        self.unbalanced.append(("stray-close", tag))
+        while self.stack:
+            top = self.stack.pop()
+            if top == tag:
+                return
+            # `top` was still open when </tag> arrived. HTML5 permits this for
+            # a handful of containers; anything else is genuine mis-nesting.
+            if tag not in IMPLICIT_END_CLOSE.get(top, ()):
+                self.unbalanced.append(("misnested", top, "closed by </%s>" % tag))
 
     def finish(self):
         return self.unbalanced, list(self.stack)
+
+
+def self_test_balance():
+    """Run the checker against inputs whose answer is known in advance.
+
+    The balance check IS this test, so it needs its own coverage. A checker
+    that quietly stops flagging anything is indistinguishable from a site with
+    no defects, and the two failure modes below are ones this class actually
+    had: mis-nested tags discarded without a word, and valid HTML5 that
+    relies on implicit closing read as broken.
+    """
+    cases = [
+        ("well-formed, every tag closed",
+         "<p>a</p><blockquote><p>b</p></blockquote>", False),
+        ("target defect: ends inside <blockquote>",
+         "<p>text</p><blockquote><p>quote</p>", True),
+        ("stray close tag", "<p>a</p></div>", True),
+        ("mis-nested: <div> closed by </blockquote>",
+         "<blockquote><div>x</blockquote>", True),
+        ("mis-nested: <li> closed by </ul> is VALID",
+         "<ul><li>a</li><li>b</ul>", False),
+        ("valid HTML5: implicit <li> close", "<ul><li>a<li>b</ul>", False),
+        ("valid HTML5: implicit <p> close", "<p>a<p>b</p>", False),
+        ("valid HTML5: <p> inside <li>, implicit <li>",
+         "<ul><li><p>a<li>b</ul>", False),
+    ]
+    bad = []
+    for label, src, expect in cases:
+        p = Balance()
+        p.feed(src)
+        p.close()
+        stray, left = p.finish()
+        got = bool(stray or left)
+        if got != expect:
+            bad.append("%s (expected flagged=%s, got %s stray=%s open=%s)"
+                       % (label, expect, got, stray, left))
+    check(not bad, "Balance classifies %d known inputs correctly" % len(cases),
+          "; ".join(bad))
 
 
 # A post whose blockquote straddles the summary boundary. Structure:
@@ -160,6 +241,12 @@ def main():
     if not os.path.isdir(SRC):
         print("FATAL: no exampleSite at", SRC, file=sys.stderr)
         return 2
+
+    # Run this BEFORE building anything. The balance checker is the whole test,
+    # and if it silently stops flagging, every assertion below passes against a
+    # site with no defects and the run looks healthy. A known-input self test
+    # is the only thing standing between that and a green build.
+    self_test_balance()
 
     tmp = tempfile.mkdtemp(prefix="rsssum-")
     try:
@@ -260,7 +347,14 @@ def main():
             else:
                 print("      NOTE: this Hugo happened to balance the summary"
                       " anyway; nothing to assert either way.")
-            check(True, "balanced-summary assertion applies from 0.167.0 only")
+            # Informational, NOT an assertion. Calling check(True, ...) here
+            # can never fail, so it padded the "all checks passed" count with
+            # a line that read like coverage of the version gate while
+            # verifying nothing. A permanently green entry is worse than no
+            # entry: it invites the next reader to trust it.
+            print("      NOTE: this is Hugo %d.%d.%d, below %d.%d.%d, so the"
+                  " balanced-summary assertion is skipped here by design."
+                  % (ver + FIXED_FROM))
 
         # Independent of the fix: the probe posts must actually reach the feed,
         # otherwise the check above is comparing zero interesting descriptions.

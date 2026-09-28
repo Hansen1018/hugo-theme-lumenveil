@@ -386,10 +386,15 @@ jobs:
       # measured on this repo's own consumer site, where 5 of 417 output files
       # changed for exactly this reason and nothing else.
       #
-      # The theme ships no RSS template, so Hugo's embedded one does the work,
-      # but the theme decides what goes in: layouts/home.json feeds .Summary
-      # straight into the JSON payload. Asserted from 0.167.0 up; below that the
-      # fix does not exist and the test reports the known-bad shape instead of
-      # failing a leg that cannot pass.
+      # The theme ships no RSS template — Hugo's embedded one is the only path
+      # the raw summary markup takes, and that is where the unclosed
+      # <blockquote> lands. The theme's own three .Summary call sites all pipe
+      # through `plainify` (home.json, _partials/post-card.html, 404.html), so
+      # they cannot carry the defect: verified, 0 of 3 descriptions in a built
+      # exampleSite/index.json contain any HTML tag. This is a regression guard
+      # on the upgrade, not a claim that the theme templates are involved.
+      #
+      # Asserted from 0.167.0 up; below that the fix does not exist and the test
+      # reports the known-bad shape instead of failing a leg that cannot pass.
       - name: Test feed summaries are not cut inside a container
         run: python3 scripts/test-rss-summary.py

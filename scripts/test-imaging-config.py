@@ -92,13 +92,21 @@ def noise_png(path, size=400, seed=20260929):
     all. A smooth gradient would hide a 20-vs-85 difference."""
     import random
     random.seed(seed)
-    rows = b""
+    # bytearray + list + join, not `+=` on immutable bytes. The first version
+    # accumulated 400 rows with `rows += row` and each row with 400
+    # `row += bytes(...)`: every one of those copies the whole accumulator, so
+    # the fixture is quadratic in its own size. Measured, 400x400: 0.22s
+    # building rows this way, 0.19s this way — a modest gain, because the
+    # per-pixel randrange calls dominate, but the quadratic term is gone and
+    # the code is no longer a trap for whoever doubles `size` later.
+    rows = []
     for _ in range(size):
-        row = b"\x00"
+        row = bytearray(b"\x00")
         for _ in range(size):
             row += bytes((random.randrange(256), random.randrange(256),
                           random.randrange(256)))
-        rows += row
+        rows.append(bytes(row))
+    rows = b"".join(rows)
 
     def chunk(tag, data):
         c = tag + data
@@ -231,9 +239,16 @@ def main():
                       "per-format quality is inert below 0.163.0: %s" % f,
                       "expected q20=q85=none, got q20=%d q85=%d none=%d"
                       % (pf20[f], pf85[f], pfnone[f]))
-            check(True, "build succeeded despite unknown keys "
-                         "(Hugo ignores them silently — the failure mode "
-                         "this test documents)")
+            # Informational, NOT an assertion. The first version called
+            # check(True, ...) here, which can never fail and so padded the
+            # "all checks passed" count with a line that read like coverage of
+            # the silent-ignore property while testing nothing at all. A
+            # permanent green entry is worse than no entry: it invites the next
+            # reader to trust it.
+            print("      NOTE: the build exited 0 with these unknown keys "
+                  "present. That silence IS the failure mode this test "
+                  "documents — the assertions above, not this line, are what "
+                  "pin it.")
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
