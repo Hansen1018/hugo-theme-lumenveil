@@ -23,10 +23,8 @@ UNMAPPED="$d/unmapped"
 # the extracted awk program behind on every failed run.
 trap 'rm -rf "$d"' EXIT
 
-# The repo path is passed as argv, not derived from __file__: this python runs
-# from a heredoc on stdin, where __file__ does not exist and `here` would
-# silently collapse to the cwd — which is how the first in-repo run looked for
-# .github/workflows/ci.yml one directory ABOVE the repo and found nothing.
+# The repo path is derived from the script's own location, so the suite reads
+# scripts/ relative to the checkout it lives in and works from any cwd.
 # Both definitions are read from scripts/, the same files the workflow reads.
 # They used to be mined out of the ci.yml run: block by string anchors, so
 # reformatting that block left this test checking a stale pattern or failing

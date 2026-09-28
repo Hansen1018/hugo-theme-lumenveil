@@ -25,6 +25,27 @@
      version. The guard makes the guarantee unconditional rather than inherited
      from a lookup that was only checked on one of the two.
 
+  3. Contract for a page with no section at all (.Section == ""): return the
+     site home, not a section list page. This looks like a contradiction of
+     rule 1 — "the list page for the post's OWN section" — but a page with no
+     section has no section list page, so the contract is stated as the pair
+     below rather than left to be inferred from the code:
+
+         .Section != ""  ->  that section's list page
+         .Section == ""  ->  the site home
+
+     Rule 1 describes the answer for the case that has an answer; this rule
+     names the case that does not, so a future reader does not "fix" the empty
+     branch into a synthesised "//" (a protocol-relative href that navigates to
+     a host) or into "" (which reloads the current page — the exact failure
+     this partial exists to prevent).
+
+     The branch is defensive rather than routinely taken. Callers gate the
+     文章 link on $isList, and a page with no section is not in any main
+     section, so in practice the link is not rendered for it. A caller that
+     uses the target unconditionally still gets a real, navigable target
+     instead of "/" or "".
+
   Returns a string, so callers use it directly as the href.
 */ -}}
 {{- $page := . -}}
@@ -41,7 +62,11 @@
      `printf "/%s/" "" | relURL` would emit "//" — a protocol-relative href that
      navigates to a host instead of a page. site.Home.RelPermalink is guarded
      too, so a site with no home permalink falls back to "/" rather than
-     reintroducing the href="" this partial exists to prevent. */ -}}
+     reintroducing the href="" this partial exists to prevent.
+
+     Why home is the right target here, and not a synthesised section URL: this
+     is the no-section case (rule 3 above), where there is no section list page
+     to point at. Home is the one location that always exists. */ -}}
 {{- if eq $page.Section "" -}}
   {{- /* relURL, not a bare "/". Every other href this partial produces goes
        through relURL and carries the base path, so a hardcoded "/" is the one

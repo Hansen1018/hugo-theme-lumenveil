@@ -2,6 +2,25 @@
 {{ $year := "" }}
 {{ $allList := .RegularPagesRecursive.ByDate.Reverse }}
 {{ $list := $allList }}
+{{/* The year groups, filtered ONCE, and the single source for both the
+     "N 个年份" stat and the pill row below. These two used to hardcode the
+     "0001" sentinel independently, and the whole point of filtering it is
+     that the advertised count agrees with the pills that are actually
+     rendered — so a future edit to one filter and not the other would
+     reintroduce precisely the divergence this filtering removed.
+
+     Declared here at the top of the template rather than next to the count
+     that first uses it, because Go template `:=` binds to the current block:
+     a variable declared inside `if $isList` is out of scope again by the time
+     the pill loop runs in a sibling block. `=` is used for the assignment so
+     it updates the top-level binding instead of shadowing it.
+
+     GroupByDate is a string grouping, so the undated group is dropped by key
+     value rather than by inspecting .Date.IsZero per page. The undated pages
+     themselves stay in $allList, in the 全部 count and in the
+     #archive-all-cards template, so they remain reachable — only the false
+     year is removed. Verified on 0.146.0 and 0.166.0. */}}
+{{ $yearGroups := where ($allList.GroupByDate "2006") "Key" "!=" "0001" }}
 {{/* $isList decides only whether this page gets the year-filter UI: the pill
      row and the <template id="archive-all-cards"> payload.
 
@@ -67,11 +86,11 @@
        year-filter UI while this count ignored it entirely. On the shipped
        exampleSite config (mainSections = ['posts']) an /archives/ page reported
        the posts year count directly above its own archives year pills. */}}
-{{/* Count the years the pill row actually renders. The pills filter the
-     undated "0001" group out (see below), so counting the raw GroupByDate
+{{/* Count the years the pill row actually renders, from the same filtered
+     group slice the pills enumerate. Counting the raw GroupByDate here
      advertised one more year than the page showed whenever a list section
      held an undated page. */}}
-{{ $yearCount = len (where ($allList.GroupByDate "2006") "Key" "!=" "0001") }}
+{{ $yearCount = len $yearGroups }}
   {{ $query := urls.Parse .Permalink }}
   {{ with $query.RawQuery }}
     {{ range split . "&" }}
@@ -98,14 +117,10 @@
   {{ if $pages }}
     <div class="tag-list tag-list--archive" role="list">
 <a href="{{ $yearBase }}" data-archive-all{{ if eq $year "" }} class="is-active"{{ end }} role="listitem">全部<span class="archive-count">{{ len $pages }}</span></a>
-      {{/* Pages with no date group under the key "0001", and that key was
-           rendered as a real year pill: an `?year=0001` button that filters to
-           the undated pages. GroupByDate is a string grouping, so the key is
-           dropped by value rather than by inspecting .Date.IsZero per page.
-           The undated pages themselves stay in $pages and in the full-card
-           template, so they remain reachable through the 全部 view — only the
-           false year is removed. Verified on 0.146.0 and 0.166.0. */}}
-      {{ range sort (where ($pages.GroupByDate "2006") "Key" "!=" "0001") "Key" "desc" }}<a href="{{ printf "%s?year=%s" $yearBase .Key }}" data-year="{{ .Key }}"{{ if eq $year .Key }} class="is-active"{{ end }} role="listitem">{{ .Key }}<span class="archive-count">{{ len .Pages }}</span></a>{{ end }}
+      {{/* Enumerates $yearGroups, the same slice that produced "N 个年份" above,
+           so the two cannot disagree. Sorted descending here; the count does
+           not care about order. */}}
+      {{ range sort $yearGroups "Key" "desc" }}<a href="{{ printf "%s?year=%s" $yearBase .Key }}" data-year="{{ .Key }}"{{ if eq $year .Key }} class="is-active"{{ end }} role="listitem">{{ .Key }}<span class="archive-count">{{ len .Pages }}</span></a>{{ end }}
     </div>
   {{ end }}
 </section>
