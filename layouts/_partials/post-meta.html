@@ -1,0 +1,38 @@
+{{- /*
+  post-meta.html — the date / reading-time / word-count / view-count bar shown
+  under the title of a post.
+
+  Usage: {{ partial "post-meta.html" . }}
+
+  This block was byte-for-byte duplicated in layouts/single.html and
+  layouts/posts/single.html — 14 identical lines including the $isList gate and
+  both per-value guards. It was extracted because the drift it invites is the
+  exact one this branch removed everywhere else: breadcrumb-target.html and
+  is-list-section.html exist so the predicate cannot be restated per template,
+  and then the predicate's own use was copied a second time. A later edit —
+  adding .Lastmod, or a third guarded value — would land in one file and leave
+  the other emitting the old markup.
+
+  Two gates, both needed:
+    $isList              the bar belongs to a list section only; section-scoped
+                         templates (ja/, archives/) resolve their own context
+                         and do not call this.
+    or (Date / WordCount)  both inner guards can be false on a stub page, and an
+                         empty <div class="post-meta"></div> is the same dead
+                         markup the guards exist to prevent.
+
+  The per-value guards matter independently. A single `and` around the whole bar
+  only covers the DATE, so a page with a date but an empty body still rendered
+  "0 分钟阅读 / 0 字" — values that read as real data rather than as absent.
+  layouts/ja/single.html was changed in this branch for that reason; this is the
+  same guard, now shared instead of restated.
+
+  The view counter is unconditional within the bar and is NOT one of the two
+  templates this was extracted from differing over. It carries a fixed
+  element id, so it must appear at most once per page — do not move it into the
+  guarded region or render it from a second caller on the same page.
+*/ -}}
+{{- $page := . -}}
+{{- $isList := partial "is-list-section.html" $page -}}
+{{- if $isList }}{{ if or (not $page.Date.IsZero) (gt $page.WordCount 0) }}<div class="post-meta">{{ if not $page.Date.IsZero }}<time datetime="{{ $page.Date.Format "2006-01-02" }}">发布于 {{ $page.Date.Format "2006 年 01 月 02 日" }}</time>{{ partial "lastmod-meta.html" $page }}{{ end }}{{ if gt $page.WordCount 0 }}<span>{{ $page.ReadingTime }} 分钟阅读</span><span>{{ $page.WordCount }} 字</span>{{ end }}<span class="page-views">阅读 <span id="busuanzi_value_page_pv">0</span> 次</span>
+{{ partial "busuanzi.html" $page }}</div>{{ end }}{{ end -}}

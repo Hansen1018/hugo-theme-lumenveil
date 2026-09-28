@@ -19,14 +19,12 @@
 <article class="article fade-up">
   <header class="article-header">
     <div class="breadcrumbs"><a href="{{ site.Home.RelPermalink }}">首页</a>{{ if $isList }}<span>/</span><a href="{{ $listTarget }}">文章</a>{{ end }}<span>/</span><span>{{ .Title }}</span></div>
-    {{/* Per-value guards inside the $isList gate, matching
-         layouts/ja/single.html and layouts/archives/single.html. The gate
-         only covers the DATE, so a page with a date but an empty body still
-         emitted "0 分钟阅读 / 0 字" — values that read as real data rather
-         than as absent. All four section-scoped single templates now suppress
-         empty values the same way. */}}
-    {{ if $isList }}{{ if or (not .Date.IsZero) (gt .WordCount 0) }}<div class="post-meta">{{ if not .Date.IsZero }}<time datetime="{{ .Date.Format "2006-01-02" }}">发布于 {{ .Date.Format "2006 年 01 月 02 日" }}</time>{{ partial "lastmod-meta.html" . }}{{ end }}{{ if gt .WordCount 0 }}<span>{{ .ReadingTime }} 分钟阅读</span><span>{{ .WordCount }} 字</span>{{ end }}<span class="page-views">阅读 <span id="busuanzi_value_page_pv">0</span> 次</span>
-{{ partial "busuanzi.html" . }}</div>{{ end }}{{ end }}
+    {{/* Date / reading-time / word-count / view-count bar. Shared with
+         layouts/single.html via _partials/post-meta.html: the two copies
+         were byte-for-byte identical, which is the drift this branch removed
+         for breadcrumb-target and is-list-section. The partial re-derives
+         $isList itself, so the gate cannot be restated here. */}}
+    {{ partial "post-meta.html" . }}
     <h1>{{ .Title }}</h1>
     {{ with .Description }}<p class="article-deck">{{ . }}</p>{{ end }}
     {{ if or .Params.categories .Params.tags }}<div class="meta-pills">{{ with .Params.categories }}<div class="category-list tag-list--large">{{ range . }}{{ $p := $.Site.GetPage (printf "/categories/%s" (. | urlize)) }}{{ if $p }}<a href="{{ $p.RelPermalink }}">#{{ $p.LinkTitle }}</a>{{ else }}<a href="{{ printf "/categories/%s/" (. | urlize) | relURL }}">#{{ . }}</a>{{ end }}{{ end }}</div>{{ end }}{{ with .Params.tags }}<div class="tag-list tag-list--large">{{ range . }}{{ $p := $.Site.GetPage (printf "/tags/%s" (. | urlize)) }}{{ if $p }}<a href="{{ $p.RelPermalink }}">#{{ $p.LinkTitle }}</a>{{ else }}<a href="{{ printf "/tags/%s/" (. | urlize) | relURL }}">#{{ . }}</a>{{ end }}{{ end }}</div>{{ end }}</div>{{ end }}

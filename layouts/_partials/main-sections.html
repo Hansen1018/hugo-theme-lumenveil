@@ -34,12 +34,20 @@
 {{- end -}}
 {{- $normalized := slice -}}
 {{- range $mainSections -}}
-  {{- /* printf "%v", not a bare lower/trim. A malformed config value -- an
+  {{- /* The cutset covers space, tab, CR and LF, not just " \t". Hugo's trim
+       takes a set of CHARACTERS, so a value carrying a leading newline or a
+       stray CR would keep it and then fail to match .Section, silently costing
+       that section its year pills. A quoted YAML/TOML scalar usually arrives
+       already stripped, so this is defensive rather than a known failure — but
+       the stated intent of the trim is whitespace tolerance, and a cutset
+       missing two of the four ASCII whitespace characters does not deliver it.
+
+       printf "%v", not a bare lower/trim. A malformed config value -- an
        int, or a nested slice -- is coerced silently by those, producing a
        garbage entry like "1" or "[a b]" that matches no section, and this
        partial feeds 404.html, home.html, home.json and every single/section
        template, so one bad value degrades the whole site. Rendering the value
        makes the failure visible in the entry itself. */ -}}
-  {{- $normalized = $normalized | append (lower (trim (printf "%v" .) " \t")) -}}
+  {{- $normalized = $normalized | append (lower (trim (printf "%v" .) " \t\n\r")) -}}
 {{- end -}}
 {{- return $normalized -}}

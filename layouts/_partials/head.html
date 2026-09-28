@@ -112,12 +112,24 @@ try {
 <meta name="twitter:description" content="{{ $description }}">
 <meta name="twitter:url" content="{{ .Permalink }}">
 {{ if .IsPage }}
-{{- /* Guarded on IsZero: page-style content legitimately has no `date:` front
-     matter, and an unguarded .Date emits 0001-01-01T00:00:00Z to crawlers.
-     A page with no date should carry no published_time, not a false one. The
-     modified_time below already needed `with` for the same reason. */}}
+{{- /* Both tags are guarded on IsZero, and the guard is written the same way on
+     both. Page-style content legitimately has no `date:` front matter, and an
+     unguarded .Date emits 0001-01-01T00:00:00Z to crawlers. A page with no date
+     should carry no published_time, not a false one.
+
+     The old comment here claimed modified_time "already needed `with` for the
+     same reason", implying `with` alone was sufficient. Measured on 0.166.0 with
+     a page carrying neither date: nor lastmod: in a section whose control
+     (dated) page emits both tags: the undated page emitted NEITHER article:*
+     tag and no 0001 date anywhere, so on this version `with` did suppress the
+     zero time. The mechanism is not documented by Hugo, and this branch also
+     builds on 0.146.0, which was not available to measure. So the guard is
+     applied to both tags explicitly: same shape on both lines, no dependence on
+     which version is running, and the `with` kept inside so a real Lastmod still
+     renders. Verified on 0.166.0 that the explicit guard changes nothing
+     (output byte-identical) — the undated page is still tag-free. */}}
 {{ if not .Date.IsZero }}<meta property="article:published_time" content="{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}">{{ end }}
-{{ with .Lastmod }}<meta property="article:modified_time" content="{{ .Format "2006-01-02T15:04:05Z07:00" }}">{{ end }}
+{{ if not .Date.IsZero }}{{ with .Lastmod }}<meta property="article:modified_time" content="{{ .Format "2006-01-02T15:04:05Z07:00" }}">{{ end }}{{ end }}
 {{ end }}
 {{- /* opt-in hljs via [params] highlight = "hljs": cdnjs full bundle (121KB, all langs incl. toml/html) + monokai + auto-highlightAll. common.min.js omitted toml/html so language-toml blocks rendered unstyled. */ -}}
 {{- if eq site.Params.highlight "hljs" -}}

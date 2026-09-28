@@ -237,7 +237,11 @@ fi
 
 echo
 echo "fence tests: $pass passed, $fail failed"
-rm -rf "$d"
+# No trailing `rm -rf "$d"`: the trap installed at the top of this script owns
+# cleanup. Deleting it here as well meant every successful run removed the
+# temp dir twice, which made the trap look unreliable for no gain — and it
+# covered nothing the trap missed, since the trap already runs on the `exit 1`
+# below and on the FATAL exits.
 # Not `exit $fail`: a POSIX exit status is masked to 8 bits, so 256 failures
 # wrap to 0 and the CI step would report success with every check failing.
 if [ "$fail" -ne 0 ]; then exit 1; fi
