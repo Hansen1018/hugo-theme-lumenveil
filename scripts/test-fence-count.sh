@@ -30,9 +30,17 @@ trap 'rm -rf "$d"' EXIT
 # reformatting that block left this test checking a stale pattern or failing
 # with "could not mine". One definition, two readers, nothing to mine.
 FENCE_AWK="$REPO/scripts/fence-counter.awk"
-BOX_RE=$(cat "$REPO/scripts/container-regex.txt")
+BOX_RE_FILE="$REPO/scripts/container-regex.txt"
+# Existence BEFORE the read, and the read cannot inherit a non-zero status.
+# This script runs under `set -e`, so `BOX_RE=$(cat ...)` on a missing file
+# aborted the suite right there with a bare `cat:` error and the FATAL below
+# never printed — the guard fired for the empty-file case only, while its
+# message said "missing". Same guard-before-assignment ordering ci.yml now
+# uses for these two files.
 [ -f "$FENCE_AWK" ] || { echo "FATAL: missing $FENCE_AWK"; exit 2; }
-[ -n "$BOX_RE" ] || { echo "FATAL: missing scripts/container-regex.txt"; exit 2; }
+[ -f "$BOX_RE_FILE" ] || { echo "FATAL: missing $BOX_RE_FILE"; exit 2; }
+BOX_RE=$(cat "$BOX_RE_FILE")
+[ -n "$BOX_RE" ] || { echo "FATAL: empty $BOX_RE_FILE"; exit 2; }
 echo "container regex from scripts/container-regex.txt: $BOX_RE"
 
 cp "$FENCE_AWK" "$d/prog.awk"

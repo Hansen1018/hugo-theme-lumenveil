@@ -20,8 +20,14 @@
     {{/* Gated per-value, matching layouts/ja/single.html: a stub page can
          legitimately have neither a date nor a body, and "0 分钟阅读 / 0 字"
          reads as real data. Guarding only the date left the two counts
-         unconditional, so the two section-scoped templates disagreed. */}}
-    {{ if or (not .Date.IsZero) (gt .WordCount 0) }}<div class="post-meta">
+         unconditional, so the two section-scoped templates disagreed.
+
+         There is deliberately NO outer `or (Date / WordCount)` gate around the
+         div, unlike layouts/ja/single.html. This bar ends with the busuanzi
+         view counter, so the div is never empty and such a gate protected
+         nothing — while it did cost the counter on stub pages. At merge base
+         b6b44c4 the whole div and the counter were unconditional here. */}}
+<div class="post-meta">
       {{ if not .Date.IsZero }}<time datetime="{{ .Date.Format "2006-01-02" }}">发布于 {{ .Date.Format "2006 年 01 月 02 日" }}</time>
       {{ partial "lastmod-meta.html" . }}{{ end }}
       {{ if gt .WordCount 0 }}<span>{{ .ReadingTime }} 分钟阅读</span>
@@ -29,7 +35,7 @@
       {{/* Page view count — busuanzi (third-party CN service for CN sites). Per-page real cross-user count. */}}
 <span class="page-views">阅读 <span id="busuanzi_value_page_pv">0</span> 次</span>
 {{ partial "busuanzi.html" . }}
-    </div>{{ end }}
+    </div>
     <h1>{{ .Title }}</h1>
     {{ with .Description }}<p class="article-deck">{{ . }}</p>{{ end }}
     {{ if or .Params.categories .Params.tags }}<div class="meta-pills">{{ with .Params.categories }}<div class="category-list tag-list--large">{{ range . }}{{ $term := . | urlize }}{{ $catPage := $.Site.GetPage (printf "/categories/%s/" $term) }}<a href="{{ printf "/categories/%s/" $term | relURL }}">{{ with $catPage }}{{ .Title }}{{ else }}{{ $term }}{{ end }}</a>{{ end }}</div>{{ end }}{{ with .Params.tags }}<div class="tag-list tag-list--large">{{ range . }}<a href="{{ printf "/tags/%s/" (. | urlize) | relURL }}">#{{ . }}</a>{{ end }}</div>{{ end }}</div>{{ end }}
