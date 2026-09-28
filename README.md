@@ -404,4 +404,4 @@ See [CHANGELOG.md](./CHANGELOG.md) for version notes. Detailed per-version notes
 
 Lumenveil is released under the [GNU General Public License v3.0](LICENSE). The default site footer links to the [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.zh-hans) license for the site's written content; you can replace it with the license that suits your work.
 
-**Tested up to:** Hugo 0.165.0 (verified via local dev and exampleSite build).
+**Tested up to:** Hugo 0.166.0 (verified via local dev and exampleSite build).
