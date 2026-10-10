@@ -36,7 +36,15 @@
 */ -}}
 
 {{- $id := .Get "id" -}}
-{{- $type := .Get "type" | default "movie" -}}
+{{- /* Whitelist the media type. It is caller-supplied and was interpolated
+       unvalidated into both the label text and the douban subdomain, so an
+       arbitrary value could reach the markup. An unknown type falls back to
+       movie rather than being echoed; the accepted set is what the config
+       block below branches on. */ -}}
+{{- $KNOWN := slice "movie" "book" "music" -}}
+{{- $typeRaw := .Get "type" | default "movie" -}}
+{{- $type := "movie" -}}
+{{- if in $KNOWN $typeRaw }}{{ $type = $typeRaw }}{{ end -}}
 {{- $title := .Get "title" | default "豆瓣条目" -}}
 {{- $year := .Get "year" -}}
 {{- $region := .Get "region" -}}
@@ -64,7 +72,14 @@
 
        No trailing trim: a `| trim` added to handle a leading/trailing separator
        broke every case (10/11 -> 0/11), and a value that already begins or
-       ends with a separator is not something a call site produces. */ -}}
+       ends with a separator is not something a call site produces.
+
+       KNOWN LIMITATION, stated rather than hidden: the replacement is
+       unconditional, so a single credit that itself contains one of these four
+       characters cannot be expressed. `·` is not in the set, so 蒂姆·罗宾斯 and
+       摩根·弗里曼 are safe; `AC/DC` or a trailing `Jr.,` would not be. Guessing
+       at an exception is what produced the drift this removes, so the
+       constraint is documented instead. */ -}}
 {{- $castOut := $cast | default "" | replaceRE `\s*[/、,，]\s*` "、" -}}
 
 {{- /* type-specific config: URL prefix, SVG icon path, role labels, aria label */ -}}
@@ -92,18 +107,36 @@
   {{- $src = $cover | relURL -}}
 {{- else if $id -}}
   {{- $api := printf "https://neodb.social/api/catalog/fetch?url=%s" ($url | urlquery) -}}
-  {{- $lookup := try (resources.GetRemote $api) -}}
+  {{- /* maxAge: a catalogue entry and its artwork do not change between
+         builds, so re-fetching both on every render is pure waste — twenty
+         cards on a site is forty requests per build. Hugo's cache is keyed by
+         URL, so the same subject reuses the same entry. */ -}}
+  {{- $lookup := try (resources.GetRemote $api (dict "maxAge" "168h")) -}}
   {{- if and $lookup (not $lookup.Err) -}}
-    {{- $raw := $lookup.Value | transform.Unmarshal -}}
-    {{- $item := $raw.data | default $raw -}}
-    {{- with $item.cover_image_url -}}
-      {{- /* Copy the image into our own output. Hot-linking NeoDB would tell
-             every reader that they read this page, which is not our business
-             to disclose for them. */ -}}
-      {{- $img := try (resources.GetRemote .) -}}
-      {{- if and $img (not $img.Err) -}}
-        {{- $src = ($img.Value.Resize "184x q82").RelPermalink -}}
-        {{- $fromNeoDB = true -}}
+    {{- /* Unmarshal is guarded separately from the fetch. A 200 carrying an
+           HTML error or rate-limit page is a perfectly good HTTP response and
+           an unparsable body, and an uncaught throw here would abort the whole
+           build — the same failure the fetch guards against, one step later. */ -}}
+    {{- $parsed := try ($lookup.Value | transform.Unmarshal) -}}
+    {{- if and $parsed (not $parsed.Err) -}}
+      {{- $raw := $parsed.Value -}}
+      {{- $item := $raw.data | default $raw -}}
+      {{- with $item.cover_image_url -}}
+        {{- /* Copy the image into our own output. Hot-linking NeoDB would tell
+               every reader that they read this page, which is not our business
+               to disclose for them. */ -}}
+        {{- $img := try (resources.GetRemote . (dict "maxAge" "168h")) -}}
+        {{- if and $img (not $img.Err) -}}
+          {{- /* Resize can throw on its own: an SVG, an unsupported codec or a
+                 resource that is not an image at all. try() only wraps the
+                 fetch, so without this the guard leaks at exactly the point it
+                 was added to cover. */ -}}
+          {{- $resized := try ($img.Value.Resize "184x q82") -}}
+          {{- if and $resized (not $resized.Err) -}}
+            {{- $src = $resized.Value.RelPermalink -}}
+            {{- $fromNeoDB = true -}}
+          {{- end -}}
+        {{- end -}}
       {{- end -}}
     {{- end -}}
   {{- end -}}
@@ -162,14 +195,26 @@
 
          The CTA cannot collide with it: the cover column fixes the card at
          >=158px tall, the label occupies y=16..37, and a centred 28px CTA
-         starts at y=65. */ -}}
-  {{- $labels := dict "movie" "Movie" "book" "Book" "music" "Music" -}}
-  {{- $label := index $labels $type | default (title $type) -}}
-  <span class="douban-card__tabs" aria-label="内容类型"><span class="douban-card__tab is-active" aria-current="true">{{ $label }}</span></span>
+         starts at y=65.
+
+         No aria-label and no aria-current. The wrapper is a plain span with
+         no role, so aria-label on it is not reliably exposed, and aria-current
+         describes an item WITHIN a set — this is one static label, so it
+         conveys nothing. $type is whitelisted above, so index never misses. */ -}}
+  {{- $label := index (dict "movie" "Movie" "book" "Book" "music" "Music") $type -}}
+  <span class="douban-card__tabs"><span class="douban-card__tab is-active">{{ $label }}</span></span>
 
   <span class="douban-card__cta" aria-hidden="true">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
   </span>
 
-  {{- if $fromNeoDB }}<span class="sr-only">封面来自 NeoDB</span>{{ end }}
+  </a>
+{{- /* Attribution sits OUTSIDE the anchor and is visible. As an sr-only span
+       inside an anchor that carries aria-label, it was doubly invisible: a
+       sighted reader never saw it, and a screen reader announced the label
+       instead of the link's text. The artwork is copied into this site's own
+       output, so saying where it came from is a courtesy worth showing. */ -}}
+{{- if $fromNeoDB }}
+  <span class="douban-card__credit">封面来自 NeoDB</span>
+{{- end }}
 </a>

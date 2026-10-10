@@ -1,7 +1,12 @@
 /* douban-card.css — media card, redesigned 2026-10-10.
-   Markup changed with the NeoDB cover: the cover and the "豆瓣" badge now live
-   in a __visual column so the body can use the full remaining width, and the
-   flat __meta row became a typed __facts row plus a labelled __credits block.
+   Markup changed with the NeoDB cover. Current structure:
+     __visual  cover image, or a type icon when no cover resolves
+     __body    __head (__title + __tabs), __facts, __credits, __synopsis
+     __tabs    one medium label, pinned to the card's top-right inner edge
+     __cta     chevron
+     __credit  visible NeoDB attribution, outside the anchor
+   The "豆瓣" badge is gone: the medium label replaced it, and the rating moved
+   out of the head row into __credits.
    Cascade slot: 27 (before sponsor.css). */
 
 .douban-card {
@@ -150,11 +155,6 @@
   white-space: nowrap;
 }
 
-.douban-card__tab.is-active {
-  color: inherit;
-  background: none;
-}
-
 .douban-card__facts {
   display: flex;
   flex-wrap: wrap;
@@ -208,6 +208,17 @@
 }
 
 /* ── call to action ─────────────────────────────────────────────── */
+
+/* Visible attribution. Was sr-only inside the anchor, where the anchor's
+   aria-label overrode it for screen readers and sighted readers never saw it
+   at all. The artwork is copied into this site's own output, so saying where
+   it came from is a courtesy worth showing. */
+.douban-card__credit {
+  display: block;
+  margin-top: 6px;
+  font: 400 10px/1.4 var(--font-sans, system-ui, sans-serif);
+  color: var(--ink-3, rgba(255, 255, 255, .48));
+}
 
 .douban-card__cta {
   flex: 0 0 auto;
@@ -289,6 +300,12 @@
   }
 
   .douban-card:hover {
+    transform: none;
+  }
+
+  /* The CTA still slid on hover above, which is the same class of motion the
+     card's own transform is disabled for. */
+  .douban-card:hover .douban-card__cta {
     transform: none;
   }
 }
