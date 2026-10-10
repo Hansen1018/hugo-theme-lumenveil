@@ -1,30 +1,71 @@
-/* douban-card.css — extracted from main.css */
+/* douban-card.css — media card, redesigned 2026-10-10.
+   Markup changed with the NeoDB cover: the cover and the "豆瓣" badge now live
+   in a __visual column so the body can use the full remaining width, and the
+   flat __meta row became a typed __facts row plus a labelled __credits block.
+   Cascade slot: 27 (before sponsor.css). */
 
 .douban-card {
-display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 18px;
-  margin: 8px 0 24px;
-  border-radius: 14px;
+  display: flex;
+  align-items: stretch;
+  gap: 18px;
+  padding: 16px 18px;
+  margin: 12px 0 28px;
+  border-radius: 16px;
   background: var(--glass-bg, rgba(255, 255, 255, .045));
   border: 1px solid var(--line, rgba(255, 255, 255, .08));
   text-decoration: none !important;
   color: inherit;
   position: relative;
-  transition: background .2s ease, border-color .2s ease, transform .2s ease;
+  overflow: hidden;
+  transition: background .2s ease, border-color .2s ease, transform .2s ease,
+              box-shadow .2s ease;
+}
+
+.douban-card::before {
+  /* Accent rail — reads as a spine even when the cover is an icon fallback. */
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: linear-gradient(180deg, #2e8b57, #22d3ee);
+  opacity: .5;
+  transition: opacity .2s ease;
 }
 
 .douban-card:hover {
-background: var(--glass-bg-hover, rgba(255, 255, 255, .075));
+  background: var(--glass-bg-hover, rgba(255, 255, 255, .075));
   border-color: var(--line-strong, rgba(255, 255, 255, .16));
   transform: translateY(-1px);
+  box-shadow: 0 6px 24px -12px rgba(0, 0, 0, .5);
+}
+
+.douban-card:hover::before {
+  opacity: 1;
+}
+
+/* ── visual column ──────────────────────────────────────────────── */
+
+.douban-card__visual {
+  position: relative;
+  flex: 0 0 84px;
+  width: 84px;
+  align-self: flex-start;
+}
+
+.douban-card__cover {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  height: auto;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--bg-2, rgba(255, 255, 255, .04));
+  box-shadow: 0 2px 10px -4px rgba(0, 0, 0, .6);
 }
 
 .douban-card__icon {
-flex: 0 0 32px;
-  width: 32px;
-  height: 32px;
+  width: 84px;
+  height: 126px;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -34,87 +75,220 @@ flex: 0 0 32px;
 }
 
 .douban-card__icon svg {
-width: 18px;
-  height: 18px;
+  width: 26px;
+  height: 26px;
   fill: currentColor;
 }
 
-.douban-card__cover {
-flex: 0 0 auto;
-  width: 56px;
-  height: 80px;
-  border-radius: 6px;
-  object-fit: cover;
-  background: var(--bg-2, rgba(255, 255, 255, .04));
+/* Score sits under the credits, in the same column as the other facts. It used
+   to sit on the artwork's bottom-right, which read as a sticker over the
+   poster rather than as a fact about the work. */
+.douban-card__score {
+  color: #e6a23c;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
+/* ── body ───────────────────────────────────────────────────────── */
+
 .douban-card__body {
-flex: 1;
+  flex: 1;
   min-width: 0;
-  line-height: 1.4;
-  padding-right: 52px;
+  line-height: 1.45;
+  display: flex;
+  flex-direction: column;
+}
+
+.douban-card__head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  /* Reserve the label's corner so a long title wraps UNDER it instead of
+     running beneath it. 66px clears the widest label ("Music") plus a gap. */
+  padding-right: 66px;
 }
 
 .douban-card__title {
-font: 550 16px/1.3 var(--font-sans, system-ui, sans-serif);
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  flex-wrap: wrap;
+  margin: 0;
+  font: 600 17px/1.3 var(--font-sans, system-ui, sans-serif);
+  letter-spacing: -.01em;
+  flex: 1;
+  min-width: 0;
 }
 
-.douban-card__source {
-position: absolute;
-  top: 10px;
-  right: 14px;
-  font: 550 10px/1 var(--font-mono, ui-monospace);
-  letter-spacing: .08em;
+/* Medium label, pinned to the card's top-right INNER edge.
+   It used to sit in the head row, which meant its right edge was the BODY's
+   right edge — another 64px in from the card border because of the CTA column
+   and the gap between them. That offset read as sloppy: the label looked like
+   it belonged to the text block rather than to the card.
+
+   Absolute to the card puts its right edge exactly on the content padding
+   (18px), so it lines up with the cover's left edge and the card's own rhythm.
+
+   Cannot collide with the CTA: the 84px cover is 126px tall (aspect-ratio 2/3),
+   so the card is at least 158px. The label occupies y=16..38; the CTA is
+   28px centred in the card, i.e. it starts at y>=65. */
+.douban-card__tabs {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(46, 139, 87, .14);
+  border: 1px solid rgba(46, 139, 87, .28);
+  white-space: nowrap;
+}
+
+.douban-card__tab {
+  font: 600 10px/1 var(--font-sans, system-ui, sans-serif);
+  letter-spacing: .07em;
   text-transform: uppercase;
   color: #2e8b57;
-  background: rgba(46, 139, 87, .10);
-  padding: 3px 7px;
-  border-radius: 999px;
-  z-index: 1;
+  white-space: nowrap;
 }
 
-.douban-card__meta {
-font: 12px/1.5 var(--font-sans, system-ui, sans-serif);
-  color: var(--ink-2, rgba(255, 255, 255, .72));
-  margin-top: 4px;
+.douban-card__tab.is-active {
+  color: inherit;
+  background: none;
+}
+
+.douban-card__facts {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 14px;
+  gap: 6px;
+  margin-top: 8px;
 }
 
-.douban-card__rating {
-color: #e6a23c;
-  font-weight: 550;
+.douban-card__fact {
+  font: 500 11px/1 var(--font-sans, system-ui, sans-serif);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2, rgba(255, 255, 255, .72));
+  background: var(--bg-2, rgba(255, 255, 255, .04));
+  border: 1px solid var(--line, rgba(255, 255, 255, .08));
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.douban-card__credits {
+  margin-top: 10px;
+  display: grid;
+  gap: 3px;
+}
+
+.douban-card__credits p {
+  margin: 0;
+  font: 13px/1.5 var(--font-sans, system-ui, sans-serif);
+  color: var(--ink-2, rgba(255, 255, 255, .72));
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.douban-card__role {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--ink-3, rgba(255, 255, 255, .48));
+  letter-spacing: .04em;
+  padding-top: 2px;
 }
 
 .douban-card__synopsis {
-font: 13px/1.55 var(--font-sans, system-ui, sans-serif);
+  margin: 10px 0 0;
+  font: 13px/1.6 var(--font-sans, system-ui, sans-serif);
   color: var(--ink-2, rgba(255, 255, 255, .72));
-  margin-top: 6px;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.douban-card__arrow {
-flex: 0 0 auto;
+/* ── call to action ─────────────────────────────────────────────── */
+
+.douban-card__cta {
+  flex: 0 0 auto;
+  align-self: center;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
   color: var(--ink-3, rgba(255, 255, 255, .48));
-  font-size: 18px;
-  transition: transform .2s ease, color .2s ease;
+  transition: color .2s ease, transform .2s ease, background .2s ease;
 }
 
-.douban-card:hover .douban-card__arrow {
-color: #2e8b57;
-  transform: translateX(3px);
+.douban-card__cta svg {
+  width: 15px;
+  height: 15px;
 }
 
-.douban-card *, .douban-card *::before, .douban-card *::after {
-text-decoration: none !important;
+.douban-card:hover .douban-card__cta {
+  color: #2e8b57;
+  background: rgba(46, 139, 87, .10);
+  transform: translateX(2px);
+}
+
+.douban-card *,
+.douban-card *::before,
+.douban-card *::after {
+  text-decoration: none !important;
   border-bottom: 0 !important;
+}
+
+/* ── narrow viewports ───────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .douban-card {
+    gap: 13px;
+    padding: 13px 14px;
+  }
+
+  /* Track the card's own padding so the label stays flush at every width. */
+  .douban-card__tabs {
+    top: 13px;
+    right: 14px;
+  }
+
+  .douban-card__head {
+    padding-right: 60px;
+  }
+
+  .douban-card__visual,
+  .douban-card__icon {
+    flex-basis: 62px;
+    width: 62px;
+  }
+
+  .douban-card__icon {
+    height: 93px;
+  }
+
+  .douban-card__title {
+    font-size: 16px;
+  }
+
+  /* The chevron costs a whole column on a phone; the cover is already an
+     obvious affordance. */
+  .douban-card__cta {
+    display: none;
+  }
+}
+
+/* ── reduced motion ─────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .douban-card,
+  .douban-card::before,
+  .douban-card__cta {
+    transition: none;
+  }
+
+  .douban-card:hover {
+    transform: none;
+  }
 }

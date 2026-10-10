@@ -1,26 +1,38 @@
 {{- /*
-  douban-card shortcode (added 2026-08-18 by Hansen, updated 2026-08-18 for type variants + style dedup)
-  CSS moved to assets/css/main.css (BEM-named component section).
+  douban-card — media card whose cover is sourced from NeoDB.
 
-  Usage:
-    {{< douban-card type="movie" id="36154853" title="好东西" year="2024"
-                       director="邵艺辉" rating="9.0" cover="2.jpg" >}}
-    {{< douban-card type="book"  id="..." title="..." year="..."
-                       director="余华" rating="9.0" cover="book.jpg" >}}
-    {{< douban-card type="music" id="..." title="..." year="..."
-                       director="万能青年旅店" rating="9.0" cover="album.jpg" >}}
+  Usage (unchanged; every existing call site keeps working):
+    {{< douban-card id="36154853" title="好东西" year="2024"
+                       director="邵艺辉" rating="8.9" cast="宋佳、钟楚曦、赵又廷"
+                       synopsis="..." >}}
 
-  Renders a clickable card linking to a Douban subject page.
-  Douban closed its public API in 2022, so metadata must be passed as
-  parameters. `cover` is optional — falls back to a type-specific icon.
+  ── Cover resolution order ────────────────────────────────────────────
+    1. cover="..."   explicit local path. Wins outright, and never touches
+                     the network — this is the fully-offline path.
+    2. NeoDB         GET /api/catalog/fetch?url=<douban subject URL>, read
+                     cover_image_url, then download + resize the image into
+                     our own output so readers never contact NeoDB.
+    3. type icon     the previous behaviour, when neither above yields a URL.
 
-  Required: id
-  Optional: type (default "movie"), title, year, region, director, rating, cast, cover, synopsis
+  ── Why step 2 exists ─────────────────────────────────────────────────
+  Douban closed its public API in 2022, so this shortcode has always required
+  metadata as parameters and a `cover` path the author had to find and commit
+  by hand. NeoDB resolves a Douban subject URL to a catalogue entry including
+  its artwork, which removes that manual step.
 
-  Type values:
-    - movie: links to movie.douban.com,  导演 / 主演 labels, 摄像机+播放三角 icon
-    - book:  links to book.douban.com,   作者 / 译者 labels, book icon
-    - music: links to music.douban.com,  艺术家 / 专辑 labels, music icon
+  ── Why the `try` wrappers, specifically ──────────────────────────────
+  resources.GetRemote throws on a network error, and an uncaught throw in a
+  shortcode aborts the whole `hugo --minify`. Measured: with a bare
+  GetRemote, an unresolvable host produced
+    ERROR error building site: ... failed to render shortcode "probe"
+  i.e. one unreachable third party would have broken the build for every site
+  using this card. `try` absorbs that, but it wraps even its SUCCESS value in
+  template.TryValue, so `transform.Unmarshal` on it fails with
+  "type template.TryValue not supported". The working form is:
+      $r := try (resources.GetRemote ...); if not $r.Err { $r.Value | transform.Unmarshal }
+  Verified on 0.146.0 (theme.toml min_version), 0.166.0 and 0.167.0: success
+  path returns the cover, failure path yields an empty string, and all three
+  exit 0.
 */ -}}
 
 {{- $id := .Get "id" -}}
@@ -33,6 +45,27 @@
 {{- $cast := .Get "cast" -}}
 {{- $synopsis := .Get "synopsis" -}}
 {{- $cover := .Get "cover" -}}
+{{- $alt := .Get "alt" -}}
+
+{{- /* Cast separator normalisation.
+
+       `cast` is one free-form string and four real call sites had drifted:
+       two used the ideographic comma (宋佳、钟楚曦、赵又廷) and two a spaced
+       slash (孙艺珍 / 池昌旭 / Nana). The template printed the string verbatim,
+       so the same card looked different on different articles.
+
+       ONE replaceRE rather than split/append/delimit. The first version built a
+       slice and re-joined it, and rendered a bare "、" — the accumulation
+       silently collapsed. A single pure function call has no intermediate
+       state to go wrong, and it needs no Hugo-version-dependent behaviour.
+
+       \s* around the separator handles "A / B / C", "A /B/ C" and "A, B"
+       alike, and leaves an unsplit name such as "蒂姆·罗宾斯" untouched.
+
+       No trailing trim: a `| trim` added to handle a leading/trailing separator
+       broke every case (10/11 -> 0/11), and a value that already begins or
+       ends with a separator is not something a call site produces. */ -}}
+{{- $castOut := $cast | default "" | replaceRE `\s*[/、,，]\s*` "、" -}}
 
 {{- /* type-specific config: URL prefix, SVG icon path, role labels, aria label */ -}}
 {{- $url := printf "https://%s.douban.com/subject/%s/" $type $id -}}
@@ -52,27 +85,91 @@
   {{- $ariaIcon = "音乐" -}}
 {{- end -}}
 
+{{- /* Resolve the cover. $src is "" when we fall through to the type icon. */ -}}
+{{- $src := "" -}}
+{{- $fromNeoDB := false -}}
+{{- if $cover -}}
+  {{- $src = $cover | relURL -}}
+{{- else if $id -}}
+  {{- $api := printf "https://neodb.social/api/catalog/fetch?url=%s" ($url | urlquery) -}}
+  {{- $lookup := try (resources.GetRemote $api) -}}
+  {{- if and $lookup (not $lookup.Err) -}}
+    {{- $raw := $lookup.Value | transform.Unmarshal -}}
+    {{- $item := $raw.data | default $raw -}}
+    {{- with $item.cover_image_url -}}
+      {{- /* Copy the image into our own output. Hot-linking NeoDB would tell
+             every reader that they read this page, which is not our business
+             to disclose for them. */ -}}
+      {{- $img := try (resources.GetRemote .) -}}
+      {{- if and $img (not $img.Err) -}}
+        {{- $src = ($img.Value.Resize "184x q82").RelPermalink -}}
+        {{- $fromNeoDB = true -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{- $coverAlt := $alt | default (printf "%s 封面" $title) -}}
+
 <a class="douban-card" href="{{ $url }}" target="_blank" rel="noopener noreferrer" aria-label="豆瓣：{{ $title }}">
-  {{- if $cover }}
-  <img class="douban-card__cover" src="{{ $cover | relURL }}" alt="{{ $title }} 封面" loading="lazy" decoding="async" />
-  {{- else }}
-  <div class="douban-card__icon" aria-label="{{ $ariaIcon }}"><svg viewBox="0 0 24 24" fill-rule="evenodd" aria-hidden="true"><path d="{{ $iconPath }}"/></svg></div>
-  {{- end }}
-  <div class="douban-card__body">
-    <div class="douban-card__title">
-      <span>{{ $title }}</span>
-    </div>
-    {{- if $synopsis }}<div class="douban-card__synopsis">{{ $synopsis }}</div>{{ end }}
-    {{- if or $year $region $director $rating $cast }}
-    <div class="douban-card__meta">
-      {{- if $year }}<span>{{ $year }}</span>{{ end }}
-      {{- if $region }}<span>{{ $region }}</span>{{ end }}
-      {{- if $director }}<span>{{ $role1Label }} · {{ $director }}</span>{{ end }}
-      {{- if $rating }}<span class="douban-card__rating">★ {{ $rating }}</span>{{ end }}
-      {{- if $cast }}<span>{{ $role2Label }} · {{ $cast }}</span>{{ end }}
-    </div>
+  <div class="douban-card__visual">
+    {{- if $src }}
+      <img class="douban-card__cover" src="{{ $src }}" alt="{{ $coverAlt }}" loading="lazy" decoding="async" />
+    {{- else }}
+      <div class="douban-card__icon" aria-label="{{ $ariaIcon }}"><svg viewBox="0 0 24 24" fill-rule="evenodd" aria-hidden="true"><path d="{{ $iconPath }}"/></svg></div>
     {{- end }}
   </div>
-  <span class="douban-card__source">豆瓣</span>
-  <div class="douban-card__arrow" aria-hidden="true">→</div>
+
+  <div class="douban-card__body">
+    <div class="douban-card__head">
+      <h4 class="douban-card__title">{{ $title }}</h4>
+    </div>
+
+    {{- if or $year $region }}
+    <div class="douban-card__facts">
+      {{- if $year }}<span class="douban-card__fact">{{ $year }}</span>{{ end }}
+      {{- if $region }}<span class="douban-card__fact">{{ $region }}</span>{{ end }}
+    </div>
+    {{- end }}
+
+    {{- if or $director $castOut $rating }}
+    <div class="douban-card__credits">
+      {{- with $director }}<p><span class="douban-card__role">{{ $role1Label }}</span>{{ . }}</p>{{ end }}
+      {{- with $castOut }}<p><span class="douban-card__role">{{ $role2Label }}</span>{{ . }}</p>{{ end }}
+      {{- /* Rating sits under the credits rather than on the artwork or beside
+             the title: it reads as one more fact about the work, in the same
+             column as the other facts, instead of competing with either. */ -}}
+      {{- with $rating }}<p><span class="douban-card__role">评分</span><span class="douban-card__score" title="豆瓣评分">★ {{ . }}</span></p>{{ end }}
+    </div>
+    {{- end }}
+
+    {{- with $synopsis }}<p class="douban-card__synopsis">{{ . }}</p>{{ end }}
+  </div>
+
+  {{- /* Medium label, pinned to the card's top-right inner edge.
+         Replaced the old "豆瓣" badge, which printed the same word on every
+         card while the one thing that actually differs — what kind of thing
+         this is — went unlabelled. A SINGLE label rather than a tab set: there
+         is exactly one card per shortcode, so the other types are not
+         destinations, and a control that cannot be clicked is worse than a
+         plain label.
+
+         It sits at card level, not inside __head, because in the head row its
+         right edge was the BODY's right edge — another 64px in from the card
+         border because of the CTA column and the gap. That misalignment read
+         as sloppy at a glance. Absolute to the card puts its right edge exactly
+         on the content padding, level with the title's baseline row.
+
+         The CTA cannot collide with it: the cover column fixes the card at
+         >=158px tall, the label occupies y=16..37, and a centred 28px CTA
+         starts at y=65. */ -}}
+  {{- $labels := dict "movie" "Movie" "book" "Book" "music" "Music" -}}
+  {{- $label := index $labels $type | default (title $type) -}}
+  <span class="douban-card__tabs" aria-label="内容类型"><span class="douban-card__tab is-active" aria-current="true">{{ $label }}</span></span>
+
+  <span class="douban-card__cta" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+  </span>
+
+  {{- if $fromNeoDB }}<span class="sr-only">封面来自 NeoDB</span>{{ end }}
 </a>

@@ -4,7 +4,7 @@
    Three-tab sponsorship card matching the blog's dark glass aesthetic. Tab
    switching is pure CSS (radio :checked + sibling combinator) — no JS required.
 
-   Cascade slot: 27 (after douban-card).
+   Cascade slot: 28 (after douban-card).
    ============================================================================ */
 
 .sponsor {
