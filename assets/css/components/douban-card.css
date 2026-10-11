@@ -25,12 +25,12 @@
      stop reads so the card follows the theme like every other
      component. The alpha variants come from the same green, so one
      override moves the whole set. */
-  --dc-green: var(--dc-green);
+  --dc-green: #2e8b57;
   --dc-green-10: rgba(46, 139, 87, .10);
   --dc-green-12: rgba(46, 139, 87, .12);
   --dc-green-14: rgba(46, 139, 87, .14);
   --dc-green-28: rgba(46, 139, 87, .28);
-  --dc-gold: var(--dc-gold);
+  --dc-gold: #e6a23c;
   border-radius: 16px;
   background: var(--glass-bg, rgba(255, 255, 255, .045));
   border: 1px solid var(--line, rgba(255, 255, 255, .08));
@@ -91,7 +91,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(46, 139, 87, .12);
+  background: var(--dc-green-12);
   color: var(--dc-green);
 }
 
@@ -171,8 +171,8 @@
   align-items: center;
   padding: 3px 8px;
   border-radius: 6px;
-  background: rgba(46, 139, 87, .14);
-  border: 1px solid rgba(46, 139, 87, .28);
+  background: var(--dc-green-14);
+  border: 1px solid var(--dc-green-28);
   white-space: nowrap;
 }
 
@@ -296,7 +296,7 @@
 
 .douban-card:hover .douban-card__cta {
   color: var(--dc-green);
-  background: rgba(46, 139, 87, .10);
+  background: var(--dc-green-10);
   transform: translateX(2px);
 }
 
