@@ -323,18 +323,33 @@
 {{- $coverAlt := $alt | default (printf "%s 封面" $title) -}}
 
 {{- if $hasLink }}
-<a class="douban-card{{ if $fromNeoDB }} douban-card--credited{{ end }}" href="{{ $url }}" target="_blank" rel="noopener noreferrer" aria-label="豆瓣：{{ $title }}">
+<a class="douban-card" href="{{ $url }}" target="_blank" rel="noopener noreferrer" aria-label="豆瓣：{{ $title }}">
 {{- else }}
 {{- /* No id: a card, not a link. Same classes so the layout is
        identical; --static is what removes the affordances that would
        otherwise promise a click. */ -}}
-<div class="douban-card douban-card--static{{ if $fromNeoDB }} douban-card--credited{{ end }}">
+<div class="douban-card douban-card--static">
 {{- end }}
   <div class="douban-card__visual">
     {{- if $src }}
       <img class="douban-card__cover" src="{{ $src }}" alt="{{ $coverAlt }}" loading="lazy" decoding="async" />
     {{- else }}
       <div class="douban-card__icon" aria-label="{{ $ariaIcon }}"><svg viewBox="0 0 24 24" fill-rule="evenodd" aria-hidden="true"><path d="{{ $iconPath }}"/></svg></div>
+    {{- end }}
+    {{- /* The attribution is a caption for the artwork, so it sits directly
+           under the artwork inside __visual rather than at the foot of the
+           card. At the foot it read as a remark about the whole card — title,
+           credits, rating — which is not what it attests to.
+
+           That moves it INSIDE the anchor on a linked card, which is a change
+           worth naming. As a following sibling it sat outside the <a>, so it
+           was visible to sighted readers but skipped by keyboard navigation
+           and unreachable by screen-reader link traversal — the worst of both.
+           Inside the anchor it is link content, so it is reachable. The anchor
+           carries aria-label="豆瓣：<title>", which supplies the accessible
+           name, so this text does not appear in the link's name. */ -}}
+    {{- if $fromNeoDB }}
+    <span class="douban-card__credit">封面来自 NeoDB</span>
     {{- end }}
   </div>
 
@@ -418,11 +433,3 @@
 {{- end }}
 
   {{- if $hasLink }}</a>{{ else }}</div>{{ end }}
-{{- /* Attribution sits OUTSIDE the anchor and is visible. As an sr-only span
-       inside an anchor that carries aria-label, it was doubly invisible: a
-       sighted reader never saw it, and a screen reader announced the label
-       instead of the link's text. The artwork is copied into this site's own
-       output, so saying where it came from is a courtesy worth showing. */ -}}
-{{- if $fromNeoDB }}
-  <span class="douban-card__credit">封面来自 NeoDB</span>
-{{- end }}

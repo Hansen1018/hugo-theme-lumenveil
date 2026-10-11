@@ -1,10 +1,11 @@
 /* douban-card.css — media card, redesigned 2026-10-10.
    Markup changed with the NeoDB cover. Current structure:
-     __visual  cover image, or a type icon when no cover resolves
+     __visual  cover image, or a type icon when no cover resolves, with the
+               NeoDB attribution as a caption directly beneath the artwork
      __body    __head (__title + __tabs), __facts, __credits, __synopsis
      __tabs    one medium label, pinned to the card's top-right inner edge
      __cta     chevron
-     __credit  visible NeoDB attribution, outside the anchor
+     __credit  visible NeoDB attribution, inside __visual under the cover
    The "豆瓣" badge is gone: the medium label replaced it, and the rating moved
    out of the head row into __credits.
    Cascade slot: 27 (before sponsor.css). */
@@ -270,29 +271,35 @@
 /* Visible attribution. Was sr-only inside the anchor, where the anchor's
    aria-label overrode it for screen readers and sighted readers never saw it
    at all. The artwork is copied into this site's own output, so saying where
-   it came from is a courtesy worth showing. */
-/* The credit sits OUTSIDE the anchor, as a following sibling of the card.
-   That means the card's 28px margin-bottom and this element's own margin
-   collapse into one — margin collapsing takes the larger of the two, so the
-   original margin-top: 6px never took effect and the credit rendered a full
-   28px below the card, detached from the thing it labels. Give the card no
-   bottom margin when a credit follows it, so the 6px is the real gap and the
-   28px rhythm moves to below the credit.
+   it came from is a courtesy worth showing.
 
-   Keyed on a class the template emits rather than on :has(+ ...). :has() is
-   broadly supported now, but where it is not the whole rule is dropped and
-   the original detached-credit layout comes straight back. The template knows
-   whether it emitted a credit, so it says so; a selector the browser may not
-   understand is a worse mechanism than one the build already knows. */
-.douban-card--credited {
-  margin-bottom: 0;
-}
+   It now sits under the artwork, inside __visual, because it attests to the
+   cover and not to the card. At the foot of the card it read as a remark about
+   the whole object — title, credits, rating — which is not what it claims, and
+   it sat further from the artwork than anything else on the card.
 
-.douban-card__credit {
+   That also retires two workarounds the old placement needed, so both are
+   removed rather than left behind as dead CSS:
+     * .douban-card--credited { margin-bottom: 0 } existed only because the
+       credit was a following sibling of the card. Its 6px top margin collapsed
+       into the card's own 28px bottom margin — collapsing takes the larger —
+       so the 6px never took effect and the credit rendered a detached 28px
+       below. Inside __visual there is no collapse to defeat.
+     * the :has(+ ...) alternative is gone with it, along with the modifier the
+       template emitted, since the credit's own presence now implies it.
+
+   Qualified with .douban-card for the same reason as every other rule here:
+   shortcodes render into the article body, and an unqualified span at (0,1,0)
+   loses to anything .prose sets at (0,1,1).
+
+   The column is 84px here and 62px in the narrow block below, so the caption
+   shrinks with it rather than overhanging the artwork it labels. */
+.douban-card .douban-card__credit {
   display: block;
-  margin: 6px 0 28px;
-  font: 400 10px/1.4 var(--font-sans, system-ui, sans-serif);
+  margin: 6px 0 0;
+  font: 400 9px/1.35 var(--font-sans, system-ui, sans-serif);
   color: var(--ink-3, rgba(255, 255, 255, .48));
+  overflow-wrap: anywhere;
 }
 /* No id means no destination: the card is rendered as a block instead of an
    anchor, and the affordances that promise a click come off. The hover
@@ -404,6 +411,14 @@
      override of the same element needs the same treatment. */
   .douban-card .douban-card__title {
     font-size: 16px;
+  }
+
+  /* The caption must shrink WITH its column, same reason and same treatment as
+     __icon above: the base 9px is set against an 84px column, and at 62px it
+     would sit wider than the artwork it labels. Qualified identically to the
+     base rule, for the same cascade reason as the title override. */
+  .douban-card .douban-card__credit {
+    font-size: 8px;
   }
 
   /* The chevron costs a whole column on a phone; the cover is already an
