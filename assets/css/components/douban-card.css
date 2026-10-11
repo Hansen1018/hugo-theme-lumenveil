@@ -30,8 +30,16 @@
      --dc-cyan deliberately does NOT exist: cyan IS --accent-2, which
      theme-light.css overrides to #0789a6, and that is what the rail
      stop reads so the card follows the theme like every other
-     component. The alpha variants come from the same green, so one
-     override moves the whole set. */
+     component. The alpha variants are NOT derived from --dc-green —
+     they are the same green at fixed alphas, written out, because
+     color-mix() is not available everywhere this theme supports and
+     because overriding the solid colour should not silently retune the
+     translucency steps. So overriding --dc-green alone moves the rail
+     stop, the icon, the tab and the CTA, and the four alpha rules keep
+     the previous green: a site wanting the whole set to follow its own
+     palette overrides all five. This says it plainly so nobody reads
+     "one override moves the whole set" and then wonders why the chip
+     did not move. */
   --dc-green: #2e8b57;
   --dc-green-10: rgba(46, 139, 87, .10);
   --dc-green-12: rgba(46, 139, 87, .12);
@@ -80,11 +88,19 @@
   align-self: flex-start;
 }
 
-.douban-card__cover {
+/* Qualified with .douban-card on purpose. Shortcodes render into the article
+   body, so .prose img (0,1,1) sets margin: 2em auto, a 1px border and the prose
+   radius — all three beat this (0,1,0) rule. The cover then sits 2em down
+   inside the visual column, growing the card, with a border the rest of the card
+   does not have. Same (0,2,0) treatment as the title, facts, credits and
+   synopsis, with margin and border reset explicitly rather than left to lose. */
+.douban-card .douban-card__cover {
   display: block;
   width: 100%;
   aspect-ratio: 2 / 3;
   height: auto;
+  margin: 0;
+  border: 0;
   border-radius: 8px;
   object-fit: cover;
   background: var(--bg-2, rgba(255, 255, 255, .04));

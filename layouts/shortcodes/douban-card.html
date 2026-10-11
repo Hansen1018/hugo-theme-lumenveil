@@ -52,7 +52,16 @@
        which the cover branch below already treats as "no lookup". */ -}}
 {{- $idRaw := .Get "id" | default "" | string -}}
 {{- $id := "" -}}
-{{- if and (gt (len $idRaw) 0) (not (findRE "[^0-9]" $idRaw 1)) -}}
+{{- /* Bounded, not merely "all digits". Douban subject ids are 5-12 digits
+       (1292052, 26425063, 34846633 all fit). Without an upper bound a typo
+       or a paste of something else entirely — a timestamp, a phone number,
+       an ISBN — passes the numeric test and is interpolated into $url, so
+       the card silently links to a subject page that does not exist. It
+       cannot break out of the href (urlquery encodes it) but it produces a
+       dead link, which is worse than failing closed. Leading zeros are
+       rejected too: Douban ids have none, and "01292052" is a typo. */ -}}
+{{- $idOK := and (findRE "^[1-9][0-9]{4,11}$" $idRaw 1) -}}
+{{- if $idOK -}}
   {{- $id = $idRaw -}}
 {{- else if gt (len $idRaw) 0 -}}
   {{- /* Failing closed is right, but silently: the author sees a
@@ -60,7 +69,7 @@
          build log to connect them. Say it once. warnf is a notice,
          not an error — verified on 0.146.0/0.166.0/0.167.0 before
          being used here — so a typo cannot abort the build. */ -}}
-  {{- warnf "douban-card: ignoring non-numeric id %q; the card will render without a link. A Douban subject id is numeric." $idRaw -}}
+  {{- warnf "douban-card: ignoring id %q; expected 5-12 digits with no leading zero. A Douban subject id looks like 1292052. The card renders without a link." $idRaw -}}
 {{- end -}}
 {{- /* Whitelist the media type. It is caller-supplied and was interpolated
        unvalidated into both the label text and the douban subdomain, so an
@@ -89,11 +98,17 @@
        mis-render. Values outside the set still fall back to movie
        rather than being echoed.
 
-       `chomp`, not `trim`: Hugo's trim is Go's strings.Trim(s, cutset)
-       and needs a second argument, so a single-argument `| trim` fails
-       to parse and takes the whole build down. Verified in pipeline
-       form on 0.146.0/0.166.0/0.167.0 before being used here. */ -}}
-{{- $typeRaw := .Get "type" | default "movie" | string | lower | chomp -}}
+       `strings.TrimSpace`, and this is not a stylistic choice. Two
+       candidates were measured on 0.146.0/0.166.0/0.167.0 with real
+       spaces and tabs fed through a file, against a no-trim control that
+       must fail: chomp removes one trailing newline and leaves " book "
+       and "\tbook\t" untouched, so the earlier chomp fix here was only
+       half a fix and the comment claiming whitespace could no longer
+       mis-render was false. `| trim " \t"` also fails — Hugo's trim is
+       strings.Trim(INPUT, CUTSET), so a piped `| trim CUTSET` passes
+       the cutset as the input and the real value as the cutset.
+       TrimSpace is Go's TrimSpace and takes one argument. */ -}}
+{{- $typeRaw := .Get "type" | default "movie" | string | lower | strings.TrimSpace -}}
 {{- $type := "movie" -}}
 {{- if in $KNOWN $typeRaw }}{{ $type = $typeRaw }}{{ end -}}
 {{- $title := .Get "title" | default "豆瓣条目" -}}
@@ -225,13 +240,18 @@
              before being used here; see the reply on that thread. */ -}}
       {{- $raw := $parsed.Value -}}
       {{- $item := $raw -}}
-      {{- /* Guarding .data was not enough. When $raw is not a map the
-             assignment above never runs, so $item REMAINS $raw — still
-             a slice — and .cover_image_url then raises "can't evaluate
-             field cover_image_url in type []interface {}", outside every
-             try here, aborting the build. So the shape is checked again
-             on $item itself, which is the object the field is read
-             from. This closes the block the earlier fix left open. */ -}}
+      {{- /* The shape is checked on $item — the object the field is read
+             from — and not only on $raw. Guarding the unwrap was not
+             enough: when $raw is not a map the assignment never runs, so
+             $item REMAINS $raw, still a slice, and .cover_image_url then
+             raises "can't evaluate field cover_image_url in type
+             []interface {}", outside every try here, aborting the build.
+
+             Note for the next reader: the response is read at the TOP
+             LEVEL. $item.cover_image_url, not $raw.data.cover_image_url.
+             Earlier comments here spoke about "guarding .data", which
+             implied a wrapper that is not there, and inviting someone to
+             add a .data unwrap would make the lookup miss forever. */ -}}
       {{- if not (reflect.IsMap $item) }}{{ $item = dict }}{{ end -}}
       {{- with $item.cover_image_url -}}
         {{- /* The URL comes from a third-party response, and whatever we
@@ -369,7 +389,11 @@
          no role, so aria-label on it is not reliably exposed, and aria-current
          describes an item WITHIN a set — this is one static label, so it
          conveys nothing. $type is whitelisted above, so index never misses. */ -}}
-  {{- $label := index $TYPES $type -}}
+  {{- /* Same source as the whitelist above: $type only ever takes a value
+         that is in $KNOWN, and $KNOWN is derived from these keys, so the
+         lookup cannot miss. The default is belt-and-braces for the case
+         someone adds a key here and forgets the range above. */ -}}
+  {{- $label := index $TYPES $type | default "Movie" -}}
   <span class="douban-card__tabs"><span class="douban-card__tab">{{ $label }}</span></span>
 
 {{- if $hasLink }}
