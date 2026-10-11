@@ -109,8 +109,12 @@
   align-items: baseline;
   gap: 12px;
   /* Reserve the label's corner so a long title wraps UNDER it instead of
-     running beneath it. 66px clears the widest label ("Music") plus a gap. */
-  padding-right: 66px;
+     running beneath it.
+     Derived from the widest label rather than a magic number: 5ch is "Music"
+     at the label's own 10px/0.07em, plus the padding and a 10px gap. Keep the
+     two in step — a longer label needs a wider ch — and note that ch tracks the
+     reader's font size, so this grows with it rather than pinning to 66px. */
+  padding-right: calc(5ch + 2.6em);
 }
 
 .douban-card__title {
@@ -185,6 +189,11 @@
   display: flex;
   gap: 8px;
   min-width: 0;
+  /* The credit value is a bare text node, so it becomes an anonymous flex item
+     that min-width: 0 cannot shrink. Without this a long unbroken value — a
+     romanised name, a URL, anything a call site supplies — overflows the row
+     and is clipped by the card's overflow: hidden. */
+  overflow-wrap: anywhere;
 }
 
 .douban-card__role {
@@ -265,12 +274,11 @@
     right: 14px;
   }
 
-  .douban-card__head {
-    padding-right: 60px;
-  }
+  /* Same derivation as the desktop rule, at the narrower label size. */
 
-  .douban-card__visual,
-  .douban-card__icon {
+  /* __visual is a flex item of the card; __icon is its block child, so
+     flex-basis does nothing on it. Only the width sizes the fallback. */
+  .douban-card__visual {
     flex-basis: 62px;
     width: 62px;
   }
