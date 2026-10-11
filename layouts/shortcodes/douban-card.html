@@ -268,7 +268,13 @@
                if NeoDB ever moves artwork elsewhere this degrades to the
                type icon, which is visible — the preferable direction. */ -}}
         {{- $imgURL := urls.Parse . -}}
-        {{- $imgHost := lower $imgURL.Host -}}
+        {{- /* Hostname, not Host: Go's URL.Host is hostname+":port" while
+               Hostname() strips the port. On .Host a perfectly legitimate
+               https://neodb.social:443/cover.jpg compares as
+               "neodb.social:443" and fails both tests, silently degrading a
+               trusted cover to the type icon. Measured on 0.146.0/0.166.0/
+               0.167.0 before being used here. */ -}}
+        {{- $imgHost := lower $imgURL.Hostname -}}
         {{- $trusted := and (eq $imgURL.Scheme "https") (or (eq $imgHost "neodb.social") (hasSuffix $imgHost ".neodb.social")) -}}
         {{- if $trusted }}
         {{- /* Copy the image into our own output. Hot-linking NeoDB would tell
@@ -296,7 +302,7 @@
                  and this guard would reject all of them. Measured on
                  0.146.0/0.166.0/0.167.0 before being used here. */ -}}
           {{- $mt := $img.Value.MediaType -}}
-          {{- if and (eq $mt.MainType "image") (ne $mt.SubType "svg") -}}
+          {{- if and (eq $mt.MainType "image") (not (hasPrefix $mt.SubType "svg")) -}}
           {{- /* Resize can throw on its own: an unsupported codec or a
                  resource that is not an image at all. try() only wraps the
                  fetch, so without this the guard leaks at exactly the point it

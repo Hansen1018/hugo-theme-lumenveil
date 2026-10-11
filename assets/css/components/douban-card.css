@@ -303,11 +303,19 @@
 }
 
 /* A static card is not a link, so it must not look like one. The base :hover
-   lifts it and casts a shadow, which is exactly the affordance a clickable
-   card advertises — contradicting the point of the variant. */
+   lifts it, casts a shadow, brightens the border and takes the accent rail to
+   full opacity — all four are click affordances, so all four are undone here.
+   The background tint is deliberately kept: it reads as a subtle surface
+   change rather than an invitation to click, and removing it would make a
+   static card visibly inert instead of merely non-clickable. */
 .douban-card--static:hover {
   transform: none;
   box-shadow: none;
+  border-color: var(--line, rgba(255, 255, 255, .08));
+}
+
+.douban-card--static:hover::before {
+  opacity: .5;
 }
 
 .douban-card__cta {
