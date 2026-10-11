@@ -391,9 +391,18 @@
          conveys nothing. $type is whitelisted above, so index never misses. */ -}}
   {{- /* Same source as the whitelist above: $type only ever takes a value
          that is in $KNOWN, and $KNOWN is derived from these keys, so the
-         lookup cannot miss. The default is belt-and-braces for the case
-         someone adds a key here and forgets the range above. */ -}}
-  {{- $label := index $TYPES $type | default "Movie" -}}
+         lookup cannot miss.
+
+         The default is belt-and-braces, but it is NOT silent: if a key is
+         added to $TYPES and the range above is not updated, index returns the
+         zero value and the card would otherwise render an empty medium label
+         with nothing in the build log. A warnf makes that desync visible
+         without failing a reader's site build over a label. */ -}}
+  {{- $label := index $TYPES $type -}}
+  {{- if not $label -}}
+    {{- warnf "douban-card: type %q is not a key of $TYPES; falling back to \"Movie\". Add the key to $TYPES." $type -}}
+    {{- $label = "Movie" -}}
+  {{- end -}}
   <span class="douban-card__tabs"><span class="douban-card__tab">{{ $label }}</span></span>
 
 {{- if $hasLink }}

@@ -173,8 +173,6 @@
   margin: 0;
   font: 600 17px/1.3 var(--font-sans, system-ui, sans-serif);
   letter-spacing: -.01em;
-  flex: 1;
-  min-width: 0;
 }
 
 /* Medium label, pinned to the card's top-right INNER edge.
@@ -310,10 +308,6 @@
 .douban-card--static:hover {
   transform: none;
   box-shadow: none;
-}
-
-.douban-card--static .douban-card__cta {
-  display: none;
 }
 
 .douban-card__cta {
