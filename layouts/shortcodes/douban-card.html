@@ -134,8 +134,12 @@
        that must not depend on a third party. Cover= still works, and
        cards without it fall back to the type icon as usual. Set in
        hugo.toml as:
-           [douban]
+           [params.douban]
              offline = true
+       The [params] prefix is required: a bare [douban] table is valid
+       Hugo config but lands in site.Config, not site.Params, so the
+       switch silently does nothing. Measured on three table shapes —
+       only [params.douban] resolves.
        or per-build with HUGO_DOUBANCARD_OFFLINE=1. Default is on,
        so an existing site changes nothing until it opts out. */ -}}
 {{- $neodb := true -}}
@@ -172,9 +176,41 @@
            build — the same failure the fetch guards against, one step later. */ -}}
     {{- $parsed := try ($lookup.Value | transform.Unmarshal) -}}
     {{- if and $parsed (not $parsed.Err) -}}
+      {{- /* Unmarshal succeeding is not the same as the body being an
+             object. A top-level array, string or number is valid JSON
+             and parses cleanly, and then .data raises "can't evaluate
+             field data in type []interface {}" — outside every try in
+             this file, so it aborts the whole build. That is the exact
+             failure the fetch and unmarshal guards exist to absorb, one
+             step further on. Checked the shape before the access rather
+             than wrapping it in try, because this is a template type
+             error rather than a resource error.
+
+             reflect.IsMap was probed on 0.146.0, 0.166.0 and 0.167.0
+             before being used here; see the reply on that thread. */ -}}
       {{- $raw := $parsed.Value -}}
-      {{- $item := $raw.data | default $raw -}}
+      {{- $item := $raw -}}
+      {{- if reflect.IsMap $raw -}}
+        {{- $item = $raw.data | default $raw -}}
+      {{- end -}}
       {{- with $item.cover_image_url -}}
+        {{- /* The URL comes from a third-party response, and whatever we
+               fetch here is COPIED INTO THIS SITE'S PUBLISHED OUTPUT.
+               So a malicious or compromised response — or a redirect —
+               could make a build retrieve arbitrary bytes and republish
+               them under this site's domain, which is worse than a hot
+               link because this site serves them.
+
+               Require https and compare the PARSED host. A prefix test on
+               the raw string would accept "neodb.social.example.com", so
+               the sub-domain form is matched explicitly instead. Four real
+               subjects were sampled and all return https on neodb.social;
+               if NeoDB ever moves artwork elsewhere this degrades to the
+               type icon, which is visible — the preferable direction. */ -}}
+        {{- $imgURL := urls.Parse . -}}
+        {{- $imgHost := lower $imgURL.Host -}}
+        {{- $trusted := and (eq $imgURL.Scheme "https") (or (eq $imgHost "neodb.social") (hasSuffix $imgHost ".neodb.social")) -}}
+        {{- if $trusted }}
         {{- /* Copy the image into our own output. Hot-linking NeoDB would tell
                every reader that they read this page, which is not our business
                to disclose for them. */ -}}
@@ -189,6 +225,7 @@
             {{- $src = $resized.Value.RelPermalink -}}
             {{- $fromNeoDB = true -}}
           {{- end -}}
+        {{- end -}}
         {{- end -}}
       {{- end -}}
     {{- end -}}
