@@ -108,16 +108,25 @@
   display: flex;
   align-items: baseline;
   gap: 12px;
-  /* Reserve the label's corner so a long title wraps UNDER it instead of
+  /* Reserve the label's corner so a long title wraps UNDER it rather than
      running beneath it.
-     Derived from the widest label rather than a magic number: 5ch is "Music"
-     at the label's own 10px/0.07em, plus the padding and a 10px gap. Keep the
-     two in step — a longer label needs a wider ch — and note that ch tracks the
-     reader's font size, so this grows with it rather than pinning to 66px. */
+
+     What the units actually track, since getting this wrong is what an
+     earlier version of this comment did: em and ch resolve against the font
+     of the element the declaration lands on — __head, which inherits the
+     article's body font. They do NOT track the 10px label font. So the em
+     term scales with the reader's text size and their zoom, and the ch term
+     adds a proportional margin on top; the label's absolute width does not
+     appear anywhere in this expression.
+
+     Over-reserving is the safe direction: the title wraps a little earlier
+     than strictly necessary, and it can never slide under the label. The
+     narrow-viewport block deliberately leaves this value alone for the same
+     reason — see the comment there. */
   padding-right: calc(5ch + 2.6em);
 }
 
-.douban-card__title {
+.douban-card .douban-card__title {
   margin: 0;
   font: 600 17px/1.3 var(--font-sans, system-ui, sans-serif);
   letter-spacing: -.01em;
@@ -159,7 +168,7 @@
   white-space: nowrap;
 }
 
-.douban-card__facts {
+.douban-card .douban-card__facts {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -182,7 +191,7 @@
   gap: 3px;
 }
 
-.douban-card__credits p {
+.douban-card .douban-card__credits p {
   margin: 0;
   font: 13px/1.5 var(--font-sans, system-ui, sans-serif);
   color: var(--ink-2, rgba(255, 255, 255, .72));
@@ -204,7 +213,7 @@
   padding-top: 2px;
 }
 
-.douban-card__synopsis {
+.douban-card .douban-card__synopsis {
   margin: 10px 0 0;
   font: 13px/1.6 var(--font-sans, system-ui, sans-serif);
   color: var(--ink-2, rgba(255, 255, 255, .72));
@@ -222,11 +231,33 @@
    aria-label overrode it for screen readers and sighted readers never saw it
    at all. The artwork is copied into this site's own output, so saying where
    it came from is a courtesy worth showing. */
+/* The credit sits OUTSIDE the anchor, as a following sibling of the card.
+   That means the card's 28px margin-bottom and this element's own margin
+   collapse into one — margin collapsing takes the larger of the two, so the
+   original margin-top: 6px never took effect and the credit rendered a full
+   28px below the card, detached from the thing it labels. Give the card no
+   bottom margin when a credit follows it, so the 6px is the real gap and the
+   28px rhythm moves to below the credit. */
+.douban-card:has(+ .douban-card__credit) {
+  margin-bottom: 0;
+}
+
 .douban-card__credit {
   display: block;
-  margin-top: 6px;
+  margin: 6px 0 28px;
   font: 400 10px/1.4 var(--font-sans, system-ui, sans-serif);
   color: var(--ink-3, rgba(255, 255, 255, .48));
+}
+/* No id means no destination: the card is rendered as a block instead of an
+   anchor, and the affordances that promise a click come off. The hover
+   background is kept — it still marks the card, and nothing here is
+   clickable, so there is no false promise to contradict. */
+.douban-card--static {
+  cursor: default;
+}
+
+.douban-card--static .douban-card__cta {
+  display: none;
 }
 
 .douban-card__cta {
@@ -274,7 +305,14 @@
     right: 14px;
   }
 
-  /* Same derivation as the desktop rule, at the narrower label size. */
+  /* __head's right reserve is deliberately NOT re-derived here. Card
+     padding and the pinned label offset both shrink by 4px, so the
+     desktop value over-reserves the corner at this width — which is
+     the safe direction: the title wraps earlier than it must, and
+     never slides under the label. Re-deriving it per breakpoint is how
+     the two numbers drift apart. There is no narrower label size; the
+     label keeps its 10px font, which is what the old comment implied
+     and was wrong about. */
 
   /* __visual is a flex item of the card; __icon is its block child, so
      flex-basis does nothing on it. Only the width sizes the fallback. */
@@ -283,7 +321,13 @@
     width: 62px;
   }
 
+  /* The icon must shrink WITH its column. __visual is 62px here, and the
+     base __icon width of 84px would spill 22px into the gap and the
+     body — the card clips at its own edge and __visual has no overflow,
+     so nothing caught it. 62x93 keeps the base 2:3 ratio. The __cover
+     path is unaffected; it is width:100% of __visual. */
   .douban-card__icon {
+    width: 62px;
     height: 93px;
   }
 

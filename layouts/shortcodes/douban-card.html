@@ -121,18 +121,49 @@
   {{- $ariaIcon = "音乐" -}}
 {{- end -}}
 
+{{- /* $id is empty for a missing or non-numeric id. $url is built
+       unconditionally above, so without this guard the card shipped a
+       href of ".../subject//" — a dead destination that looks fine in
+       the markup. A card with no subject to point at is not a link, so
+       it renders as a plain block and drops the CTA that promises
+       navigation. Every existing call site passes an id, so this is a
+       floor under a typo, not a change to working markup. */ -}}
+{{- $hasLink := gt (len $id) 0 -}}
+
+{{- /* Opt out of the NeoDB lookup for a build with no network, or one
+       that must not depend on a third party. Cover= still works, and
+       cards without it fall back to the type icon as usual. Set in
+       hugo.toml as:
+           [douban]
+             offline = true
+       or per-build with HUGO_DOUBANCARD_OFFLINE=1. Default is on,
+       so an existing site changes nothing until it opts out. */ -}}
+{{- $neodb := true -}}
+{{- with site.Params.douban -}}
+  {{- if .offline }}{{ $neodb = false }}{{ end -}}
+{{- end -}}
+{{- if eq (getenv "HUGO_DOUBANCARD_OFFLINE") "1" }}{{ $neodb = false }}{{ end -}}
+
 {{- /* Resolve the cover. $src is "" when we fall through to the type icon. */ -}}
 {{- $src := "" -}}
 {{- $fromNeoDB := false -}}
 {{- if $cover -}}
   {{- $src = $cover | relURL -}}
-{{- else if $id -}}
+{{- else if and $id $neodb -}}
   {{- $api := printf "https://neodb.social/api/catalog/fetch?url=%s" ($url | urlquery) -}}
   {{- /* maxAge: a catalogue entry and its artwork do not change between
          builds, so re-fetching both on every render is pure waste — twenty
          cards on a site is forty requests per build. Hugo's cache is keyed by
          URL, so the same subject reuses the same entry. */ -}}
-  {{- $fetchOpts := dict "maxAge" "168h" "timeout" "10s" -}}
+  {{- /* 6s, not 10s: two sequential requests per card means a card costs
+         at most 12s before it gives up, and a page of them is what made
+         an offline build feel hung rather than merely degraded.
+
+         maxAge caches SUCCESS only, so when NeoDB is unreachable every
+         card is re-attempted on every render — hence params.douban.offline
+         below, which skips the network entirely for an air-gapped or CI
+         build without editing a single call site. */ -}}
+  {{- $fetchOpts := dict "maxAge" "168h" "timeout" "6s" -}}
   {{- $lookup := try (resources.GetRemote $api $fetchOpts) -}}
   {{- if and $lookup (not $lookup.Err) -}}
     {{- /* Unmarshal is guarded separately from the fetch. A 200 carrying an
@@ -166,7 +197,14 @@
 
 {{- $coverAlt := $alt | default (printf "%s 封面" $title) -}}
 
+{{- if $hasLink }}
 <a class="douban-card" href="{{ $url }}" target="_blank" rel="noopener noreferrer" aria-label="豆瓣：{{ $title }}">
+{{- else }}
+{{- /* No id: a card, not a link. Same classes so the layout is
+       identical; --static is what removes the affordances that would
+       otherwise promise a click. */ -}}
+<div class="douban-card douban-card--static">
+{{- end }}
   <div class="douban-card__visual">
     {{- if $src }}
       <img class="douban-card__cover" src="{{ $src }}" alt="{{ $coverAlt }}" loading="lazy" decoding="async" />
@@ -177,7 +215,16 @@
 
   <div class="douban-card__body">
     <div class="douban-card__head">
-      <h4 class="douban-card__title">{{ $title }}</h4>
+      {{- /* A p, not a heading. One h4 per card adds a heading-navigation
+             stop per card and skips a level wherever the surrounding
+             post is h1/h2/h3. The card is a labelled object, not a
+             section of the article, so it does not belong in the outline.
+             Note the selectors below are qualified with .douban-card on
+             purpose: .prose p matches too, and at (0,1,1) it beat
+             .douban-card__title at (0,1,0). The same applied to the old
+             h4 and .prose h4, so the card was being styled by the
+             heading rules the article applies rather than its own. */ -}}
+      <p class="douban-card__title">{{ $title }}</p>
     </div>
 
     {{- if or $year $region }}
@@ -226,11 +273,13 @@
   {{- $label := index $TYPES $type -}}
   <span class="douban-card__tabs"><span class="douban-card__tab">{{ $label }}</span></span>
 
+{{- if $hasLink }}
   <span class="douban-card__cta" aria-hidden="true">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
   </span>
+{{- end }}
 
-  </a>
+  {{- if $hasLink }}</a>{{ else }}</div>{{ end }}
 {{- /* Attribution sits OUTSIDE the anchor and is visible. As an sr-only span
        inside an anchor that carries aria-label, it was doubly invisible: a
        sighted reader never saw it, and a screen reader announced the label

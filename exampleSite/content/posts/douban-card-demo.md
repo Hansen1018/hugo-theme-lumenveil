@@ -57,6 +57,31 @@ Cover is fetched from NeoDB at build time.
 
 {{< douban-card id="36154853" title="好东西" year="2024" region="中国大陆" director="邵艺辉" rating="8.9" cast="宋佳、钟楚曦、赵又廷" synopsis="失婚的中年女人王铁梅独立抚养女儿，与邻居女孩小叶成为挚友，两人以及身边一群都市女性在日常中相互扶持。" >}}
 
+### Opting out of the network
+
+A build with no route to NeoDB — air-gapped, or CI where a third-party
+dependency would make the build non-hermetic — can skip the lookup
+entirely without touching a single call site:
+
+```toml
+[params.douban]
+  offline = true
+```
+
+The `[params]` prefix is required. A bare `[douban]` table is valid Hugo
+config but lands in `site.Config`, not `site.Params`, so the switch silently
+does nothing — the build still reaches for NeoDB and still prints the credit.
+
+or per-build:
+
+```bash
+HUGO_DOUBANCARD_OFFLINE=1 hugo
+```
+
+Cards then fall back to the type icon, exactly as they do when NeoDB is
+simply unreachable. The default is on, so an existing site changes nothing
+until it opts out.
+
 ### Fully offline — cover from the page bundle
 
 If a `cover.jpg` lives next to this `index.md`, reference it by filename. No
