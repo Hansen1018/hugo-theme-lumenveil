@@ -79,8 +79,12 @@ HUGO_DOUBANCARD_OFFLINE=1 hugo
 ```
 
 Cards then fall back to the type icon, exactly as they do when NeoDB is
-simply unreachable. The default is on, so an existing site changes nothing
-until it opts out.
+simply unreachable.
+Note that the lookup is ON by default: a site that uses this shortcode makes
+two HTTP requests per card at build time. A build with no route out attempts
+them, times out on each, and renders the type icon instead — slower, but not
+a failure. Set the flag above if you need a build that never touches the
+network.
 
 ### Fully offline — cover from the page bundle
 

@@ -13,7 +13,14 @@
   display: flex;
   align-items: stretch;
   gap: 18px;
-  padding: 16px 18px;
+  /* Padding and the pinned label offset were the same numbers written
+     twice — once here, once again in the narrow-viewport block. Two
+     copies drift, and this file's own comments warn against exactly
+     that. Declared once; the media query overrides these two
+     variables and nothing else. */
+  --dc-pad-y: 16px;
+  --dc-pad-x: 18px;
+  padding: var(--dc-pad-y) var(--dc-pad-x);
   margin: 12px 0 28px;
   /* The theme has NO green token — the accent trio is violet/cyan/pink
      and the only warm token is --alert-warning-color. So the green is
@@ -121,9 +128,13 @@
 }
 
 .douban-card__head {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
+  /* Not a flex row. __head used to hold the title AND the medium label, and
+     align-items/gap existed for that pair. The label is now an absolutely
+     positioned .douban-card__tabs at card level, so __head has exactly one
+     child and both declarations were inert — the kind of leftover that reads
+     as if a second child is expected. display:block keeps the padding reserve
+     below, which is the only thing this rule still does. */
+  display: block;
   /* Reserve the label's corner so a long title wraps UNDER it rather than
      running beneath it.
 
@@ -164,8 +175,8 @@
    28px centred in the card, i.e. it starts at y>=65. */
 .douban-card__tabs {
   position: absolute;
-  top: 16px;
-  right: 18px;
+  top: var(--dc-pad-y);
+  right: var(--dc-pad-x);
   z-index: 1;
   display: inline-flex;
   align-items: center;
@@ -235,7 +246,6 @@
   color: var(--ink-2, rgba(255, 255, 255, .72));
   display: -webkit-box;
   -webkit-line-clamp: 3;
-  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -253,8 +263,14 @@
    original margin-top: 6px never took effect and the credit rendered a full
    28px below the card, detached from the thing it labels. Give the card no
    bottom margin when a credit follows it, so the 6px is the real gap and the
-   28px rhythm moves to below the credit. */
-.douban-card:has(+ .douban-card__credit) {
+   28px rhythm moves to below the credit.
+
+   Keyed on a class the template emits rather than on :has(+ ...). :has() is
+   broadly supported now, but where it is not the whole rule is dropped and
+   the original detached-credit layout comes straight back. The template knows
+   whether it emitted a credit, so it says so; a selector the browser may not
+   understand is a worse mechanism than one the build already knows. */
+.douban-card--credited {
   margin-bottom: 0;
 }
 
@@ -270,6 +286,14 @@
    clickable, so there is no false promise to contradict. */
 .douban-card--static {
   cursor: default;
+}
+
+/* A static card is not a link, so it must not look like one. The base :hover
+   lifts it and casts a shadow, which is exactly the affordance a clickable
+   card advertises — contradicting the point of the variant. */
+.douban-card--static:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 .douban-card--static .douban-card__cta {
@@ -325,13 +349,8 @@
 @media (max-width: 480px) {
   .douban-card {
     gap: 13px;
-    padding: 13px 14px;
-  }
-
-  /* Track the card's own padding so the label stays flush at every width. */
-  .douban-card__tabs {
-    top: 13px;
-    right: 14px;
+    --dc-pad-y: 13px;
+    --dc-pad-x: 14px;
   }
 
   /* __head's right reserve is deliberately NOT re-derived here. Card

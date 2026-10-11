@@ -6,6 +6,16 @@
                        director="邵艺辉" rating="8.9" cast="宋佳、钟楚曦、赵又廷"
                        synopsis="..." >}}
 
+  Optional parameters, all unchanged from the previous version:
+    id        Douban subject id, numeric. Required for the link and
+              for the NeoDB lookup; omitted or non-numeric renders a
+              non-clickable card and warns.
+    type      movie (default) | book | music. Normalised with lower/trim.
+    region    free text, shown as a fact chip
+    rating    free text, shown with a star
+    cover     local path; wins outright and never touches the network
+    alt       alt text for the cover image. Defaults to "<title> 封面".
+
   ── Cover resolution order ────────────────────────────────────────────
     1. cover="..."   explicit local path. Wins outright, and never touches
                      the network — this is the fully-offline path.
@@ -44,6 +54,13 @@
 {{- $id := "" -}}
 {{- if and (gt (len $idRaw) 0) (not (findRE "[^0-9]" $idRaw 1)) -}}
   {{- $id = $idRaw -}}
+{{- else if gt (len $idRaw) 0 -}}
+  {{- /* Failing closed is right, but silently: the author sees a
+         non-clickable card and a missing link with nothing in the
+         build log to connect them. Say it once. warnf is a notice,
+         not an error — verified on 0.146.0/0.166.0/0.167.0 before
+         being used here — so a typo cannot abort the build. */ -}}
+  {{- warnf "douban-card: ignoring non-numeric id %q; the card will render without a link. A Douban subject id is numeric." $idRaw -}}
 {{- end -}}
 {{- /* Whitelist the media type. It is caller-supplied and was interpolated
        unvalidated into both the label text and the douban subdomain, so an
@@ -63,7 +80,20 @@
 {{- range $k, $_ := $TYPES -}}
   {{- $KNOWN = $KNOWN | append $k -}}
 {{- end -}}
-{{- $typeRaw := .Get "type" | default "movie" -}}
+{{- /* Normalise before the membership test. `in` is exact and
+       case-sensitive, so type="Movie" or type=" book " used to fall
+       through to the movie branch — silently changing the douban
+       subdomain, both role labels and the medium label for what the
+       author wrote. Coerced with | string like $idRaw above, then
+       lower and trim so casing and stray whitespace cannot
+       mis-render. Values outside the set still fall back to movie
+       rather than being echoed.
+
+       `chomp`, not `trim`: Hugo's trim is Go's strings.Trim(s, cutset)
+       and needs a second argument, so a single-argument `| trim` fails
+       to parse and takes the whole build down. Verified in pipeline
+       form on 0.146.0/0.166.0/0.167.0 before being used here. */ -}}
+{{- $typeRaw := .Get "type" | default "movie" | string | lower | chomp -}}
 {{- $type := "movie" -}}
 {{- if in $KNOWN $typeRaw }}{{ $type = $typeRaw }}{{ end -}}
 {{- $title := .Get "title" | default "豆瓣条目" -}}
@@ -140,8 +170,13 @@
        Hugo config but lands in site.Config, not site.Params, so the
        switch silently does nothing. Measured on three table shapes —
        only [params.douban] resolves.
-       or per-build with HUGO_DOUBANCARD_OFFLINE=1. Default is on,
-       so an existing site changes nothing until it opts out. */ -}}
+       or per-build with HUGO_DOUBANCARD_OFFLINE=1.
+
+       The lookup is ON by default: a site that adopts this shortcode
+       performs two HTTP requests per card at build time, one of them
+       NeoDB's. A build with no route out will attempt them and fall
+       back to the type icon on timeout, which is slower but does not
+       fail. Existing content is unaffected; the request is new. */ -}}
 {{- $neodb := true -}}
 {{- with site.Params.douban -}}
   {{- if .offline }}{{ $neodb = false }}{{ end -}}
@@ -190,9 +225,14 @@
              before being used here; see the reply on that thread. */ -}}
       {{- $raw := $parsed.Value -}}
       {{- $item := $raw -}}
-      {{- if reflect.IsMap $raw -}}
-        {{- $item = $raw.data | default $raw -}}
-      {{- end -}}
+      {{- /* Guarding .data was not enough. When $raw is not a map the
+             assignment above never runs, so $item REMAINS $raw — still
+             a slice — and .cover_image_url then raises "can't evaluate
+             field cover_image_url in type []interface {}", outside every
+             try here, aborting the build. So the shape is checked again
+             on $item itself, which is the object the field is read
+             from. This closes the block the earlier fix left open. */ -}}
+      {{- if not (reflect.IsMap $item) }}{{ $item = dict }}{{ end -}}
       {{- with $item.cover_image_url -}}
         {{- /* The URL comes from a third-party response, and whatever we
                fetch here is COPIED INTO THIS SITE'S PUBLISHED OUTPUT.
@@ -216,7 +256,28 @@
                to disclose for them. */ -}}
         {{- $img := try (resources.GetRemote . $fetchOpts) -}}
         {{- if and $img (not $img.Err) -}}
-          {{- /* Resize can throw on its own: an SVG, an unsupported codec or a
+          {{- /* The host check above only sees the URL NeoDB SAID. Hugo
+                 follows redirects and exposes no final-URL field on the
+                 fetched resource — URL, FinalURL and Redirect were all
+                 measured absent on 0.146.0 and 0.167.0 — and an unknown
+                 option key such as disable_redirects is ignored. So the
+                 post-redirect host genuinely cannot be asserted from a
+                 template, and pretending otherwise would be a false claim.
+
+                 What CAN be asserted is what came back: a raster image.
+                 That closes the dangerous half of the same exposure, since
+                 an SVG or an HTML document republished under this site's
+                 domain is a stored-XSS vector, and neither survives
+                 Resize as a raster anyway. Anything else degrades to the
+                 type icon, which is visible rather than silent.
+
+                 MainType, not Type: Type renders as the full "image/png",
+                 so comparing it to "image" is false for every real cover
+                 and this guard would reject all of them. Measured on
+                 0.146.0/0.166.0/0.167.0 before being used here. */ -}}
+          {{- $mt := $img.Value.MediaType -}}
+          {{- if and (eq $mt.MainType "image") (ne $mt.SubType "svg") -}}
+          {{- /* Resize can throw on its own: an unsupported codec or a
                  resource that is not an image at all. try() only wraps the
                  fetch, so without this the guard leaks at exactly the point it
                  was added to cover. */ -}}
@@ -224,6 +285,7 @@
           {{- if and $resized (not $resized.Err) -}}
             {{- $src = $resized.Value.RelPermalink -}}
             {{- $fromNeoDB = true -}}
+          {{- end -}}
           {{- end -}}
         {{- end -}}
         {{- end -}}
@@ -235,12 +297,12 @@
 {{- $coverAlt := $alt | default (printf "%s 封面" $title) -}}
 
 {{- if $hasLink }}
-<a class="douban-card" href="{{ $url }}" target="_blank" rel="noopener noreferrer" aria-label="豆瓣：{{ $title }}">
+<a class="douban-card{{ if $fromNeoDB }} douban-card--credited{{ end }}" href="{{ $url }}" target="_blank" rel="noopener noreferrer" aria-label="豆瓣：{{ $title }}">
 {{- else }}
 {{- /* No id: a card, not a link. Same classes so the layout is
        identical; --static is what removes the affordances that would
        otherwise promise a click. */ -}}
-<div class="douban-card douban-card--static">
+<div class="douban-card douban-card--static{{ if $fromNeoDB }} douban-card--credited{{ end }}">
 {{- end }}
   <div class="douban-card__visual">
     {{- if $src }}
