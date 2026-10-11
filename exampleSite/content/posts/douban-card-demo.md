@@ -104,5 +104,6 @@ network call is made:
 - The `synopsis` field is clamped to 3 lines via `-webkit-line-clamp`; longer summaries get an ellipsis.
 - The medium label (`Movie` / `Book` / `Music`) sits at the top-right of the body, opposite the title. It replaces the old "豆瓣" badge: that printed the same word on every card while the one thing that actually differs — what kind of thing this is — went unlabelled.
 - The rating renders in the credits block, below 导演 / 主演, as one more labelled fact about the work rather than a sticker over the artwork.
+- The NeoDB attribution ("Cover from NeoDB") sits directly under the artwork, inside the card's anchor, so it is reachable by keyboard and announced as part of the link.
 - The right-edge chevron is the "click to follow" affordance, and is hidden below 480px where the artwork already carries the cue.
 - `prefers-reduced-motion` disables the hover lift and slide.
