@@ -18,6 +18,17 @@
   display: block;
   text-align: center;
   font-size: 13px;
+  line-height: 1.35;
   color: var(--ink-3);
-  margin: -1.5em auto 2em;
+  padding: 2px 10px 0;
+  margin: 0 auto 2em;
+}
+/* A captioned figure hands its bottom spacing to the caption, so the image
+   must drop the 2em bottom margin it needs when it stands alone. Scoped to
+   the --caption modifier rather than `:has(> figcaption)` so this carries
+   no browser-support assumption, matching the `.pswp-item--caption` pattern
+   already used by gallery.html. Without this the image's 2em margin and the
+   caption's padding would stack into a double gap. */
+.pswp-figure--caption > .pswp-inline > img {
+  margin-bottom: 0;
 }
