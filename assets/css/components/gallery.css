@@ -66,9 +66,9 @@
   display: block;
   text-align: center;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.35;
   color: var(--ink-3);
-  padding: 8px 10px 0;
+  padding: 2px 10px 0;
 }
 /* A captioned .pswp-item must not clip its own caption. The
    `overflow:hidden` + `border-radius:12px` on .pswp-item exist to round the
