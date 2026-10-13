@@ -49,19 +49,39 @@
   height: auto;
   display: block;
 }
+/* Captions — ALWAYS visible, centered below the image.
+   Replaces the previous hover overlay (position:absolute + dark gradient +
+   opacity:0 → 1 on :hover), which hid captions until hover and directly
+   contradicted render-image.html's always-on <figcaption> styling in
+   gallery-prose.css. One shared rule now covers all three caption
+   carriers so the gallery shortcode and the markdown title syntax look
+   identical:
+     .pswp-caption   — <span> emitted by the gallery shortcode (captions=)
+     figcaption      — render-image.html, markdown `![alt](src "caption")`
+   Colour/size match gallery-prose.css `.pswp-figure > figcaption` so the
+   two paths cannot drift apart. */
+.pswp-gallery .pswp-caption,
 .pswp-gallery .pswp-item figcaption,
 .pswp-gallery .gallery-image figcaption {
-  position: absolute;
-  inset: auto 0 0 0;
-  padding: 8px 12px;
-  font: 11px var(--font-mono, ui-monospace, monospace);
-  color: #fff;
-  background: linear-gradient(transparent, rgba(0,0,0,.7));
-  opacity: 0;
-  transition: opacity .2s ease;
+  display: block;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-3);
+  padding: 8px 10px 0;
 }
-.pswp-gallery .pswp-item:hover figcaption,
-.pswp-gallery .gallery-image:hover figcaption { opacity: 1; }
+/* A captioned .pswp-item must not clip its own caption. The
+   `overflow:hidden` + `border-radius:12px` on .pswp-item exist to round the
+   *image* corners; a caption child would be clipped by both. Move the
+   rounding onto the <img> for captioned items only, leaving uncaptioned
+   items (the vast majority, and every pre-captions article) untouched. */
+.pswp-gallery[data-pswp-layout="justified"] > .pswp-item--caption {
+  overflow: visible;
+  border-radius: 0;
+}
+.pswp-gallery[data-pswp-layout="justified"] > .pswp-item--caption > img {
+  border-radius: 12px;
+}
 @media (max-width: 900px) {
   .pswp-gallery[data-pswp-layout="grid"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
