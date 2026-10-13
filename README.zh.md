@@ -124,6 +124,23 @@ toc: true
 ```
 
 短代码会渲染响应式 CSS 网格，并使用 PhotoSwipe 提供大图浏览。
+
+### 图注
+
+用 `captions="A|B|C"` 给图片加图注。图注**按位置**对应图片，以 `|` 分隔，所以图注内部可以包含逗号：
+
+```md
+{{< gallery images="a.jpg,b.jpg" captions="傍晚抵达|返程之前" layout="justified" sort="manual" >}}
+```
+
+图注渲染在图片下方居中，**常显可见**，无需悬停。同样的文字会用作图片的 `alt` —— 否则 `alt` 只能退回到原始路径，对读屏软件和搜索引擎没有意义。
+
+注意：
+
+- 图注仅适用于 `images=` 形式。目录形式在构建时自动列出文件，无法按位置附加图注。
+- 多余的图注会被忽略；图注数量少于图片数量时，剩余图片不显示图注。
+- 图注中的字面量 `&` 会让 Hugo 短代码解析器报错，请避免使用（写成 `&amp;` 也无效）。
+
 ### CSS 组件架构
 
 `layouts/_partials/head.html` 在 build 时把每个组件文件按 cascade 顺序显式列在 slice 里，再用 `resources.Concat` 打包成一个 minified + fingerprinted 的 `main.css`：

@@ -252,6 +252,22 @@ The shortcode renders a responsive CSS grid and uses PhotoSwipe for full-screen 
 
 The `weight` strategy is convenient when filenames come from a camera or scanner that doesn't preserve capture order — rename to add a prefix and the gallery reorders.
 
+#### Captions
+
+Add `captions="A|B|C"` to annotate images. Captions are matched to images **by position** and split on `|`, so a caption may itself contain commas:
+
+```md
+{{< gallery images="a.jpg,b.jpg" captions="Arrival at dusk|Before heading back" layout="justified" sort="manual" >}}
+```
+
+Each caption renders centred below its image, always visible — no hover needed. The same text is used as the image's `alt`, which otherwise falls back to the raw path and carries no meaning for screen readers or search engines.
+
+Notes:
+
+- Captions apply to the `images=` form only. The folder form derives its file list at build time, where per-file captions cannot be attached positionally.
+- Extra captions are ignored; if the list is shorter than the image list, the remaining images render uncaptioned.
+- A literal `&` inside a caption breaks Hugo's shortcode parser. Avoid it (`&amp;` does not help either).
+
 #### Inline images in markdown
 
 Single images rendered via the standard `![alt](image.jpg)` markdown also join the gallery: the render hook attaches the same `data-flex-grow` / `data-flex-basis` attributes, and a small JS helper in `main.js` groups consecutive figures into a justified masonry container automatically.

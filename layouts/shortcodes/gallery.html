@@ -9,6 +9,33 @@
     {{< gallery "folder-name" sort="date" reverse="true"      → sort by date desc
     {{< gallery "folder-name" sort="weight"                   → sort by 01-foo.jpg prefix
     {{< gallery images="a.jpg,b.jpg" cols="3" sort="manual"   → explicit list, keep order
+    {{< gallery images="a.jpg,b.jpg" captions="Foo|Bar"       → per-image captions
+
+  Captions (v0.1.10+)
+  ------------------------
+  `captions="A|B|C"` assigns a caption to each image by POSITION, split on
+  the pipe character (so a caption may itself contain commas, which
+  `images=` cannot). Index i of `captions` corresponds to index i of
+  `images`. Extra captions beyond the image count are ignored; images
+  without a caption render none.
+
+  A caption does two things:
+    1. Renders as a <span class="pswp-caption"> directly below the image,
+       ALWAYS visible. This aligns the shortcode with render-image.html,
+       which has supported always-on captions since v0.1.9 via markdown
+       title syntax (`![alt](src "caption")`). The previous
+       opacity-on-hover overlay in gallery.css was removed — captions
+       are no longer hidden until hover.
+    2. Becomes the img `alt` when present. Previously `alt` fell back to
+       the raw path (e.g. "assets/tianjin/tianjin-01.jpg"), which carries
+       no meaning for screen readers or search engines.
+
+  When `captions` is absent or empty, output is unchanged: no caption
+  means no span and no extra class.
+
+  Note: `captions` only applies to the `images=` form. The `folder=`
+  form derives its list from .Page.Resources.Match at build time, where
+  per-file captions cannot be attached positionally.
 
   Sort options:
     - name (default): alphabetical by filename
@@ -50,24 +77,34 @@
 {{- $sort := default "name" (.Get "sort") -}}
 {{- $reverse := eq (default "false" (.Get "reverse")) "true" -}}
 {{- $gap := default "14" (.Get "gap") -}}
+{{- $captions := slice -}}
+{{- with (.Get "captions") -}}
+  {{- range (split . "|") -}}
+    {{- $captions = $captions | append (trim . " ") -}}
+  {{- end -}}
+{{- end -}}
 
 {{- $items := slice -}}
 {{- if $folder -}}
   {{- range (.Page.Resources.Match (printf "%s/*" $folder)) -}}
-    {{- $items = $items | append (dict "src" .RelPermalink "w" (int .Width) "h" (int .Height) "name" .Name "weight" 999999) -}}
+    {{- $items = $items | append (dict "src" .RelPermalink "w" (int .Width) "h" (int .Height) "name" .Name "weight" 999999 "caption" "") -}}
   {{- end -}}
 {{- else if $images -}}
-  {{- range (split $images ",") -}}
-    {{- $path := trim . " " -}}
+  {{- range $idx, $raw := (split $images ",") -}}
+    {{- $path := trim $raw " " -}}
+    {{- $cap := "" -}}
+    {{- if lt $idx (len $captions) -}}
+      {{- $cap = index $captions $idx -}}
+    {{- end -}}
     {{- if $path -}}
       {{- $r := "" -}}
       {{- with $.Page.Resources -}}
         {{- $r = .GetMatch $path -}}
       {{- end -}}
       {{- if $r -}}
-        {{- $items = $items | append (dict "src" $r.RelPermalink "w" (int $r.Width) "h" (int $r.Height) "name" $r.Name "weight" 999999) -}}
+        {{- $items = $items | append (dict "src" $r.RelPermalink "w" (int $r.Width) "h" (int $r.Height) "name" $r.Name "weight" 999999 "caption" $cap) -}}
       {{- else -}}
-        {{- $items = $items | append (dict "src" (printf "/%s" $path) "w" 0 "h" 0 "name" $path "weight" 999999) -}}
+        {{- $items = $items | append (dict "src" (printf "/%s" $path) "w" 0 "h" 0 "name" $path "weight" 999999 "caption" $cap) -}}
       {{- end -}}
     {{- end -}}
   {{- end -}}
@@ -88,7 +125,7 @@
   {{- $weighted = sort $weighted "_w" -}}
   {{- $items = slice -}}
   {{- range $weighted -}}
-    {{- $items = $items | append (dict "src" .src "w" .w "h" .h "name" .name "weight" ._w) -}}
+    {{- $items = $items | append (dict "src" .src "w" .w "h" .h "name" .name "weight" ._w "caption" .caption) -}}
   {{- end -}}
 {{- else if ne $sort "manual" -}}
   {{- $items = sort $items "name" -}}
@@ -114,8 +151,9 @@
         {{- $orientation = "landscape" -}}
       {{- end -}}
     {{- end -}}
-    <a href="{{ .src | safeURL }}" class="pswp-item" data-pswp-src="{{ .src | safeURL }}" data-pswp-width="{{ .w }}" data-pswp-height="{{ .h }}" data-pswp-ratio="{{ $aspectRatio }}" data-pswp-orientation="{{ $orientation }}" style="--pswp-ratio: {{ $aspectRatio }}{{ if $flexGrow }}; --pswp-grow: {{ $flexGrow }}; --pswp-basis: {{ $flexBasis }}px{{ end }}">
-      <img src="{{ .src | safeURL }}" alt="{{ .name }}" loading="lazy" decoding="async">
+    <a href="{{ .src | safeURL }}" class="pswp-item{{ with .caption }} pswp-item--caption{{ end }}" data-pswp-src="{{ .src | safeURL }}" data-pswp-width="{{ .w }}" data-pswp-height="{{ .h }}" data-pswp-ratio="{{ $aspectRatio }}" data-pswp-orientation="{{ $orientation }}" style="--pswp-ratio: {{ $aspectRatio }}{{ if $flexGrow }}; --pswp-grow: {{ $flexGrow }}; --pswp-basis: {{ $flexBasis }}px{{ end }}">
+      <img src="{{ .src | safeURL }}" alt="{{ with .caption }}{{ . }}{{ else }}{{ .name }}{{ end }}" loading="lazy" decoding="async">
+      {{- with .caption }}<span class="pswp-caption">{{ . }}</span>{{ end -}}
     </a>
   {{- end -}}
 </div>
