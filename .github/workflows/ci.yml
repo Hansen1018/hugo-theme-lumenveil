@@ -28,30 +28,31 @@ jobs:
     # plain builds, one per matrix leg; anything past 15 minutes is broken,
     # not slow.
     timeout-minutes: 15
-    # theme.toml declares min_version = "0.146.0" and README promises
-    # "Hugo Extended 0.146.0 or newer", so that floor is part of the public
-    # contract — test it. A single pinned version proved the opposite: pinned at
-    # 0.146.0 this workflow missed 20 releases, and Hugo 0.163.0's
-    # imaging.quality deprecation only surfaced after the pin was raised.
-    # The topmost leg (0.167.0) is a pin too, so the matrix does not track the
-    # Hugo tip on its own — bump THAT one by hand when cutting a release. The
-    # leg below it is a temporary carry, not a release pin, and is dropped on
-    # the next Hugo upgrade. Dependabot's github-actions ecosystem only moves
-    # `uses:` refs, not a version string inside a matrix, so none of this
-    # happens automatically.
+    # Policy: the matrix tracks the two most recent Hugo releases — the one the
+    # example site's consumer runs, and the one above it. A single pinned
+    # version proved the opposite of tracking: pinned at 0.146.0 this workflow
+    # missed 20 releases, and Hugo 0.163.0's imaging.quality deprecation only
+    # surfaced after the pin was raised. Two legs still bracket each upgrade, so
+    # a break introduced by the bump itself is caught here rather than reported
+    # downstream. Dependabot's github-actions ecosystem only moves `uses:` refs,
+    # not a version string inside a matrix, so the top leg is raised by hand
+    # when cutting a release and the older leg is dropped at the same time.
     #
-    # 0.167.0 was added because it is the version the example site's own
-    # consumer runs, and while it was absent the workflow was not testing the
-    # Hugo the project is actually deployed on. That release also carried
-    # d692a243 (#14044), which changed auto-summary truncation — the subject of
-    # the RSS summary test below, which needs a 0.167.0 leg to assert anything.
-    # 0.166.0 is kept for one more cycle: it is the version that was live until
-    # this release, so the pair still brackets the upgrade and would catch a
-    # break introduced by the bump itself. Drop it on the next Hugo upgrade.
+    # 0.167.0 is the floor of that window. It is also what the RSS summary test
+    # below needs in order to assert anything: d692a243 (#14044) changed
+    # auto-summary truncation in 0.167.0 and nothing below it carries the fix.
+    # Both legs are >= 0.167.0, so that test asserts on every leg.
+    #
+    # Known gap, left open deliberately: theme.toml still declares
+    # min_version = "0.146.0" and README still promises "Hugo Extended 0.146.0
+    # or newer", but no leg exercises 0.146.0 any more. The theme therefore
+    # claims support for versions CI no longer verifies. Raising min_version to
+    # match would drop support for every consumer on those versions — a
+    # breaking change, and a separate decision from this one.
     strategy:
       fail-fast: false
       matrix:
-        hugo-version: ['0.146.0', '0.166.0', '0.167.0']
+        hugo-version: ['0.167.0', '0.168.0']
     steps:
       - uses: actions/checkout@v7
         with:
@@ -371,15 +372,17 @@ jobs:
 
       # A green build does not mean the config was read. exampleSite ships
       # per-format imaging keys ([imaging.jpeg] / .webp / .avif) that only exist
-      # from 0.163.0; on the 0.146.0 leg Hugo treats them as unknown keys,
-      # ignores them SILENTLY, and still exits 0. So the 0.146.0 leg was
-      # passing while telling you nothing about image quality — the exact
-      # failure mode measured in scripts/test-imaging-config.py.
+      # from 0.163.0; below that Hugo treats them as unknown keys, ignores them
+      # SILENTLY, and still exits 0. A leg in that range would therefore pass
+      # while telling you nothing about image quality — the exact failure mode
+      # measured in scripts/test-imaging-config.py. Since the matrix dropped its
+      # last sub-0.163.0 leg, that inert direction is no longer covered here;
+      # the test still asserts the honoured direction on every leg it runs.
       #
       # This test does not assert a config is "right" — the scalar/per-format
       # choice is a documented judgement call in exampleSite/hugo.toml. It
-      # asserts the two mechanical facts a future Hugo could invalidate
-      # silently, on whichever version this matrix leg is running.
+      # asserts the mechanical facts a future Hugo could invalidate silently,
+      # on whichever version this matrix leg is running.
       - name: Test the imaging config is actually honoured
         run: python3 scripts/test-imaging-config.py
 
