@@ -70,6 +70,24 @@
   color: var(--ink-3);
   padding: 2px 10px 0;
 }
+/* A captioned item's image must NOT keep the 2em bottom margin that the
+   global `.prose img { margin: 2em auto; }` gives every image in the
+   article body — including gallery items, because the shortcode renders
+   its images inside .prose. That 32px margin then stacks on top of the
+   caption's own 2px padding, so the measured gap from the image's bottom
+   edge to the first line of caption text is 34px, while the padding looks
+   inert. Measured in Chromium, not inferred.
+
+   This is the gallery-side twin of the rule gallery-prose.css already
+   applies to `.pswp-figure--caption > .pswp-inline > img`. Both paths now
+   land on a 2px gap.
+
+   Scoped to --caption: uncaptioned items (the vast majority, and every
+   article written before the captions parameter existed) keep their
+   existing 2em spacing untouched. */
+.pswp-gallery .pswp-item--caption > img {
+  margin-bottom: 0;
+}
 /* A captioned .pswp-item must not clip its own caption. The
    `overflow:hidden` + `border-radius:12px` on .pswp-item exist to round the
    *image* corners; a caption child would be clipped by both. Move the
