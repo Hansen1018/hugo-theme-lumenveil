@@ -435,9 +435,8 @@ def published_below(pkg, current):
         if "-" in ver:
             # A prerelease is not what "behind upstream" means.
             continue
-        try:
-            key = version_parts(ver)
-        except ValueError:
+        key = version_parts(ver)
+        if key is None:
             # A published version this harness cannot parse cannot be
             # compared against, so it is not a candidate.
             continue
@@ -449,7 +448,7 @@ def published_below(pkg, current):
 def version_parts(version):
     """(major, minor, patch) for a version string, prerelease parts dropped.
 
-    Raises ValueError for a version that does not parse. ONE parser for
+    Returns None for a version that does not parse. ONE parser for
     the whole harness: two parsers that disagree about a malformed
     version are two places where the version a case planted and the
     comparison made against it can drift apart.
@@ -463,10 +462,9 @@ def version_parts(version):
     core = version.split("+")[0].split("-")[0]
     parts = []
     for part in core.split("."):
-        try:
-            parts.append(int(part))
-        except ValueError:
-            raise ValueError("cannot parse the version %r" % version)
+        if not re.fullmatch(r"[0-9]+", part):
+            return None
+        parts.append(int(part))
     while len(parts) < 3:
         parts.append(0)
     return tuple(parts[:3])
@@ -559,11 +557,10 @@ def main():
     # The network budget starts here, so it covers every probe and every
     # network run this harness makes.
     start_budget()
-    # Whether the npm registry answered. Bound here so it can never be
-    # unbound: a later case reads it and an earlier one sets it, and a
-    # reordering of the cases must not turn that into an
-    # UnboundLocalError -- whose exit code (1) is indistinguishable from
-    # "a case misbehaved".
+    # Whether the npm registry answered. Bound here so that a case
+    # which reads it before Fault 4 sets it sees False instead of
+    # raising UnboundLocalError -- whose exit code (1) is
+    # indistinguishable from "a case misbehaved".
     reachable = False
     print("fault injection for scripts/test-cdn-versions.py")
     print()
@@ -893,14 +890,16 @@ def version_core(version):
     """(major, minor, patch) for a version taken from the tree.
 
     The version comes out of the tree, so one that does not parse means
-    the tree carries something this harness does not understand -- which
-    is FATAL_HARNESS, not a silently coerced zero.
+    the tree carries a version this harness cannot read -- which is
+    FATAL_HARNESS, not a silently coerced zero. The message says which
+    of the two is broken: the tree, not this harness.
     """
-    try:
-        return version_parts(version)
-    except ValueError as exc:
-        print("FATAL: %s" % exc, file=sys.stderr)
+    parts = version_parts(version)
+    if parts is None:
+        print("FATAL: the tree pins a version that is not a version: %r"
+              % version, file=sys.stderr)
         sys.exit(FATAL_HARNESS)
+    return parts
 
 
 def bump(version):
