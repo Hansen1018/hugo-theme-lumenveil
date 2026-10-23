@@ -413,15 +413,18 @@ jobs:
   # their own job rather than as two more steps in the matrix job above.
   # Running them on every matrix leg repeated the same network work and
   # doubled the chance that one leg flaked on a slow CDN or a slow
-  # registry. One job runs once per push.
+  # registry. One job runs once per workflow run: this workflow triggers
+  # on push as well as on pull_request, so "once per push" would have
+  # been true of only half of the runs.
   cdn-pins:
     runs-on: ubuntu-latest
     # A hung step (an unresponsive registry, a CDN that never answers)
     # otherwise burns runner minutes up to the 6h GitHub default. The two
     # steps below carry their own, tighter bounds; this is the backstop, and
-    # it is wider than the sum of those two, so that a step which uses its
+    # it is wider than the sum of those two (2 + 12 = 14) by enough to cover
+    # the checkout and the runner start-up, so that a step which uses its
     # whole allowance does not take the job down with it.
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
         with:
@@ -475,10 +478,13 @@ jobs:
       # that the network half was not exercised.
       #
       # A skip is the only soft outcome here. Exit 3 from the harness is a
-      # hard failure and is meant to be: it means the harness could not
-      # build the case at all (a template shape it does not recognise),
-      # which is a defect in the harness rather than an outage, and must
-      # not be confused with the network being down.
+      # hard failure and is meant to be: it means the harness could not do
+      # its own job -- a template shape it does not recognise, a version
+      # string it cannot parse, a budget it was handed that is not a
+      # number -- which is a defect in the harness rather than an outage,
+      # and must not be confused with the network being down. The cases
+      # that need the network are skipped, not failed, when the registry
+      # or the CDN cannot be reached; see the comment above.
       - name: Test the CDN version check actually catches a broken pin
         # This one does reach the network -- the npm registry, and the
         # CDN requests behind the reachability check -- so it gets a
@@ -493,9 +499,10 @@ jobs:
         # network would turn into a red build, which is the one outcome
         # the skip rules exist to prevent.
         #
-        # Seven minutes of network work, inside a twelve-minute step,
-        # inside a fifteen-minute job. The offline cases are not counted
-        # against the budget: they touch no network at all.
+        # Seven minutes of network work (the budget above), inside a
+        # twelve-minute step, inside a twenty-minute job. The offline
+        # cases are not counted against the budget: they touch no network
+        # at all.
         env:
           CDN_FAULTS_BUDGET: "420"
         timeout-minutes: 12
