@@ -502,8 +502,14 @@ def main():
             check_upstream(pins)
             check_urls(collect_urls())
     except Exception as exc:  # noqa: BLE001 -- the point is to report, not crash
+        # Whatever was found before the crash stays found. A crash
+        # after a finding must not swallow it: the finding is a fact
+        # about the tree, and it does not depend on the rest of the
+        # check having run. The crash is a DIFFERENT thing -- the
+        # check could not be carried out -- so it is recorded as that,
+        # and printed with the "!" marker, never as a finding.
         print("  ERROR the check could not be carried out: %s" % exc)
-        return 2
+        unreachable.append("the check could not be carried out: %s" % exc)
 
     print()
     print("=" * 78)
@@ -533,8 +539,16 @@ def main():
             # not findings either.
             print("  ! %s" % u)
         return 2
-    print("PASSED  every CDN pin agrees with itself, with the README and "
-          "with upstream.")
+    if args.latest:
+        print("PASSED  every CDN pin agrees with itself, with the README "
+              "and with upstream.")
+    else:
+        # Say only what was actually checked. The offline half never
+        # asked npm or the CDNs anything, so a summary that claims the
+        # pins agree "with upstream" asserts a comparison that did not
+        # happen.
+        print("PASSED  every CDN pin agrees with itself and with the "
+              "README (the upstream half needs --latest).")
     return 0
 
 
