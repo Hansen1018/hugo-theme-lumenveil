@@ -1,0 +1,217 @@
+# Watches the CDN library versions the theme pins in layouts/ and reports when
+# upstream has moved past them.
+#
+# Why this is a scheduled job and not another pull-request CI step: a new
+# upstream release is not a defect in the PR being reviewed. Failing every
+# build until somebody bumps a pin teaches people to ignore red CI, and the
+# bump then lands whenever the schedule happens to run. The half that IS a
+# defect -- every pin agreeing with every other pin, and with the versions
+# quoted in the README -- runs on every pull request; see the "Check the CDN
+# pins are internally consistent" step in ci.yml.
+#
+# The pins are read out of the templates by scripts/test-cdn-versions.py
+# rather than listed here, so this file cannot become a second place that
+# has to be edited by hand. It is the same single source of truth the
+# pull-request check uses.
+name: cdn-versions
+
+on:
+  schedule:
+    # Weekly, Monday 06:17 UTC. Deliberately off the hour: every scheduled
+    # workflow in the world fires at :00, and GitHub delays the queue.
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+# One run at a time. The scheduled run and a manual dispatch can overlap,
+# and the open/close steps below are a check-then-act: two runs that both
+# find no tracking issue would each open one. The group serialises them;
+# cancel-in-progress is false so a running check is never killed mid-way.
+concurrency:
+  group: cdn-versions
+  cancel-in-progress: false
+
+# Read-only by default. The job below widens this to issues:write for the
+# single step that opens or updates the tracking issue, and nothing else.
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Compare the pinned versions with upstream
+        id: check
+        # `shell: bash` is GitHub's `bash --noprofile --norc -eo pipefail`, so
+        # pipefail is already on. The script's exit code is captured rather
+        # than piped straight into tee, because the script distinguishes a
+        # genuine "your pins are behind" (exit 1) from "the check could not
+        # be carried out" (exit 2, e.g. the registry was unreachable) and the
+        # two must not produce the same outcome. An exit 2 must not open an
+        # issue claiming the pins are stale.
+        shell: bash
+        # The step's own bound, tighter than the job's ten minutes. The
+        # check needs a couple of minutes when the network behaves; a
+        # step that is killed by its own timeout says so as a step
+        # timeout, where a job timeout says only that the job ran out
+        # of time and leaves the reader guessing which step hung.
+        timeout-minutes: 8
+        run: |
+          set +e
+          python3 scripts/test-cdn-versions.py --latest | tee cdn-versions.txt
+          # PIPESTATUS is read ONCE, into an array: assigning from it
+          # resets it, so reading [0] and [1] in two separate
+          # statements would read the second one out of a reset array.
+          codes=("${PIPESTATUS[@]}")
+          set -e
+          # Both reads carry a default. A read that produced nothing is
+          # not a verdict: the check's own exit code falls back to 2
+          # ("could not be carried out"), so the steps that act on a
+          # verdict see no verdict and no issue is opened on the
+          # strength of a number nobody produced.
+          check_code="${codes[0]:-2}"
+          capture_code="${codes[1]:-0}"
+          if [ "$capture_code" -ne 0 ]; then
+            # The check's own verdict and the capture of its output
+            # are two different things. A tee that failed (a full disk,
+            # a permissions problem) says nothing about the pins, so it
+            # is reported as its own outcome instead of being folded
+            # into the check's: the issue body quotes the captured
+            # output, and a truncated capture would make that body
+            # wrong in a way nobody would notice.
+            echo "the check output could not be captured (tee exit $capture_code)" >&2
+            check_code=2
+          fi
+          # The verdict has to reach the steps that act on it, and
+          # the write is checked rather than assumed. A failed write
+          # (GITHUB_OUTPUT unset, a full disk) under set -e would abort
+          # the step with the WRITE's exit code, which is 1 -- the
+          # code that means "your pins are behind". The step would then
+          # carry no verdict at all while looking like a verdict, and
+          # the difference between "stale" and "could not be carried
+          # out" is the difference between opening an issue and
+          # staying quiet. A write that fails is "could not be carried
+          # out", so it exits 2.
+          if ! printf 'exit_code=%s\n' "$check_code" >> "$GITHUB_OUTPUT"; then
+            echo "::error::could not write the verdict to GITHUB_OUTPUT" >&2
+            exit 2
+          fi
+          exit $check_code
+
+      - name: Find the tracking issue
+        # ONE lookup, in ONE place. The open and close steps used to
+        # repeat the same `gh issue list` pipeline verbatim, and two
+        # copies of a lookup are two copies that can drift apart.
+        id: lookup
+        # always(): the step above fails on purpose when the pins are
+        # behind, and a step whose `if` names no status function is
+        # implicitly guarded by success().
+        #
+        # The second half of that guard matters too: if the checkout
+        # failed, the check step never ran, so there is nothing to look
+        # up and no verdict to act on. Skipped then, rather than
+        # succeeding with an empty answer that the branches below would
+        # read as "no tracking issue exists".
+        if: always() && steps.check.outcome != 'skipped'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TITLE="CDN library pins need attention"
+
+          # Look for an existing open issue with this exact title, so a pin
+          # that stays behind for several weeks updates one issue instead of
+          # opening a new one every Monday. The title is matched exactly
+          # rather than with `gh issue list --search`, which treats its
+          # argument as a query and would not match a title literally.
+          # --limit is explicit: gh defaults to 30 issues, and once more
+          # than that many open `dependencies` issues exist, the exact-title
+          # lookup would silently miss the tracking issue and open a second
+          # one every Monday.
+          OPEN="$(gh issue list --label dependencies --state open --limit 200 --json number,title)"
+          NUMBER="$(printf '%s' "$OPEN" | jq -r --arg t "$TITLE" 'map(select(.title == $t)) | .[0].number // empty')"
+          echo "title=$TITLE" >> "$GITHUB_OUTPUT"
+          echo "number=$NUMBER" >> "$GITHUB_OUTPUT"
+      - name: Open or update the tracking issue
+        # Exit 1 only. Exit 2 means the check could not run, and the job is
+        # already red for that; opening an issue would report a stale-pin
+        # problem that does not exist.
+        #
+        # always() is load-bearing, not decoration. The step above exits
+        # with the script's own exit code, so a genuine "your pins are
+        # behind" (exit 1) FAILS that step -- and a step whose `if`
+        # names no status function is implicitly guarded by success(),
+        # which is false once an earlier step has failed. Without
+        # always() this step is skipped exactly when it is needed most,
+        # and the tracking issue is never opened. Measured on the real
+        # engine: after a step exited 1, a following step whose `if` read
+        # only steps.check.outputs was SKIPPED, while
+        # `always() && steps.check.outputs` ran.
+        # steps.lookup.outcome == 'success' as well: if the lookup itself
+        # failed there is no number to update, and opening a new issue on
+        # the strength of a failed lookup is how duplicates appear.
+        if: always() && steps.check.outputs.exit_code == '1' && steps.lookup.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LOOKUP_TITLE: ${{ steps.lookup.outputs.title }}
+          LOOKUP_NUMBER: ${{ steps.lookup.outputs.number }}
+        run: |
+          set -euo pipefail
+          # The lookup happened once, in the step above. Two copies of it
+          # are two copies that can drift apart -- one of them quietly
+          # stops finding the issue the other one closes.
+          TITLE="$LOOKUP_TITLE"
+          NUMBER="$LOOKUP_NUMBER"
+
+          BODY="$(
+            echo "The pinned CDN libraries in layouts/ need attention: either a pin"
+            echo "is behind the latest upstream release, or a pin points at a file"
+            echo "the CDN does not serve. The raw output of the check follows."
+            echo
+            echo "Bump the pin in the template, update the version quoted in the README, and run"
+            echo "python3 scripts/test-cdn-versions.py -- it reads the pins from the templates"
+            echo "and fails while they disagree with each other or with the README."
+            echo
+            echo '```'
+            # The capture is a convenience, not the alert. If the file
+            # is missing, the issue still has to be opened -- with the
+            # output missing -- because a missing capture is not a
+            # reason to stay silent about the pins. Failing the step
+            # here would open nothing at all.
+            if [ -f cdn-versions.txt ]; then
+              cat cdn-versions.txt
+            else
+              echo '(the check output was not captured)'
+            fi
+            echo '```'
+          )"
+
+          if [ -n "$NUMBER" ]; then
+            echo "updating issue #$NUMBER"
+            gh issue comment "$NUMBER" --body "$BODY"
+          else
+            echo "opening a new issue"
+            gh issue create --title "$TITLE" --label dependencies --body "$BODY"
+          fi
+
+      - name: Close the tracking issue when the pins are current again
+        # always() for the same reason as the step above: the guard has
+        # to survive a failed previous step, so the two branches are
+        # decided by the exit code alone.
+        if: always() && steps.check.outputs.exit_code == '0' && steps.lookup.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LOOKUP_NUMBER: ${{ steps.lookup.outputs.number }}
+        run: |
+          set -euo pipefail
+          # The lookup happened once, in the step above.
+          NUMBER="$LOOKUP_NUMBER"
+          if [ -n "$NUMBER" ]; then
+            echo "closing issue #$NUMBER -- the pins are current"
+            gh issue close "$NUMBER" --comment "The pinned CDN versions are current again."
+          fi

@@ -5,11 +5,13 @@ on:
   pull_request:
     branches: [main]
 
-# Least privilege, declared explicitly rather than inherited. This workflow only
-# checks out code and runs Hugo — it never writes to the repo — so a repo-wide
-# default change to a wider GITHUB_TOKEN scope should not silently widen this
-# job. Matches the explicit grant in ocr-review.yml, which additionally needs
-# pull-requests: write to post review comments.
+# Least privilege, declared explicitly rather than inherited. Neither job in
+# this file writes to the repo: one checks out code and runs Hugo, the other
+# checks out code and asks the npm registry and the CDNs what versions they
+# have. So a repo-wide default change to a wider GITHUB_TOKEN scope should
+# not silently widen either of them. Matches the explicit grant in
+# ocr-review.yml, which additionally needs pull-requests: write to post
+# review comments.
 permissions:
   contents: read
 
@@ -405,3 +407,121 @@ jobs:
       # reports the known-bad shape instead of failing a leg that cannot pass.
       - name: Test feed summaries are not cut inside a container
         run: python3 scripts/test-rss-summary.py
+
+
+  # The CDN pin checks do not depend on the Hugo version, so they live in
+  # their own job rather than as two more steps in the matrix job above.
+  # Running them on every matrix leg repeated the same network work and
+  # doubled the chance that one leg flaked on a slow CDN or a slow
+  # registry. One job runs once per workflow run: this workflow triggers
+  # on push as well as on pull_request, so "once per push" would have
+  # been true of only half of the runs.
+  cdn-pins:
+    runs-on: ubuntu-latest
+    # Explicit here as well as at the workflow level above, for the
+    # same reason: this job reads the tree and asks the npm registry
+    # and the CDNs what versions they have, and writes nothing.
+    # Declaring it at the job keeps the grant visible where the job
+    # is, so widening it later has to be a deliberate edit.
+    permissions:
+      contents: read
+    # A hung step (an unresponsive registry, a CDN that never answers)
+    # otherwise burns runner minutes up to the 6h GitHub default. The
+    # steps below carry their own, tighter bounds; this is the backstop
+    # above all of them. It is deliberately NOT the ceiling that binds:
+    # the step that does the network work takes its ceiling from the
+    # budget below, and a fixed job ceiling that could cut that step
+    # short is exactly the drift this job exists to prevent. Sixty
+    # minutes sits above any budget the step would sensibly be given,
+    # so the step's own ceiling is always the one that ends the work.
+    timeout-minutes: 60
+    # ONE number for the network work. The step's timeout below reads
+    # it back out of the environment, and the harness takes the same
+    # number and keeps a fixed headroom inside it for the cases that
+    # touch no network at all. So the harness can never out-run the
+    # step that runs it, and the step can never be killed before the
+    # harness has given up on its own: raising this one number moves
+    # both, and there is nothing else to keep in step with it.
+    env:
+      CDN_FAULTS_BUDGET_MINUTES: "12"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Parity with the build job above, so the two jobs cannot
+          # silently disagree about what "the tree" is. The repository
+          # carries no submodule today, so this changes nothing yet.
+          submodules: recursive
+
+      # The CDN library versions the theme loads are hardcoded in the
+      # templates, and Dependabot cannot see them: it tracks package
+      # manifests, and a CDN-pinned theme has none. Without a check, a bump
+      # that updates one reference to a library but not the others --
+      # highlight.js is loaded as a stylesheet from jsDelivr and as a script
+      # from cdnjs -- ships silently and the mismatch only shows up as a
+      # broken page in a browser. The README quotes a version in prose, so
+      # it drifts the same way.
+      #
+      # This asserts the internal half only: every pin agrees with every
+      # other pin for the same library, and the versions quoted in
+      # README.md and README.zh.md match the templates. The pins are read
+      # out of the templates themselves, so this step cannot become a
+      # second list to keep in sync.
+      #
+      # The upstream half -- "is a newer release out there?" -- is NOT
+      # checked here. A new upstream release is not a defect in this pull
+      # request, and failing every build until somebody bumps the pin
+      # teaches people to ignore red CI. That half runs on a schedule
+      # instead: .github/workflows/cdn-versions.yml.
+      - name: Check the CDN pins are internally consistent
+        # Bounded so a hung read cannot eat the whole job's budget. This
+        # step runs the checker in its DEFAULT mode -- the offline half,
+        # which reads the tree and makes no network calls at all. The
+        # checker's network half is --latest, and that runs on the
+        # schedule, not here. (The step below this one does reach the
+        # network: it is the checker's own self-test.) Two minutes is far
+        # more than a local read can need.
+        timeout-minutes: 2
+        run: python3 scripts/test-cdn-versions.py
+
+      # The check above is worth nothing if it cannot fail. This asserts it
+      # does, by breaking the tree in each way the check is meant to catch
+      # and confirming the exit code changes. It runs against a COPY of the
+      # tree in a temp directory, so it cannot touch the checkout.
+      #
+      # The cases that need the npm registry are SKIPPED, not failed, when
+      # the registry cannot be reached: an outage says nothing about the
+      # checker, and a test that turns a network outage into a red build
+      # teaches people to ignore red builds. A skip is reported -- counted in
+      # the summary and announced as a ::warning:: annotation, which GitHub
+      # shows on the check itself -- so a green run never hides the fact
+      # that the network half was not exercised.
+      #
+      # A skip is the only soft outcome here. Exit 3 from the harness is a
+      # hard failure and is meant to be: it means the harness could not do
+      # its own job -- a template shape it does not recognise, a version
+      # string it cannot parse, a budget it was handed that is not a
+      # number -- which is a defect in the harness rather than an outage,
+      # and must not be confused with the network being down. The cases
+      # that need the network are skipped, not failed, when the registry
+      # or the CDN cannot be reached; see the comment above.
+      - name: Test the CDN version check actually catches a broken pin
+        # This one does reach the network -- the npm registry, and the
+        # CDN requests behind the reachability check -- so it gets a
+        # longer bound than the step above.
+        #
+        # The bound is the number above, read back out of the
+        # environment rather than written out a second time here. The
+        # harness bounds its own network work to that number less a
+        # fixed headroom for the cases that touch no network, so the
+        # two cannot drift apart: if the budget grew past what this
+        # timeout allows, the harness would be killed mid-run and a
+        # slow network would turn into a red build, which is the one
+        # outcome the skip rules exist to prevent. And the reverse
+        # cannot happen either -- the harness gives up on its own
+        # before the step can kill it.
+        #
+        # Twelve minutes of allowance: seven of network work inside it
+        # once the harness has kept its headroom, plus the cases that
+        # touch no network at all.
+        timeout-minutes: ${{ fromJSON(env.CDN_FAULTS_BUDGET_MINUTES) }}
+        run: python3 scripts/test-cdn-versions-faults.py
