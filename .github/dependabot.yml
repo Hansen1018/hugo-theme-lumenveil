@@ -7,7 +7,7 @@ version: 2
 # moment a script imports one more module, and a list that is already
 # out of date is worse than none. The repository root does have one
 # third-party dependency: verify.py and dark-check.py drive Playwright,
-# which CONTRIBUTING.md documents as a manual install. Dependabot's pip
+# and the Makefile's `verify` target runs them. Dependabot's pip
 # ecosystem tracks a manifest file, and there is none, so an entry would
 # sit here permanently skipped and read as though something were being
 # tracked. Add one in the same commit that introduces a requirements.txt.
