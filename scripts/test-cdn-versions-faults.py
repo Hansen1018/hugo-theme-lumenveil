@@ -151,7 +151,7 @@ def probe_timeout(own):
     return max(1, int(min(own, budget_left())))
 
 
-def run(args=(), timeout=180):
+def run(args=(), timeout=180, network=False):
     """(exit code, output) for one run of the checker against the copy.
 
     A checker that hangs is reported as TIMEOUT rather than crashing the
@@ -160,11 +160,14 @@ def run(args=(), timeout=180):
     did not behave as specified", which would make a wedged checker
     indistinguishable from a case that caught a fault.
 
-    A run that needs the network and finds the budget spent is reported
-    the same way, and the caller skips it: the network did not answer,
-    which says nothing about the tree.
+    A run that reaches the network and finds the budget spent is
+    reported the same way, and the caller skips it: the network did not
+    answer, which says nothing about the tree. The `network` flag says
+    which runs those: the case that points the checker at a dead local
+    port reaches no network at all -- it is refused instantly -- so it
+    must not be refused by a budget it does not spend.
     """
-    if "--latest" in args and budget_spent():
+    if network and budget_spent():
         return TIMEOUT, "the harness ran out of its network budget"
     try:
         proc = subprocess.run(
@@ -541,7 +544,7 @@ def main():
             lambda m: m.group(1) + stale)
         sub(os.path.join(WORK, "README.zh.md"), KATEX_PROSE,
             lambda m: m.group(1) + stale)
-        code, out = run(["--latest"])
+        code, out = run(["--latest"], network=True)
         if not network_not_carried_out(
                 ["stale pin fails --latest",
                  "the failure names the stale pin"], code, skipped):
@@ -581,10 +584,12 @@ def main():
     if code != 0:
         print(out[-1500:])
     if reachable:
-        code, out = run(["--latest"])
+        code, out = run(["--latest"], network=True)
         if not network_not_carried_out(
                 ["a pin nobody published fails --latest",
-                 "the failure names the unpublished pin"], code, skipped):
+                 "the failure names the unpublished pin",
+                 "the failure says the version was never published"],
+                code, skipped):
             results.append(report("a pin nobody published fails --latest", code, 1))
             results.append(report_names("the failure names the unpublished pin",
                                          out, ghost))
@@ -657,7 +662,7 @@ def main():
     published, looked = version_published("katex", current_katex())
     if (registry_reachable() and cdn_reachable()
             and looked and published):
-        code, out = run(["--latest"])
+        code, out = run(["--latest"], network=True)
         if not network_not_carried_out(
                 ["a missing CDN file fails --latest",
                  "the failure names the missing file"], code, skipped):
