@@ -60,6 +60,50 @@ atexit.register(shutil.rmtree, WORK, True)
 # so that CI can tell it apart from a case that behaved wrongly.
 FATAL_HARNESS = 3
 
+
+class BudgetSpent(Exception):
+    """The harness ran out of its network budget mid-question.
+
+    Its own exception, because "I ran out of time to ask" and "I asked
+    and the answer was no" are different facts: the first is a skip,
+    the second is a verdict. Reporting one as the other tells the
+    reader that a question was answered when it was never asked.
+    """
+
+# Every check this harness runs, by name.
+#
+# This is the harness's own account of what it owes the reader. At the
+# end of the run each name has to be accounted for exactly once: either
+# as a verdict or as a skip. A name that is neither was a check that
+# silently stopped running, and a name that is both means one branch
+# of a case counted the same check twice. Either way the reader would
+# see a number that does not add up, with nothing to say which check
+# went missing -- so the accounting is checked rather than assumed.
+CHECKS = (
+    "intact tree passes",
+    "half-finished bump (jsdelivr only)",
+    "README quotes a different version",
+    "README.zh.md quotes a different version",
+    "stale pin fails --latest",
+    "the failure names the stale pin",
+    "stale but consistent tree passes offline mode",
+    "a pin nobody published passes the offline check",
+    "a pin nobody published fails --latest",
+    "the failure names the unpublished pin",
+    "the failure says the version was never published",
+    "an unreachable registry leaves the tree alone",
+    "an unreachable registry exits 2",
+    "a missing CDN file passes the offline check",
+    "a missing CDN file fails --latest",
+    "the failure names the missing file",
+    "a wedged checker is reported as a timeout",
+    "no pins at all -> treated as a failure",
+)
+
+# The names of the checks that produced a verdict. The skips live in
+# main(), next to the case that skipped them.
+ACCOUNTED = []
+
 # The checker reads layouts/ and the READMEs, and resolves the repository
 # root from its own location -- so the copy has to reproduce that shape.
 # A directory named themes is skipped: exampleSite/themes/ is a symlink back
@@ -105,10 +149,11 @@ def reset():
 
 
 # The exit code a run reports when the checker did not finish. 124 is
-# the conventional shell code for a timeout, and it is deliberately not
-# 0, 1 or 2: this harness's own exit codes mean "every case behaved",
-# "a case did not behave" and "the check could not be carried out", and
-# a wedged checker must not be reported as any of those.
+# the conventional shell code for a timeout, and it is deliberately a
+# code nothing else here uses: this harness's own codes are 0, 1 and 3
+# (every case behaved, a case did not behave, the harness could not do
+# its own job) and the checker's are 0, 1 and 2. A wedged checker must
+# not be reported as any of those.
 TIMEOUT = 124
 
 
@@ -124,10 +169,39 @@ TIMEOUT = 124
 # It is read from the environment so that the number the CI step allows
 # and the number the step's own timeout allows are set in the same
 # place and cannot drift apart silently.
-BUDGET = float(os.environ.get("CDN_FAULTS_BUDGET", "420"))
+def budget_seconds():
+    """The harness's network budget, in seconds.
+
+    Read from the environment so that the number the CI step allows and
+    the number the step's own timeout allows are set in the same place
+    and cannot drift apart silently.
+
+    A value that is not a number is a broken configuration, not a case
+    that misbehaved, so it exits FATAL_HARNESS instead of dying with an
+    uncaught ValueError whose exit code (1) is the one a failing case
+    uses. A budget of zero would be the same mistake wearing a
+    disguise: every network case would be skipped and the run would
+    report green without having asked anything.
+    """
+    raw = os.environ.get("CDN_FAULTS_BUDGET", "420")
+    try:
+        value = float(raw)
+    except ValueError:
+        print("FATAL: CDN_FAULTS_BUDGET is not a number: %r" % raw,
+              file=sys.stderr)
+        sys.exit(FATAL_HARNESS)
+    if value <= 0:
+        print("FATAL: CDN_FAULTS_BUDGET must be positive: %r" % raw,
+              file=sys.stderr)
+        sys.exit(FATAL_HARNESS)
+    return value
+
+
+BUDGET = budget_seconds()
 
 _deadline = None
 _registry_ok = None
+_registry_flaky = False
 
 
 def start_budget():
@@ -147,8 +221,16 @@ def budget_spent():
 
 
 def probe_timeout(own):
-    """The timeout for one probe: its own limit, or what is left of the budget."""
-    return max(1, int(min(own, budget_left())))
+    """The timeout for one probe: its own limit, or what is left of the budget.
+
+    Zero means the budget is gone: a probe cannot be asked at all then,
+    and a one-second probe would report a timeout instead of reporting
+    that there was no time left to ask.
+    """
+    left = budget_left()
+    if left <= 0:
+        return 0
+    return max(1, int(min(own, left)))
 
 
 def run(args=(), timeout=180, network=False):
@@ -246,7 +328,8 @@ def cdn_reachable():
     reachable while the other is not, and the URL check needs a probe
     of its own rather than borrowing the registry answer.
     """
-    if budget_spent():
+    timeout = probe_timeout(20)
+    if timeout <= 0:
         return False
     url = ("https://cdn.jsdelivr.net/npm/katex@%s/dist/katex.min.css"
            % current_katex())
@@ -254,7 +337,7 @@ def cdn_reachable():
         req = urllib.request.Request(
             url, method="HEAD",
             headers={"User-Agent": "lumenveil-cdn-faults"})
-        with urllib.request.urlopen(req, timeout=probe_timeout(20)) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             return resp.status == 200
     except Exception:  # network, DNS, timeout
         return False
@@ -263,24 +346,38 @@ def cdn_reachable():
 def registry_reachable():
     """Can the npm registry be asked at all?
 
-    The answer is remembered: the probe is paid for once, not once per
-    case, and a registry that is down must not be paid for again.
+    A registry that answered is not asked again -- the probe is paid
+    for once. A registry that did NOT answer is asked again later: it
+    may come back, and a case that runs later deserves its own reading
+    rather than an earlier case's verdict. The one answer that sticks
+    is the bad one: a registry that answered and then failed is
+    unusable for the rest of the run.
     """
     global _registry_ok
-    if _registry_ok is not None:
-        return _registry_ok
-    if budget_spent():
+    if _registry_flaky:
+        return False
+    if _registry_ok:
+        return True
+    timeout = probe_timeout(20)
+    if timeout <= 0:
         return False
     try:
         req = urllib.request.Request(
             REGISTRY + "/katex/latest",
             headers={"User-Agent": "lumenveil-cdn-faults"})
-        with urllib.request.urlopen(req, timeout=probe_timeout(20)) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             _registry_ok = (json.loads(resp.read().decode("utf-8"))
                              .get("version") is not None)
     except Exception:
         _registry_ok = False
-    return _registry_ok
+    return bool(_registry_ok)
+
+
+def mark_registry_flaky():
+    """The registry answered and then failed: do not ask it again."""
+    global _registry_ok, _registry_flaky
+    _registry_flaky = True
+    _registry_ok = False
 
 
 def version_published(pkg, version):
@@ -291,14 +388,15 @@ def version_published(pkg, version):
     "nobody published it" and "we could not look" are different facts,
     and only the first is a defect in the tree.
     """
-    if budget_spent():
+    timeout = probe_timeout(30)
+    if timeout <= 0:
         return None, False
     url = (REGISTRY + "/" + urllib.parse.quote(pkg, safe="")
            + "/" + urllib.parse.quote(version, safe=""))
     req = urllib.request.Request(
         url, headers={"User-Agent": "lumenveil-cdn-faults"})
     try:
-        with urllib.request.urlopen(req, timeout=probe_timeout(30)) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             return data.get("version") == version, True
     except urllib.error.HTTPError as exc:
@@ -317,12 +415,15 @@ def published_below(pkg, current):
     (katex has no 0.15.11), and a stale pin that does not exist upstream
     would be caught for the wrong reason -- as a typo, not as drift.
     """
+    timeout = probe_timeout(30)
+    if timeout <= 0:
+        raise BudgetSpent()
     url = REGISTRY + "/" + urllib.parse.quote(pkg, safe="")
     req = urllib.request.Request(
         url,
         headers={"User-Agent": "lumenveil-cdn-faults",
                  "Accept": "application/vnd.npm.install-v1+json"})
-    with urllib.request.urlopen(req, timeout=probe_timeout(30)) as resp:
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
         data = json.loads(resp.read().decode("utf-8"))
     limit = version_core(current)
     best = None
@@ -402,6 +503,7 @@ def network_not_carried_out(names, code, skipped):
 
 def report(name, code, expect):
     ok = (code == expect)
+    ACCOUNTED.append(name)
     print("  [%s] %-46s exit=%d (expected %d)"
           % ("PASS" if ok else "FAIL", name, code, expect))
     return ok
@@ -415,6 +517,7 @@ def report_names(name, out, version):
     pass for the wrong reason. The version is what the case planted, so
     the failure has to name it.
     """
+    ACCOUNTED.append(name)
     hits = [line for line in failures(out) if version in line]
     ok = bool(hits)
     print("  [%s] %-46s %s"
@@ -431,6 +534,7 @@ def report_says(name, out, phrase):
     entirely -- and then the case would pass for the wrong reason. So the
     reason has to be asserted as well as the version.
     """
+    ACCOUNTED.append(name)
     hits = [line for line in failures(out) if phrase in line]
     ok = bool(hits)
     print("  [%s] %-46s %s"
@@ -506,9 +610,18 @@ def main():
     # release" -- the case would pass, for the wrong reason.
     reachable = registry_reachable()
     stale = None
+    # Why the stale pin could not be planted. These are different facts,
+    # and the skip below reports which one happened instead of a
+    # generic "could not".
+    stale_reason = "no published release below the pin to plant"
     if reachable:
         try:
             stale = published_below("katex", pinned)
+        except BudgetSpent:
+            # The budget ran out before the question could be asked.
+            # Not the same as an answer of "no release below the pin",
+            # so it is not reported as one.
+            stale_reason = "the harness ran out of its network budget"
         except Exception as exc:  # noqa: BLE001 -- a registry that
             # answers and then times out is an outage, not a defect
             # in the tree. Treated as unreachable: the cases that
@@ -517,11 +630,14 @@ def main():
             # is indistinguishable from "a case misbehaved".
             print("  the registry answered and then failed: %s" % exc)
             stale = None
+            stale_reason = "the registry answered and then failed"
             # The registry is unreliable, not just slow about this one
             # package: the later cases ask it questions too, and a
             # half-answered registry would fail them for the wrong
-            # reason.
-            reachable = False
+            # reason. So it is marked unusable for the rest of the run.
+            mark_registry_flaky()
+    else:
+        stale_reason = "the registry could not be reached"
     if not stale:
         # No real published release below the pin to plant. BOTH cases
         # that need it are skipped, the offline one included: its
@@ -535,8 +651,7 @@ def main():
                      "the failure names the stale pin",
                      "stale but consistent tree passes offline mode"):
             skipped.append(name)
-            print("  [SKIP] %-46s no published release below the pin to plant"
-                  % name)
+            print("  [SKIP] %-46s %s" % (name, stale_reason))
     else:
         sub(find_pin_file(KATEX_PIN), KATEX_PIN,
             lambda m: m.group(1) + stale + m.group(3))
@@ -583,7 +698,9 @@ def main():
                           code, 0))
     if code != 0:
         print(out[-1500:])
-    if reachable:
+    # Its own reading of the registry, not the one Fault 4 took: the
+    # registry may have come back in between.
+    if registry_reachable():
         code, out = run(["--latest"], network=True)
         if not network_not_carried_out(
                 ["a pin nobody published fails --latest",
@@ -604,10 +721,11 @@ def main():
             if code != 1:
                 print(out[-1500:])
     else:
-        # Both checks of this case are skipped: the exit code, and the
-        # reason it would have had.
+        # Three checks of this case are skipped: the exit code, the
+        # version in the text, and the reason it would have had.
         for name in ("a pin nobody published fails --latest",
-                     "the failure names the unpublished pin"):
+                     "the failure names the unpublished pin",
+                     "the failure says the version was never published"):
             skipped.append(name)
         print("  [SKIP] %-46s npm registry unreachable"
               % "a pin nobody published fails --latest")
@@ -705,6 +823,26 @@ def main():
         print(out[-1500:])
 
     shutil.rmtree(WORK, ignore_errors=True)
+
+    # Every check has to be accounted for exactly once: as a verdict or
+    # as a skip. A check that is neither was a case that quietly
+    # stopped running, and the summary would report a number that does
+    # not add up with nothing to say which one went missing.
+    accounted = ACCOUNTED + skipped
+    missing = [n for n in CHECKS if n not in accounted]
+    duplicated = sorted({n for n in accounted if accounted.count(n) > 1})
+    unexpected = [n for n in accounted if n not in CHECKS]
+    if missing or duplicated or unexpected:
+        print("FATAL: the harness's own accounting does not add up",
+              file=sys.stderr)
+        for name in missing:
+            print("  never accounted for: %s" % name, file=sys.stderr)
+        for name in duplicated:
+            print("  accounted for twice: %s" % name, file=sys.stderr)
+        for name in unexpected:
+            print("  not a check this harness knows: %s" % name,
+                  file=sys.stderr)
+        return FATAL_HARNESS
 
     print()
     if skipped:
