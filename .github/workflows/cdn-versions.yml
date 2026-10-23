@@ -95,7 +95,7 @@ jobs:
         # read as "no tracking issue exists".
         if: always() && steps.check.outcome != 'skipped'
         env:
-          GH_TOKEN: *** github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           TITLE="CDN library pins need attention"
@@ -133,14 +133,16 @@ jobs:
         # the strength of a failed lookup is how duplicates appear.
         if: always() && steps.check.outputs.exit_code == '1' && steps.lookup.outcome == 'success'
         env:
-          GH_TOKEN: *** github.token }}
+          GH_TOKEN: ${{ github.token }}
+          LOOKUP_TITLE: ${{ steps.lookup.outputs.title }}
+          LOOKUP_NUMBER: ${{ steps.lookup.outputs.number }}
         run: |
           set -euo pipefail
           # The lookup happened once, in the step above. Two copies of it
           # are two copies that can drift apart -- one of them quietly
           # stops finding the issue the other one closes.
-          TITLE="${{ steps.lookup.outputs.title }}"
-          NUMBER="${{ steps.lookup.outputs.number }}"
+          TITLE="$LOOKUP_TITLE"
+          NUMBER="$LOOKUP_NUMBER"
 
           BODY="$(
             echo "The pinned CDN libraries in layouts/ need attention: either a pin"
@@ -170,11 +172,12 @@ jobs:
         # decided by the exit code alone.
         if: always() && steps.check.outputs.exit_code == '0' && steps.lookup.outcome == 'success'
         env:
-          GH_TOKEN: *** github.token }}
+          GH_TOKEN: ${{ github.token }}
+          LOOKUP_NUMBER: ${{ steps.lookup.outputs.number }}
         run: |
           set -euo pipefail
           # The lookup happened once, in the step above.
-          NUMBER="${{ steps.lookup.outputs.number }}"
+          NUMBER="$LOOKUP_NUMBER"
           if [ -n "$NUMBER" ]; then
             echo "closing issue #$NUMBER -- the pins are current"
             gh issue close "$NUMBER" --comment "The pinned CDN versions are current again."
