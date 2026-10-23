@@ -4,8 +4,15 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-  - package-ecosystem: "pip"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    # No requirements.txt yet; dependabot will skip until one is added.
+# There is deliberately no `pip` ecosystem entry. The theme has no
+# requirements.txt, and the scripts under scripts/ import only the Python
+# standard library (collections, html, json, os, re, shutil, subprocess,
+# sys, tempfile, urllib, zlib), so a pip entry would sit here permanently
+# skipped and read as though something were being tracked. Add one in the
+# same commit that introduces a requirements.txt.
+#
+# The CDN libraries the theme loads -- highlight.js, KaTeX, PhotoSwipe --
+# are pinned in layouts/ and are invisible to every ecosystem above: they
+# are not packages, they are strings in a template. That is why they are
+# checked by scripts/test-cdn-versions.py (on every pull request) and by
+# .github/workflows/cdn-versions.yml (on a schedule).

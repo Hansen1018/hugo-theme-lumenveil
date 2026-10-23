@@ -1,0 +1,109 @@
+# Watches the CDN library versions the theme pins in layouts/ and reports when
+# upstream has moved past them.
+#
+# Why this is a scheduled job and not another pull-request CI step: a new
+# upstream release is not a defect in the PR being reviewed. Failing every
+# build until somebody bumps a pin teaches people to ignore red CI, and the
+# bump then lands whenever the schedule happens to run. The half that IS a
+# defect -- every pin agreeing with every other pin, and with the versions
+# quoted in the README -- runs on every pull request; see the "Check the CDN
+# pins are internally consistent" step in ci.yml.
+#
+# The pins are read out of the templates by scripts/test-cdn-versions.py
+# rather than listed here, so this file cannot become a second place that
+# has to be edited by hand. It is the same single source of truth the
+# pull-request check uses.
+name: cdn-versions
+
+on:
+  schedule:
+    # Weekly, Monday 06:17 UTC. Deliberately off the hour: every scheduled
+    # workflow in the world fires at :00, and GitHub delays the queue.
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+# Read-only by default. The job below widens this to issues:write for the
+# single step that opens or updates the tracking issue, and nothing else.
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Compare the pinned versions with upstream
+        id: check
+        # `shell: bash` is GitHub's `bash --noprofile --norc -eo pipefail`, so
+        # pipefail is already on. The script's exit code is captured rather
+        # than piped straight into tee, because the script distinguishes a
+        # genuine "your pins are behind" (exit 1) from "the check could not
+        # be carried out" (exit 2, e.g. the registry was unreachable) and the
+        # two must not produce the same outcome. An exit 2 must not open an
+        # issue claiming the pins are stale.
+        shell: bash
+        run: |
+          set +e
+          python3 scripts/test-cdn-versions.py --latest | tee cdn-versions.txt
+          code=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit $code
+
+      - name: Open or update the tracking issue
+        # Exit 1 only. Exit 2 means the check could not run, and the job is
+        # already red for that; opening an issue would report a stale-pin
+        # problem that does not exist.
+        if: steps.check.outputs.exit_code == '1'
+        env:
+          GH_TOKEN: *** github.token }}
+        run: |
+          set -euo pipefail
+          TITLE="CDN library pins are behind upstream"
+
+          # Look for an existing open issue with this exact title, so a pin
+          # that stays behind for several weeks updates one issue instead of
+          # opening a new one every Monday. The title is matched exactly
+          # rather than with `gh issue list --search`, which treats its
+          # argument as a query and would not match a title literally.
+          OPEN="$(gh issue list --label dependencies --state open --json number,title)"
+          NUMBER="$(printf '%s' "$OPEN" | jq -r --arg t "$TITLE" 'map(select(.title == $t)) | .[0].number // empty')"
+
+          BODY="$(
+            echo "The pinned CDN library versions in layouts/ are behind upstream."
+            echo
+            echo "Bump the pin in the template, update the version quoted in the README, and run"
+            echo "python3 scripts/test-cdn-versions.py -- it reads the pins from the templates"
+            echo "and fails while they disagree with each other or with the README."
+            echo
+            echo '```'
+            cat cdn-versions.txt
+            echo '```'
+          )"
+
+          if [ -n "$NUMBER" ]; then
+            echo "updating issue #$NUMBER"
+            gh issue comment "$NUMBER" --body "$BODY"
+          else
+            echo "opening a new issue"
+            gh issue create --title "$TITLE" --label dependencies --body "$BODY"
+          fi
+
+      - name: Close the tracking issue when the pins are current again
+        if: steps.check.outputs.exit_code == '0'
+        env:
+          GH_TOKEN: *** github.token }}
+        run: |
+          set -euo pipefail
+          TITLE="CDN library pins are behind upstream"
+          OPEN="$(gh issue list --label dependencies --state open --json number,title)"
+          NUMBER="$(printf '%s' "$OPEN" | jq -r --arg t "$TITLE" 'map(select(.title == $t)) | .[0].number // empty')"
+          if [ -n "$NUMBER" ]; then
+            echo "closing issue #$NUMBER -- the pins are current"
+            gh issue close "$NUMBER" --comment "The pinned CDN versions are current again."
+          fi

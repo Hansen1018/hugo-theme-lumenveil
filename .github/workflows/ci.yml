@@ -405,3 +405,33 @@ jobs:
       # reports the known-bad shape instead of failing a leg that cannot pass.
       - name: Test feed summaries are not cut inside a container
         run: python3 scripts/test-rss-summary.py
+
+      # The CDN library versions the theme loads are hardcoded in the
+      # templates, and Dependabot cannot see them: it tracks package
+      # manifests, and a CDN-pinned theme has none. Without a check, a bump
+      # that updates one reference to a library but not the others --
+      # highlight.js is loaded as a stylesheet from jsDelivr and as a script
+      # from cdnjs -- ships silently and the mismatch only shows up as a
+      # broken page in a browser. The README quotes a version in prose, so
+      # it drifts the same way.
+      #
+      # This asserts the internal half only: every pin agrees with every
+      # other pin for the same library, and the versions quoted in the
+      # README match the templates. The pins are read out of the templates
+      # themselves, so this step cannot become a second list to keep in
+      # sync.
+      #
+      # The upstream half -- "is a newer release out there?" -- is NOT
+      # checked here. A new upstream release is not a defect in this pull
+      # request, and failing every build until somebody bumps the pin
+      # teaches people to ignore red CI. That half runs on a schedule
+      # instead: .github/workflows/cdn-versions.yml.
+      - name: Check the CDN pins are internally consistent
+        run: python3 scripts/test-cdn-versions.py
+
+      # The check above is worth nothing if it cannot fail. This asserts it
+      # does, by breaking the tree in each way the check is meant to catch
+      # and confirming the exit code changes. It runs against a COPY of the
+      # tree in a temp directory, so it cannot touch the checkout.
+      - name: Test the CDN version check actually catches a broken pin
+        run: python3 scripts/test-cdn-versions-faults.py
