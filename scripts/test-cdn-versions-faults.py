@@ -98,6 +98,8 @@ CHECKS = (
     "the failure names the missing file",
     "a wedged checker is reported as a timeout",
     "no pins at all -> treated as a failure",
+    "a pin that is not a version is reported",
+    "the failure names the malformed pin",
 )
 
 # The names of the checks that produced a verdict. The skips live in
@@ -172,10 +174,6 @@ TIMEOUT = 124
 def budget_seconds():
     """The harness's network budget, in seconds.
 
-    Read from the environment so that the number the CI step allows and
-    the number the step's own timeout allows are set in the same place
-    and cannot drift apart silently.
-
     A value that is not a number is a broken configuration, not a case
     that misbehaved, so it exits FATAL_HARNESS instead of dying with an
     uncaught ValueError whose exit code (1) is the one a failing case
@@ -200,7 +198,13 @@ def budget_seconds():
 BUDGET = budget_seconds()
 
 _deadline = None
-_registry_ok = None
+# Whether the npm registry has answered YES at least once. A probe that
+# failed does not stick: a registry that blipped is asked again later,
+# because a case that runs later deserves its own reading rather than
+# an earlier probe's verdict. The one answer that does stick is the bad
+# one -- a registry that answered and then failed, which is unusable
+# for the rest of the run (see mark_registry_flaky).
+_registry_ok = False
 _registry_flaky = False
 
 
@@ -449,6 +453,12 @@ def version_parts(version):
     the whole harness: two parsers that disagree about a malformed
     version are two places where the version a case planted and the
     comparison made against it can drift apart.
+
+    The same rule is the one the checker parses versions by
+    (version_tuple in scripts/test-cdn-versions.py): a part that is not
+    a number is not a version, and a version with more than three parts
+    is compared by its first three. A malformed version is therefore
+    reported by the checker rather than guessed at by either of them.
     """
     core = version.split("+")[0].split("-")[0]
     parts = []
@@ -819,6 +829,24 @@ def main():
     os.makedirs(os.path.join(WORK, "layouts"))
     code, out = run()
     results.append(report("no pins at all -> treated as a failure", code, 1))
+    if code != 1:
+        print(out[-1500:])
+
+    # Fault 11: a pin that is not a version at all. "0.16.x" names no
+    # release, so there is no file behind it on the CDN. A checker that
+    # read the unreadable part as 0 would call it the oldest possible
+    # version and report the tree as current.
+    reset()
+    sub(find_pin_file(KATEX_PIN), KATEX_PIN,
+        lambda m: m.group(1) + "0.16.x" + m.group(3))
+    for readme in ("README.md", "README.zh.md"):
+        sub(os.path.join(WORK, readme), KATEX_PROSE,
+            lambda m: m.group(1) + "0.16.x")
+    code, out = run()
+    results.append(report("a pin that is not a version is reported",
+                          code, 1))
+    results.append(report_names("the failure names the malformed pin",
+                                 out, "0.16.x"))
     if code != 1:
         print(out[-1500:])
 

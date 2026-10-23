@@ -86,11 +86,20 @@ READMES = ("README.md", "README.zh.md")
 # The package group allows an optional scope. jsDelivr serves
 # @scope/pkg@1.2.3 as well as pkg@1.2.3, and a scoped name the pattern
 # does not match would be invisible to every check below.
+# The shape of a version as the pins spell it: a digit, then whatever
+# a version may carry after it -- another digit, a letter, a dot, a plus
+# or a dash. It is ONE constant because the pin patterns and the README
+# pattern have to read a version the same way: a pattern that stopped
+# one character earlier would compare a different string than the one
+# the template pins, and the difference shows up as a mismatch that is
+# not there.
+VERSION = r"[0-9][0-9A-Za-z.+-]*"
+
 JSDELIVR = re.compile(
     r"cdn\.jsdelivr\.net/npm/((?:@[A-Za-z0-9._-]+/)?[A-Za-z0-9._-]+)"
-    r"@([0-9][0-9A-Za-z.+-]*)")
+    r"@(" + VERSION + r")")
 CDNJS = re.compile(
-    r"cdnjs\.cloudflare\.com/ajax/libs/([A-Za-z0-9._-]+)/([0-9][0-9A-Za-z.+-]*)")
+    r"cdnjs\.cloudflare\.com/ajax/libs/([A-Za-z0-9._-]+)/(" + VERSION + r")")
 
 # The whole URL, for the reachability check. The version is part of it, so
 # the URL names one exact file on one exact CDN: the thing a browser would
@@ -138,21 +147,31 @@ def ok(msg):
     print("  ok    %s" % msg)
 
 
-def vtuple(v):
-    """(major, minor, patch) for a version string.
+def version_tuple(v):
+    """(major, minor, patch) for a version string, or None if it is not one.
 
     Pre-release and build metadata are dropped: npm's `latest` dist-tag is
     never a pre-release, and comparing `1.2.3-rc1` against `1.2.3` by
     numeric parts is the only comparison that decides the question this
     script asks, which is whether a newer release exists.
+
+    None means the string does not name a version at all -- `1.2.x`. The
+    caller has to report that rather than guess, and the guess this
+    function used to make was always in the direction that hides a
+    defect: an unreadable component became 0, so a malformed pin looked
+    like the oldest possible version rather than like a broken one.
+
+    The rule is the one the fault harness parses versions by, so the two
+    cannot answer the same question two different ways: a part that is
+    not a number is not a version to either of them, and a version with
+    more than three parts is compared by its first three.
     """
     core = v.split("+")[0].split("-")[0]
     parts = []
     for part in core.split("."):
-        try:
-            parts.append(int(part))
-        except ValueError:
-            parts.append(0)
+        if not re.fullmatch(r"[0-9]+", part):
+            return None
+        parts.append(int(part))
     while len(parts) < 3:
         parts.append(0)
     return tuple(parts[:3])
@@ -272,6 +291,14 @@ def check_consistency(pins):
         versions = pins[pkg]
         if len(versions) == 1:
             ver = list(versions)[0]
+            if version_tuple(ver) is None:
+                # A pin that names no version names no file: there is no
+                # such release on npm and no such path on the CDN. The
+                # offline half is where this is caught, because the
+                # offline half is what runs on every pull request.
+                fail("%s is pinned at %s, which is not a version number"
+                     % (pkg, ver))
+                continue
             ok("%s pinned at %s (%d occurrence%s)"
                % (pkg, ver, len(versions[ver]),
                   "" if len(versions[ver]) == 1 else "s"))
@@ -297,14 +324,37 @@ def check_readme(pins):
         # A lookbehind rather than \b: a scoped package name starts with
         # "@", which is not a word character, so \b would never match in
         # front of it.
+        # The quoted version is a full x.y.z, and nothing may follow it
+        # that would make it longer. A pattern that stopped after three
+        # numbers read "1.2.3" out of a README that says "1.2.3.4" or
+        # "1.2.3-rc1" and compared that against the pin -- a mismatch
+        # that is not there, or a match that is not one. The lookaheads
+        # refuse the truncated reading instead of accepting it: what
+        # follows the version may not be a digit, a pre-release marker,
+        # or a dot and a digit. The full stop that ends a sentence is
+        # not a version character, so "loads KaTeX 0.16.11." still
+        # quotes 0.16.11.
         pattern = re.compile(
-            r"(?i)(?<!\w)%s\s+v?(\d+\.\d+\.\d+)" % re.escape(pkg))
+            r"(?i)(?<!\w)%s\s+v?(\d+\.\d+\.\d+)(?!\d)(?![-+])(?!\.\d)"
+            % re.escape(pkg))
         for name in READMES:
             path = os.path.join(REPO, name)
             if not os.path.exists(path):
                 continue
-            with open(path, encoding="utf-8") as fh:
-                text = fh.read()
+            try:
+                with open(path, encoding="utf-8") as fh:
+                    text = fh.read()
+            except (OSError, UnicodeDecodeError) as exc:
+                # A README that cannot be read is a fact about the run,
+                # not a reason to throw away the facts the template scan
+                # already produced: an exception here used to end the
+                # whole check as "could not be carried out" and the
+                # findings collected before it were never printed.
+                unreachable.append("%s: the README could not be read (%s)"
+                                   % (name, exc))
+                print("  ERROR %s: the README could not be read (%s)"
+                      % (name, exc))
+                continue
             for m in pattern.finditer(text):
                 quoted = m.group(1)
                 if quoted != pinned:
@@ -413,7 +463,21 @@ def check_upstream(pins):
                  "to npm, so the CDN has no file behind it"
                  % (pkg, pinned))
             continue
-        if vtuple(latest) > vtuple(pinned):
+        pinned_key = version_tuple(pinned)
+        if pinned_key is None:
+            # The offline check already reported a pin that names no
+            # version. There is nothing to compare here, and the
+            # version npm published exists, so this is not a drift.
+            continue
+        latest_key = version_tuple(latest)
+        if latest_key is None:
+            unreachable.append(
+                "%s: npm published a version this check cannot read (%s)"
+                % (pkg, latest))
+            print("  ERROR %s: npm published a version this check cannot "
+                  "read (%s)" % (pkg, latest))
+            continue
+        if latest_key > pinned_key:
             fail("%s is pinned at %s but npm publishes %s" % (pkg, pinned, latest))
         else:
             ok("%s is pinned at %s, npm latest is %s" % (pkg, pinned, latest))
