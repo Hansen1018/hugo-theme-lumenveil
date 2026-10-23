@@ -94,6 +94,10 @@ READMES = ("README.md", "README.zh.md")
 # the template pins, and the difference shows up as a mismatch that is
 # not there.
 VERSION = r"[0-9][0-9A-Za-z.+-]*"
+# The fault harness spells the same rule out again, in
+# scripts/test-cdn-versions-faults.py. It cannot import this file: it
+# tests a COPY of the tree, and importing the thing under test is how
+# a test stops testing it.
 
 JSDELIVR = re.compile(
     r"cdn\.jsdelivr\.net/npm/((?:@[A-Za-z0-9._-]+/)?[A-Za-z0-9._-]+)"

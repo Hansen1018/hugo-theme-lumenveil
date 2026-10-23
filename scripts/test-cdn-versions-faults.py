@@ -123,6 +123,12 @@ CHECKER = os.path.join(WORK, "scripts", "test-cdn-versions.py")
 # shape the checker reads fine cannot abort the whole harness with a
 # fatal error that takes every later case down with it.
 VERSION = r"[0-9][0-9A-Za-z.+-]*"
+# The same rule as the checker's VERSION constant, in
+# scripts/test-cdn-versions.py -- spelled out in both places because
+# this harness runs against a COPY of the tree and cannot import the
+# file it is testing. A pattern that stopped one character earlier
+# would compare a different string than the one the template pins, and
+# the difference shows up as a mismatch that is not there.
 STYLE_PIN = re.compile(r"(highlight\.js@)(" + VERSION + r")(/styles)")
 KATEX_PIN = re.compile(r"(katex@)(" + VERSION + r")(/dist)")
 KATEX_PROSE = re.compile(r"(KaTeX )(" + VERSION + r")")
