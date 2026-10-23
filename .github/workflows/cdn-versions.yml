@@ -55,6 +55,12 @@ jobs:
         # two must not produce the same outcome. An exit 2 must not open an
         # issue claiming the pins are stale.
         shell: bash
+        # The step's own bound, tighter than the job's ten minutes. The
+        # check needs a couple of minutes when the network behaves; a
+        # step that is killed by its own timeout says so as a step
+        # timeout, where a job timeout says only that the job ran out
+        # of time and leaves the reader guessing which step hung.
+        timeout-minutes: 8
         run: |
           set +e
           python3 scripts/test-cdn-versions.py --latest | tee cdn-versions.txt
@@ -81,7 +87,20 @@ jobs:
             echo "the check output could not be captured (tee exit $capture_code)" >&2
             check_code=2
           fi
-          echo "exit_code=$check_code" >> "$GITHUB_OUTPUT"
+          # The verdict has to reach the steps that act on it, and
+          # the write is checked rather than assumed. A failed write
+          # (GITHUB_OUTPUT unset, a full disk) under set -e would abort
+          # the step with the WRITE's exit code, which is 1 -- the
+          # code that means "your pins are behind". The step would then
+          # carry no verdict at all while looking like a verdict, and
+          # the difference between "stale" and "could not be carried
+          # out" is the difference between opening an issue and
+          # staying quiet. A write that fails is "could not be carried
+          # out", so it exits 2.
+          if ! printf 'exit_code=%s\n' "$check_code" >> "$GITHUB_OUTPUT"; then
+            echo "::error::could not write the verdict to GITHUB_OUTPUT" >&2
+            exit 2
+          fi
           exit $check_code
 
       - name: Find the tracking issue
@@ -159,7 +178,16 @@ jobs:
             echo "and fails while they disagree with each other or with the README."
             echo
             echo '```'
-            cat cdn-versions.txt
+            # The capture is a convenience, not the alert. If the file
+            # is missing, the issue still has to be opened -- with the
+            # output missing -- because a missing capture is not a
+            # reason to stay silent about the pins. Failing the step
+            # here would open nothing at all.
+            if [ -f cdn-versions.txt ]; then
+              cat cdn-versions.txt
+            else
+              echo '(the check output was not captured)'
+            fi
             echo '```'
           )"
 
