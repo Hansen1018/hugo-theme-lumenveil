@@ -87,7 +87,13 @@ jobs:
         # always(): the step above fails on purpose when the pins are
         # behind, and a step whose `if` names no status function is
         # implicitly guarded by success().
-        if: always()
+        #
+        # The second half of that guard matters too: if the checkout
+        # failed, the check step never ran, so there is nothing to look
+        # up and no verdict to act on. Skipped then, rather than
+        # succeeding with an empty answer that the branches below would
+        # read as "no tracking issue exists".
+        if: always() && steps.check.outcome != 'skipped'
         env:
           GH_TOKEN: *** github.token }}
         run: |

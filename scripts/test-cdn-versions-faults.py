@@ -41,6 +41,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -97,11 +98,30 @@ def reset():
             shutil.copy2(src, dst)
 
 
-def run(args=()):
-    proc = subprocess.run(
-        [sys.executable, os.path.join(WORK, "scripts", "test-cdn-versions.py")]
-        + list(args),
-        capture_output=True, text=True, timeout=180, cwd=WORK)
+# The exit code a run reports when the checker did not finish. 124 is
+# the conventional shell code for a timeout, and it is deliberately not
+# 0, 1 or 2: this harness's own exit codes mean "every case behaved",
+# "a case did not behave" and "the check could not be carried out", and
+# a wedged checker must not be reported as any of those.
+TIMEOUT = 124
+
+
+def run(args=(), timeout=180):
+    """(exit code, output) for one run of the checker against the copy.
+
+    A checker that hangs is reported as TIMEOUT rather than crashing the
+    harness: subprocess.run raises TimeoutExpired, and an uncaught
+    exception exits with 1 -- the same code this harness uses for "a case
+    did not behave as specified", which would make a wedged checker
+    indistinguishable from a case that caught a fault.
+    """
+    try:
+        proc = subprocess.run(
+            [sys.executable, os.path.join(WORK, "scripts", "test-cdn-versions.py")]
+            + list(args),
+            capture_output=True, text=True, timeout=timeout, cwd=WORK)
+    except subprocess.TimeoutExpired:
+        return TIMEOUT, "the checker did not finish within %ds" % timeout
     return proc.returncode, proc.stdout + proc.stderr
 
 
@@ -195,6 +215,30 @@ def registry_reachable():
         return False
 
 
+def version_published(pkg, version):
+    """(published, looked) for one exact version on the npm registry.
+
+    published is True when npm has it, False when it does not, and None
+    when the registry could not be asked. The three-way answer matters:
+    "nobody published it" and "we could not look" are different facts,
+    and only the first is a defect in the tree.
+    """
+    url = (REGISTRY + "/" + urllib.parse.quote(pkg, safe="")
+           + "/" + urllib.parse.quote(version, safe=""))
+    req = urllib.request.Request(
+        url, headers={"User-Agent": "lumenveil-cdn-faults"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            return data.get("version") == version, True
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            return False, True
+        return None, True
+    except Exception:  # network, DNS, timeout, malformed body
+        return None, False
+
+
 def published_below(pkg, current):
     """The greatest version npm has published that is below `current`.
 
@@ -248,6 +292,31 @@ def failures(out):
         if line.startswith("FAILED"):
             return [l for l in lines[i + 1:] if l.startswith("  - ")]
     return []
+
+
+def network_not_carried_out(names, code, skipped):
+    """Did the checker fail to carry the case out at all?
+
+    Two answers mean that, and neither is a verdict about the tree:
+
+    - TIMEOUT: the checker did not finish. A timeout is an outage.
+    - 2: the checker's own "could not be carried out" -- the registry
+      or the CDN could not be reached, or the network budget ran out
+      before the question could be asked. The checker says so itself,
+      and a run that could not be carried out has found nothing wrong.
+
+    The offline cases have no network in them at all, so neither of
+    these can happen there: a timeout there means a wedged checker and
+    stays a failure -- which is what the case that plants a wedged
+    checker asserts, and why it expects TIMEOUT rather than 2.
+    """
+    if code not in (TIMEOUT, 2):
+        return False
+    for name in names:
+        skipped.append(name)
+    print("  [SKIP] %-46s the check could not be carried out (%d)"
+          % (names[0], code))
+    return True
 
 
 def report(name, code, expect):
@@ -323,13 +392,17 @@ def main():
     # offline check must not notice it, and --latest must.
     reset()
     pinned = current_katex()
-    # The stale version has to be one that really exists upstream: a pin
-    # that was never published is caught as a typo, not as drift.
-    stale = older_than(pinned)
+    # The stale version has to be one that really exists upstream, and it
+    # has to be the release the registry itself reports as the greatest
+    # published one below the pin. An arithmetic guess names a version
+    # nobody published (katex has no 0.15.11), and then --latest fails
+    # with "never published" rather than with "behind the latest
+    # release" -- the case would pass, for the wrong reason.
     reachable = registry_reachable()
+    stale = None
     if reachable:
         try:
-            published = published_below("katex", pinned)
+            stale = published_below("katex", pinned)
         except Exception as exc:  # noqa: BLE001 -- a registry that
             # answers and then times out is an outage, not a defect
             # in the tree. Treated as unreachable: the cases that
@@ -337,36 +410,50 @@ def main():
             # the harness dying with a traceback whose exit code (1)
             # is indistinguishable from "a case misbehaved".
             print("  the registry answered and then failed: %s" % exc)
-            published = None
+            stale = None
+            # The registry is unreliable, not just slow about this one
+            # package: the later cases ask it questions too, and a
+            # half-answered registry would fail them for the wrong
+            # reason.
             reachable = False
-        if published:
-            stale = published
-    sub(find_pin_file(KATEX_PIN), KATEX_PIN,
-        lambda m: m.group(1) + stale + m.group(3))
-    sub(os.path.join(WORK, "README.md"), KATEX_PROSE,
-        lambda m: m.group(1) + stale)
-    sub(os.path.join(WORK, "README.zh.md"), KATEX_PROSE,
-        lambda m: m.group(1) + stale)
-    if reachable:
-        code, out = run(["--latest"])
-        results.append(report("stale pin fails --latest", code, 1))
-        results.append(report_names("the failure names the stale pin",
-                                     out, stale))
-        if code != 1:
-            print(out[-1500:])
-    else:
+    if not stale:
+        # No real published release below the pin to plant. BOTH cases
+        # that need it are skipped, the offline one included: its
+        # subject is a tree that is consistent but STALE, and a version
+        # nobody published is a typo, not a stale pin. The intact-tree
+        # case above still covers the offline mode.
         skipped.append("stale pin fails --latest")
-        print("  [SKIP] %-46s npm registry unreachable" % "stale pin fails --latest")
+        skipped.append("stale but consistent tree passes offline mode")
+        print("  [SKIP] %-46s no published release below the pin to plant"
+              % "stale pin fails --latest")
+        print("  [SKIP] %-46s no published release below the pin to plant"
+              % "stale but consistent tree passes offline mode")
+    else:
+        sub(find_pin_file(KATEX_PIN), KATEX_PIN,
+            lambda m: m.group(1) + stale + m.group(3))
+        sub(os.path.join(WORK, "README.md"), KATEX_PROSE,
+            lambda m: m.group(1) + stale)
+        sub(os.path.join(WORK, "README.zh.md"), KATEX_PROSE,
+            lambda m: m.group(1) + stale)
+        code, out = run(["--latest"])
+        if not network_not_carried_out(
+                ["stale pin fails --latest",
+                 "the failure names the stale pin"], code, skipped):
+            results.append(report("stale pin fails --latest", code, 1))
+            results.append(report_names("the failure names the stale pin",
+                                         out, stale))
+            if code != 1:
+                print(out[-1500:])
 
-    # Fault 5: the same stale tree must NOT fail the OFFLINE check. The
-    # offline check does not look at upstream -- if it did, every pull
-    # request would go red the day a release lands, which is why the two
-    # modes are separate in the first place.
-    code, out = run()
-    results.append(report("stale but consistent tree passes offline mode",
-                          code, 0))
-    if code != 0:
-        print(out[-1500:])
+        # Fault 5: the same stale tree must NOT fail the OFFLINE check.
+        # The offline check does not look at upstream -- if it did, every
+        # pull request would go red the day a release lands, which is why
+        # the two modes are separate in the first place.
+        code, out = run()
+        results.append(report("stale but consistent tree passes offline mode",
+                              code, 0))
+        if code != 0:
+            print(out[-1500:])
 
     # Fault 6: a pin that names a version nobody ever published. The
     # comparison against the latest release cannot see it -- a pin ABOVE
@@ -389,11 +476,14 @@ def main():
         print(out[-1500:])
     if reachable:
         code, out = run(["--latest"])
-        results.append(report("a pin nobody published fails --latest", code, 1))
-        results.append(report_names("the failure names the unpublished pin",
-                                     out, ghost))
-        if code != 1:
-            print(out[-1500:])
+        if not network_not_carried_out(
+                ["a pin nobody published fails --latest",
+                 "the failure names the unpublished pin"], code, skipped):
+            results.append(report("a pin nobody published fails --latest", code, 1))
+            results.append(report_names("the failure names the unpublished pin",
+                                         out, ghost))
+            if code != 1:
+                print(out[-1500:])
     else:
         skipped.append("a pin nobody published fails --latest")
         print("  [SKIP] %-46s npm registry unreachable"
@@ -431,22 +521,43 @@ def main():
                           code, 0))
     if code != 0:
         print(out[-1500:])
-    if reachable and cdn_reachable():
+    # The case is only meaningful when the pinned release really exists
+    # upstream. If it does not, --latest already fails with "never
+    # published", the exit code says 1 for a reason this case did not
+    # plant, and the URL check is never exercised at all.
+    published, looked = version_published("katex", current_katex())
+    if (registry_reachable() and cdn_reachable()
+            and looked and published):
         code, out = run(["--latest"])
-        results.append(report("a missing CDN file fails --latest", code, 1))
-        # The exit code alone cannot say WHY: a tree that is already
-        # behind upstream fails for a reason this case did not plant.
-        # The failure has to name the missing file.
-        results.append(report_names("the failure names the missing file",
-                                     out, "katex.nonexistent.css"))
-        if code != 1:
-            print(out[-1500:])
+        if not network_not_carried_out(
+                ["a missing CDN file fails --latest",
+                 "the failure names the missing file"], code, skipped):
+            results.append(report("a missing CDN file fails --latest", code, 1))
+            # The exit code alone cannot say WHY: a tree that is already
+            # behind upstream fails for a reason this case did not plant.
+            # The failure has to name the missing file.
+            results.append(report_names("the failure names the missing file",
+                                         out, "katex.nonexistent.css"))
+            if code != 1:
+                print(out[-1500:])
     else:
         skipped.append("a missing CDN file fails --latest")
-        print("  [SKIP] %-46s the CDN could not be reached"
+        print("  [SKIP] %-46s the pinned release could not be confirmed"
               % "a missing CDN file fails --latest")
 
-    # Fault 9: no pins at all must be a FAILURE. A check that finds nothing
+    # Fault 9: a checker that hangs. The harness must say so rather than
+    # die: an uncaught TimeoutExpired exits with 1, the same code a case
+    # that did not behave uses, so a wedged checker would be
+    # indistinguishable from a case that caught a fault.
+    reset()
+    write(CHECKER, "import time\ntime.sleep(30)\n")
+    code, out = run(timeout=2)
+    results.append(report("a wedged checker is reported as a timeout",
+                          code, TIMEOUT))
+    if code != TIMEOUT:
+        print(out[-1500:])
+
+    # Fault 10: no pins at all must be a FAILURE. A check that finds nothing
     # to check has checked nothing, and would pass forever on a tree where
     # the templates had been refactored past the URLs.
     reset()
@@ -502,22 +613,6 @@ def bump(version):
     """A different version, derived from the one in the tree."""
     major, minor, patch = version_core(version)
     return "%d.%d.%d" % (major, minor, patch + 1)
-
-
-def older_than(version):
-    """A version below the one in the tree, without going negative.
-
-    Arithmetic only: it is the fallback for the case where the registry
-    cannot be reached and the published list cannot be asked for a real
-    older version. It is used only for the offline case, where the version
-    does not have to exist upstream.
-    """
-    major, minor, patch = version_core(version)
-    if minor > 0:
-        return "%d.%d.%d" % (major, minor - 1, patch)
-    if major > 0:
-        return "%d.%d.%d" % (major - 1, 0, patch)
-    return "0.0.%d" % max(patch - 1, 0)
 
 
 def never_published(version):

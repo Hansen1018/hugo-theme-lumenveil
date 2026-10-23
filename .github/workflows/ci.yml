@@ -5,11 +5,13 @@ on:
   pull_request:
     branches: [main]
 
-# Least privilege, declared explicitly rather than inherited. This workflow only
-# checks out code and runs Hugo — it never writes to the repo — so a repo-wide
-# default change to a wider GITHUB_TOKEN scope should not silently widen this
-# job. Matches the explicit grant in ocr-review.yml, which additionally needs
-# pull-requests: write to post review comments.
+# Least privilege, declared explicitly rather than inherited. Neither job in
+# this file writes to the repo: one checks out code and runs Hugo, the other
+# checks out code and asks the npm registry and the CDNs what versions they
+# have. So a repo-wide default change to a wider GITHUB_TOKEN scope should
+# not silently widen either of them. Matches the explicit grant in
+# ocr-review.yml, which additionally needs pull-requests: write to post
+# review comments.
 permissions:
   contents: read
 
@@ -416,12 +418,17 @@ jobs:
     runs-on: ubuntu-latest
     # A hung step (an unresponsive registry, a CDN that never answers)
     # otherwise burns runner minutes up to the 6h GitHub default. The two
-    # steps below carry their own, tighter bounds; this is the backstop,
-    # and it is wider than the sum of those two so that a step that
-    # uses its whole allowance does not take the job down with it.
+    # steps below carry their own, tighter bounds; this is the backstop, and
+    # it is wider than the sum of those two, so that a step which uses its
+    # whole allowance does not take the job down with it.
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Parity with the build job above, so the two jobs cannot
+          # silently disagree about what "the tree" is. The repository
+          # carries no submodule today, so this changes nothing yet.
+          submodules: recursive
 
       # The CDN library versions the theme loads are hardcoded in the
       # templates, and Dependabot cannot see them: it tracks package
@@ -433,10 +440,10 @@ jobs:
       # it drifts the same way.
       #
       # This asserts the internal half only: every pin agrees with every
-      # other pin for the same library, and the versions quoted in the
-      # README match the templates. The pins are read out of the templates
-      # themselves, so this step cannot become a second list to keep in
-      # sync.
+      # other pin for the same library, and the versions quoted in
+      # README.md and README.zh.md match the templates. The pins are read
+      # out of the templates themselves, so this step cannot become a
+      # second list to keep in sync.
       #
       # The upstream half -- "is a newer release out there?" -- is NOT
       # checked here. A new upstream release is not a defect in this pull
@@ -461,12 +468,25 @@ jobs:
       # the registry cannot be reached: an outage says nothing about the
       # checker, and a test that turns a network outage into a red build
       # teaches people to ignore red builds. A skip is reported -- counted in
-      # the summary and announced as a warning -- so that a green run never
-      # hides the fact that the network half was not exercised.
+      # the summary and announced as a ::warning:: annotation, which GitHub
+      # shows on the check itself -- so a green run never hides the fact
+      # that the network half was not exercised.
+      #
+      # A skip is the only soft outcome here. Exit 3 from the harness is a
+      # hard failure and is meant to be: it means the harness could not
+      # build the case at all (a template shape it does not recognise),
+      # which is a defect in the harness rather than an outage, and must
+      # not be confused with the network being down.
       - name: Test the CDN version check actually catches a broken pin
         # This one does reach the network -- the npm registry, and the
         # CDN requests behind the reachability check -- so it gets a
-        # longer bound than the step above, still well inside the
-        # job's own limit.
-        timeout-minutes: 8
+        # longer bound than the step above.
+        #
+        # The arithmetic: the harness runs the checker several times, and
+        # each network-dependent case costs a reachability probe plus one
+        # budgeted run of the checker (the checker itself stops after
+        # NETWORK_BUDGET). Three such cases are about seven minutes in the
+        # worst case, so twelve leaves headroom and still fits inside the
+        # job's own fifteen.
+        timeout-minutes: 12
         run: python3 scripts/test-cdn-versions-faults.py

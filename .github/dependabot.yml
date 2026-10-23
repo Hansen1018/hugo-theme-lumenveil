@@ -2,14 +2,15 @@ version: 2
 
 # There is deliberately no `pip` ecosystem entry, and that is not because
 # the repository is dependency-free. The scripts under scripts/ import only
-# the Python standard library (argparse, collections, html, json, os, re,
-# shutil, struct, subprocess, sys, tempfile, urllib, zlib), so they need no
-# manifest. The repository root does have one third-party dependency:
-# verify.py and dark-check.py drive Playwright, which CONTRIBUTING.md
-# documents as a manual install. Dependabot's pip ecosystem tracks a
-# manifest file, and there is none, so an entry would sit here permanently
-# skipped and read as though something were being tracked. Add one in the
-# same commit that introduces a requirements.txt.
+# the Python standard library, so they need no manifest -- no list of
+# module names is given here on purpose, because such a list drifts the
+# moment a script imports one more module, and a list that is already
+# out of date is worse than none. The repository root does have one
+# third-party dependency: verify.py and dark-check.py drive Playwright,
+# which CONTRIBUTING.md documents as a manual install. Dependabot's pip
+# ecosystem tracks a manifest file, and there is none, so an entry would
+# sit here permanently skipped and read as though something were being
+# tracked. Add one in the same commit that introduces a requirements.txt.
 #
 # The CDN libraries the theme loads -- highlight.js, KaTeX, PhotoSwipe --
 # are pinned in layouts/ and are invisible to every ecosystem above: they

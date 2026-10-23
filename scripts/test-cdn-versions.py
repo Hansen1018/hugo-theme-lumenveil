@@ -30,6 +30,14 @@ Two independent checks live here, and they fail for different reasons:
    a path the CDN does not have: the page then loads a 404 for the maths
    or the highlighter and renders without it, silently.
 
+The network half has a wall-clock budget of its own (NETWORK_BUDGET). A
+registry or a CDN that accepts the connection and then stalls costs the
+full per-request timeout for every request in turn, and there are enough
+of them -- three packages, each looked up twice, plus every pinned URL
+-- to turn a total outage into minutes of waiting. Once the budget is
+spent the check stops asking and reports what it could not reach, which
+is the same "could not be carried out" outcome a timeout produces.
+
 The network half is deliberately NOT part of pull-request CI: a new
 upstream release is not a defect in the PR being reviewed, and failing
 every build until somebody bumps the pin teaches people to ignore red CI.
@@ -61,6 +69,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -94,6 +103,30 @@ CDN_URL = re.compile(
 
 fails = []
 unreachable = []
+
+# The wall-clock budget for the whole network half of the check.
+#
+# A registry or a CDN that accepts the connection and then stalls costs
+# the full per-request timeout for every request in turn, and there are
+# enough of them -- three packages, each looked up twice, plus every
+# pinned URL -- to turn a total outage into minutes of waiting. Once the
+# budget is spent the check stops asking and reports what it could not
+# reach, which is the same "could not be carried out" outcome (exit 2)
+# that a single timeout already produces.
+NETWORK_BUDGET = 90.0
+_deadline = None
+
+
+def start_network_budget():
+    global _deadline
+    _deadline = time.monotonic() + NETWORK_BUDGET
+
+
+def budget_spent():
+    """Has the network budget run out?"""
+    if _deadline is None:
+        return False
+    return time.monotonic() > _deadline
 
 
 def fail(msg):
@@ -174,6 +207,8 @@ def http_status(url, timeout=20):
     a 5xx, a timeout, a DNS failure. The middle one is a fact about the
     tree; the last one is the absence of one.
     """
+    if budget_spent():
+        return None, "unreachable", "the network budget was spent"
     req = urllib.request.Request(
         url, method="HEAD", headers={"User-Agent": "lumenveil-cdn-versions"})
     try:
@@ -287,6 +322,8 @@ def npm_published(pkg, version, timeout=20):
     three-way answer is deliberate: "not there" and "could not look" are
     different facts, and only the first is a defect in the tree.
     """
+    if budget_spent():
+        return None, "the network budget was spent"
     url = "https://registry.npmjs.org/%s/%s" % (
         urllib.parse.quote(pkg, safe=""),
         urllib.parse.quote(version, safe=""))
@@ -313,6 +350,8 @@ def npm_latest(pkg, timeout=20):
     5xx, a malformed body. The last one is not a fact about the package: it
     is the absence of one, and the two must not be reported alike.
     """
+    if budget_spent():
+        return None, "unreachable", "the network budget was spent"
     url = "https://registry.npmjs.org/%s/latest" % (
         urllib.parse.quote(pkg, safe=""))
     req = urllib.request.Request(
@@ -395,6 +434,7 @@ def main():
         check_consistency(pins)
         check_readme(pins)
         if args.latest:
+            start_network_budget()
             check_upstream(pins)
             check_urls(collect_urls())
     except Exception as exc:  # noqa: BLE001 -- the point is to report, not crash
