@@ -418,6 +418,13 @@ jobs:
   # been true of only half of the runs.
   cdn-pins:
     runs-on: ubuntu-latest
+    # Explicit here as well as at the workflow level above, for the
+    # same reason: this job reads the tree and asks the npm registry
+    # and the CDNs what versions they have, and writes nothing.
+    # Declaring it at the job keeps the grant visible where the job
+    # is, so widening it later has to be a deliberate edit.
+    permissions:
+      contents: read
     # A hung step (an unresponsive registry, a CDN that never answers)
     # otherwise burns runner minutes up to the 6h GitHub default. The
     # steps below carry their own, tighter bounds; this is the backstop
