@@ -71,12 +71,17 @@ CHECKER = os.path.join(WORK, "scripts", "test-cdn-versions.py")
 # The two pin shapes this test mutates. The stylesheet comes from jsDelivr
 # and the script from cdnjs, so the stylesheet alone is the half-bump case:
 # a tree where the two disagree is exactly the bug the checker is for.
-STYLE_PIN = re.compile(r"(highlight\.js@)(\d+\.\d+\.\d+)(/styles)")
-KATEX_PIN = re.compile(r"(katex@)(\d+\.\d+\.\d+)(/dist)")
-KATEX_PROSE = re.compile(r"(KaTeX )(\d+\.\d+\.\d+)")
+# The version part of every pattern below accepts what the CHECKER
+# accepts -- a prerelease or build suffix included -- so that a pin
+# shape the checker reads fine cannot abort the whole harness with a
+# fatal error that takes every later case down with it.
+VERSION = r"[0-9][0-9A-Za-z.+-]*"
+STYLE_PIN = re.compile(r"(highlight\.js@)(" + VERSION + r")(/styles)")
+KATEX_PIN = re.compile(r"(katex@)(" + VERSION + r")(/dist)")
+KATEX_PROSE = re.compile(r"(KaTeX )(" + VERSION + r")")
 # The KaTeX stylesheet URL. Used by the case that plants a path that
 # does not exist inside a real, published release.
-KATEX_CSS = re.compile(r"(katex@[\d.]+/dist/)katex\.min\.css")
+KATEX_CSS = re.compile(r"(katex@" + VERSION + r"/dist/)katex\.min\.css")
 
 # The registry the checker talks to. Rewritten inside the COPY of the
 # checker to simulate an outage, so the simulation needs no hook in the
@@ -254,27 +259,38 @@ def published_below(pkg, current):
                  "Accept": "application/vnd.npm.install-v1+json"})
     with urllib.request.urlopen(req, timeout=30) as resp:
         data = json.loads(resp.read().decode("utf-8"))
-    limit = version_key(current)
+    limit = version_core(current)
     best = None
     for ver in data.get("versions", {}):
         if "-" in ver:
             # A prerelease is not what "behind upstream" means.
             continue
-        key = version_key(ver)
+        try:
+            key = version_parts(ver)
+        except ValueError:
+            # A published version this harness cannot parse cannot be
+            # compared against, so it is not a candidate.
+            continue
         if key < limit and (best is None or key > best[0]):
             best = (key, ver)
     return best[1] if best else None
 
 
-def version_key(version):
-    """(major, minor, patch) for a version string, prerelease parts dropped."""
+def version_parts(version):
+    """(major, minor, patch) for a version string, prerelease parts dropped.
+
+    Raises ValueError for a version that does not parse. ONE parser for
+    the whole harness: two parsers that disagree about a malformed
+    version are two places where the version a case planted and the
+    comparison made against it can drift apart.
+    """
     core = version.split("+")[0].split("-")[0]
     parts = []
     for part in core.split("."):
         try:
             parts.append(int(part))
         except ValueError:
-            parts.append(0)
+            raise ValueError("cannot parse the version %r" % version)
     while len(parts) < 3:
         parts.append(0)
     return tuple(parts[:3])
@@ -342,9 +358,31 @@ def report_names(name, out, version):
     return ok
 
 
+def report_says(name, out, phrase):
+    """Did the checker report this reason?
+
+    Naming the version is not enough. A version the registry DOES
+    publish can still make --latest fail, for a different reason
+    entirely -- and then the case would pass for the wrong reason. So the
+    reason has to be asserted as well as the version.
+    """
+    hits = [line for line in failures(out) if phrase in line]
+    ok = bool(hits)
+    print("  [%s] %-46s %s"
+          % ("PASS" if ok else "FAIL", name,
+             "said %r" % phrase if ok else "did not say %r" % phrase))
+    return ok
+
+
 def main():
     results = []
     skipped = []
+    # Whether the npm registry answered. Bound here so it can never be
+    # unbound: a later case reads it and an earlier one sets it, and a
+    # reordering of the cases must not turn that into an
+    # UnboundLocalError -- whose exit code (1) is indistinguishable from
+    # "a case misbehaved".
+    reachable = False
     print("fault injection for scripts/test-cdn-versions.py")
     print()
 
@@ -422,12 +460,15 @@ def main():
         # subject is a tree that is consistent but STALE, and a version
         # nobody published is a typo, not a stale pin. The intact-tree
         # case above still covers the offline mode.
-        skipped.append("stale pin fails --latest")
-        skipped.append("stale but consistent tree passes offline mode")
-        print("  [SKIP] %-46s no published release below the pin to plant"
-              % "stale pin fails --latest")
-        print("  [SKIP] %-46s no published release below the pin to plant"
-              % "stale but consistent tree passes offline mode")
+        # One entry per CHECK, so the total reported below never drifts:
+        # three checks are skipped here, and listing two of them would
+        # report fewer skips than there are checks.
+        for name in ("stale pin fails --latest",
+                     "the failure names the stale pin",
+                     "stale but consistent tree passes offline mode"):
+            skipped.append(name)
+            print("  [SKIP] %-46s no published release below the pin to plant"
+                  % name)
     else:
         sub(find_pin_file(KATEX_PIN), KATEX_PIN,
             lambda m: m.group(1) + stale + m.group(3))
@@ -482,10 +523,22 @@ def main():
             results.append(report("a pin nobody published fails --latest", code, 1))
             results.append(report_names("the failure names the unpublished pin",
                                          out, ghost))
+            # The version this case plants is ABOVE the pin, so the only
+            # thing that can make --latest fail is the "never
+            # published" branch. A registry that did publish it would
+            # fail for some other reason instead -- and the case would
+            # pass for the wrong reason. So the reason is asserted too.
+            results.append(report_says(
+                "the failure says the version was never published",
+                out, "never published"))
             if code != 1:
                 print(out[-1500:])
     else:
-        skipped.append("a pin nobody published fails --latest")
+        # Both checks of this case are skipped: the exit code, and the
+        # reason it would have had.
+        for name in ("a pin nobody published fails --latest",
+                     "the failure names the unpublished pin"):
+            skipped.append(name)
         print("  [SKIP] %-46s npm registry unreachable"
               % "a pin nobody published fails --latest")
 
@@ -496,7 +549,18 @@ def main():
     # outage.
     reset()
     text = read(CHECKER)
-    write(CHECKER, text.replace(REGISTRY, "http://127.0.0.1:9"))
+    # The rewrite is a string substitution against a literal in the
+    # checker, so it is coupled to how that file spells the registry
+    # host. If the checker is refactored to spell it differently, the
+    # substitution matches nothing and this case quietly stops testing
+    # what it exists to test. So the substitution is checked, not
+    # assumed.
+    rewritten = text.replace(REGISTRY, "http://127.0.0.1:9")
+    if rewritten == text:
+        print("FATAL: the checker no longer spells the registry host %r"
+              % REGISTRY, file=sys.stderr)
+        sys.exit(FATAL_HARNESS)
+    write(CHECKER, rewritten)
     code, out = run()
     results.append(report("an unreachable registry leaves the tree alone",
                           code, 0))
@@ -541,7 +605,9 @@ def main():
             if code != 1:
                 print(out[-1500:])
     else:
-        skipped.append("a missing CDN file fails --latest")
+        for name in ("a missing CDN file fails --latest",
+                     "the failure names the missing file"):
+            skipped.append(name)
         print("  [SKIP] %-46s the pinned release could not be confirmed"
               % "a missing CDN file fails --latest")
 
@@ -572,7 +638,7 @@ def main():
 
     print()
     if skipped:
-        print("  %d of %d cases ran; %d skipped: %s"
+        print("  %d of %d checks ran; %d skipped: %s"
               % (len(results), len(results) + len(skipped), len(skipped),
                  ", ".join(skipped)))
         # The skipped cases are the only ones that exercise the --latest
@@ -582,31 +648,23 @@ def main():
         print("::warning::the registry-dependent cases were skipped, so the "
               "--latest half of the checker was not exercised")
     else:
-        print("  %d/%d cases behaved as specified"
+        print("  %d/%d checks behaved as specified"
               % (sum(results), len(results)))
     return 0 if all(results) else 1
 
 
 def version_core(version):
-    """(major, minor, patch) for a version string, prerelease dropped.
+    """(major, minor, patch) for a version taken from the tree.
 
-    The checker's own pattern accepts a prerelease ("0.16.11-beta.1"),
-    so a version that does not parse as three plain numbers is a real
-    possibility rather than a theoretical one. The helpers below build
-    a version FROM the tree, so one they cannot parse means the harness
-    cannot build its case -- FATAL_HARNESS, not a case that misbehaved
-    (exit 1 would say the opposite).
+    The version comes out of the tree, so one that does not parse means
+    the tree carries something this harness does not understand -- which
+    is FATAL_HARNESS, not a silently coerced zero.
     """
-    core = version.split("+")[0].split("-")[0]
     try:
-        numbers = [int(p) for p in core.split(".")]
-    except ValueError:
-        print("FATAL: cannot parse the version %r" % version,
-              file=sys.stderr)
+        return version_parts(version)
+    except ValueError as exc:
+        print("FATAL: %s" % exc, file=sys.stderr)
         sys.exit(FATAL_HARNESS)
-    while len(numbers) < 3:
-        numbers.append(0)
-    return tuple(numbers[:3])
 
 
 def bump(version):

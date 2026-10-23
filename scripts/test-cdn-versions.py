@@ -448,7 +448,14 @@ def main():
         for f in fails:
             print("  - %s" % f)
         for u in unreachable:
-            print("  - %s" % u)
+            # A different marker from the failures above, on purpose. An
+            # unreachable entry is the ABSENCE of a finding, and anything
+            # that reads this output to decide what went wrong has to be
+            # able to tell the two apart. The fault harness looks for the
+            # "  - " marker, and must not read "could not reach the
+            # registry" as if the checker had reported the version the
+            # case planted.
+            print("  ! %s" % u)
         return 1
     if unreachable:
         # Nothing failed, but part of the check could not be carried out.
@@ -458,7 +465,9 @@ def main():
         print("INCOMPLETE  %d check(s) could not be carried out."
               % len(unreachable))
         for u in unreachable:
-            print("  - %s" % u)
+            # The same marker as in the FAILED branch above: these are
+            # not findings either.
+            print("  ! %s" % u)
         return 2
     print("PASSED  every CDN pin agrees with itself, with the README and "
           "with upstream.")
