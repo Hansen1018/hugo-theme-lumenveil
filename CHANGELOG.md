@@ -1,4 +1,5 @@
 ## Unreleased
+- eefd12b fix(deps): bump KaTeX to 0.19.0 and highlight.js to 11.12.0
 - 5c14ecc fix(js): wrap unwrapped <pre> in .highlight before attaching copy button
 - 06aeb41 docs(brand): add Lumenveil logo suite
 - 502fcdc docs(brand): add GitHub Settings asset PNGs + maintenance note
