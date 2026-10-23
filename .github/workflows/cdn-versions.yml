@@ -58,27 +58,36 @@ jobs:
         run: |
           set +e
           python3 scripts/test-cdn-versions.py --latest | tee cdn-versions.txt
-          code=${PIPESTATUS[0]}
+          # PIPESTATUS is read ONCE, into an array: assigning from it
+          # resets it, so reading [0] and [1] in two separate
+          # statements would read the second one out of a reset array.
+          codes=("${PIPESTATUS[@]}")
           set -e
-          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
-          exit $code
+          check_code="${codes[0]}"
+          capture_code="${codes[1]:-0}"
+          if [ "$capture_code" -ne 0 ]; then
+            # The check's own verdict and the capture of its output
+            # are two different things. A tee that failed (a full disk,
+            # a permissions problem) says nothing about the pins, so it
+            # is reported as its own outcome instead of being folded
+            # into the check's: the issue body quotes the captured
+            # output, and a truncated capture would make that body
+            # wrong in a way nobody would notice.
+            echo "the check output could not be captured (tee exit $capture_code)" >&2
+            check_code=2
+          fi
+          echo "exit_code=$check_code" >> "$GITHUB_OUTPUT"
+          exit $check_code
 
-      - name: Open or update the tracking issue
-        # Exit 1 only. Exit 2 means the check could not run, and the job is
-        # already red for that; opening an issue would report a stale-pin
-        # problem that does not exist.
-        #
-        # always() is load-bearing, not decoration. The step above exits
-        # with the script's own exit code, so a genuine "your pins are
-        # behind" (exit 1) FAILS that step -- and a step whose `if`
-        # names no status function is implicitly guarded by success(),
-        # which is false once an earlier step has failed. Without
-        # always() this step is skipped exactly when it is needed most,
-        # and the tracking issue is never opened. Measured on the real
-        # engine: after a step exited 1, a following step whose `if` read
-        # only steps.check.outputs was SKIPPED, while
-        # `always() && steps.check.outputs` ran.
-        if: always() && steps.check.outputs.exit_code == '1'
+      - name: Find the tracking issue
+        # ONE lookup, in ONE place. The open and close steps used to
+        # repeat the same `gh issue list` pipeline verbatim, and two
+        # copies of a lookup are two copies that can drift apart.
+        id: lookup
+        # always(): the step above fails on purpose when the pins are
+        # behind, and a step whose `if` names no status function is
+        # implicitly guarded by success().
+        if: always()
         env:
           GH_TOKEN: *** github.token }}
         run: |
@@ -96,6 +105,36 @@ jobs:
           # one every Monday.
           OPEN="$(gh issue list --label dependencies --state open --limit 200 --json number,title)"
           NUMBER="$(printf '%s' "$OPEN" | jq -r --arg t "$TITLE" 'map(select(.title == $t)) | .[0].number // empty')"
+          echo "title=$TITLE" >> "$GITHUB_OUTPUT"
+          echo "number=$NUMBER" >> "$GITHUB_OUTPUT"
+      - name: Open or update the tracking issue
+        # Exit 1 only. Exit 2 means the check could not run, and the job is
+        # already red for that; opening an issue would report a stale-pin
+        # problem that does not exist.
+        #
+        # always() is load-bearing, not decoration. The step above exits
+        # with the script's own exit code, so a genuine "your pins are
+        # behind" (exit 1) FAILS that step -- and a step whose `if`
+        # names no status function is implicitly guarded by success(),
+        # which is false once an earlier step has failed. Without
+        # always() this step is skipped exactly when it is needed most,
+        # and the tracking issue is never opened. Measured on the real
+        # engine: after a step exited 1, a following step whose `if` read
+        # only steps.check.outputs was SKIPPED, while
+        # `always() && steps.check.outputs` ran.
+        # steps.lookup.outcome == 'success' as well: if the lookup itself
+        # failed there is no number to update, and opening a new issue on
+        # the strength of a failed lookup is how duplicates appear.
+        if: always() && steps.check.outputs.exit_code == '1' && steps.lookup.outcome == 'success'
+        env:
+          GH_TOKEN: *** github.token }}
+        run: |
+          set -euo pipefail
+          # The lookup happened once, in the step above. Two copies of it
+          # are two copies that can drift apart -- one of them quietly
+          # stops finding the issue the other one closes.
+          TITLE="${{ steps.lookup.outputs.title }}"
+          NUMBER="${{ steps.lookup.outputs.number }}"
 
           BODY="$(
             echo "The pinned CDN libraries in layouts/ need attention: either a pin"
@@ -123,14 +162,13 @@ jobs:
         # always() for the same reason as the step above: the guard has
         # to survive a failed previous step, so the two branches are
         # decided by the exit code alone.
-        if: always() && steps.check.outputs.exit_code == '0'
+        if: always() && steps.check.outputs.exit_code == '0' && steps.lookup.outcome == 'success'
         env:
           GH_TOKEN: *** github.token }}
         run: |
           set -euo pipefail
-          TITLE="CDN library pins need attention"
-          OPEN="$(gh issue list --label dependencies --state open --limit 200 --json number,title)"
-          NUMBER="$(printf '%s' "$OPEN" | jq -r --arg t "$TITLE" 'map(select(.title == $t)) | .[0].number // empty')"
+          # The lookup happened once, in the step above.
+          NUMBER="${{ steps.lookup.outputs.number }}"
           if [ -n "$NUMBER" ]; then
             echo "closing issue #$NUMBER -- the pins are current"
             gh issue close "$NUMBER" --comment "The pinned CDN versions are current again."

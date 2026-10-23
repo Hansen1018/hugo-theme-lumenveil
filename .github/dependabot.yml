@@ -1,9 +1,5 @@
 version: 2
-updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
+
 # There is deliberately no `pip` ecosystem entry, and that is not because
 # the repository is dependency-free. The scripts under scripts/ import only
 # the Python standard library (argparse, collections, html, json, os, re,
@@ -20,3 +16,9 @@ updates:
 # are not packages, they are strings in a template. That is why they are
 # checked by scripts/test-cdn-versions.py (on every pull request) and by
 # .github/workflows/cdn-versions.yml (on a schedule).
+
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

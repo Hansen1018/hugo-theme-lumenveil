@@ -406,6 +406,23 @@ jobs:
       - name: Test feed summaries are not cut inside a container
         run: python3 scripts/test-rss-summary.py
 
+
+  # The CDN pin checks do not depend on the Hugo version, so they live in
+  # their own job rather than as two more steps in the matrix job above.
+  # Running them on every matrix leg repeated the same network work and
+  # doubled the chance that one leg flaked on a slow CDN or a slow
+  # registry. One job runs once per push.
+  cdn-pins:
+    runs-on: ubuntu-latest
+    # A hung step (an unresponsive registry, a CDN that never answers)
+    # otherwise burns runner minutes up to the 6h GitHub default. The two
+    # steps below carry their own, tighter bounds; this is the backstop,
+    # and it is wider than the sum of those two so that a step that
+    # uses its whole allowance does not take the job down with it.
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
       # The CDN library versions the theme loads are hardcoded in the
       # templates, and Dependabot cannot see them: it tracks package
       # manifests, and a CDN-pinned theme has none. Without a check, a bump
@@ -427,10 +444,11 @@ jobs:
       # teaches people to ignore red CI. That half runs on a schedule
       # instead: .github/workflows/cdn-versions.yml.
       - name: Check the CDN pins are internally consistent
-        # Bounded so a hung read cannot eat the whole job's budget.
-        # This step only reads the tree -- no network -- so two minutes
-        # is far more than it can need, and it fails fast if something
-        # wedges.
+        # Bounded so a hung read cannot eat the whole job's budget. This
+        # step runs the checker in its DEFAULT mode -- the offline half,
+        # which reads the tree and makes no network calls at all. The
+        # network half is --latest, and that runs on the schedule above,
+        # not here. Two minutes is far more than a local read can need.
         timeout-minutes: 2
         run: python3 scripts/test-cdn-versions.py
 
@@ -449,6 +467,6 @@ jobs:
         # This one does reach the network -- the npm registry, and the
         # CDN requests behind the reachability check -- so it gets a
         # longer bound than the step above, still well inside the
-        # job's own 15-minute limit.
+        # job's own limit.
         timeout-minutes: 8
         run: python3 scripts/test-cdn-versions-faults.py

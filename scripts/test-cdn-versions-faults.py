@@ -33,18 +33,26 @@ keeping --latest out of pull-request CI. A skip is still reported -- counted
 in the summary and announced as a warning -- so that a green run never hides
 the fact that the network half of the checker was not exercised.
 """
+import atexit
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import urllib.parse
 import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
-WORK = os.path.join("/tmp", "cdn-faults")
+# A unique directory per run. A fixed path under /tmp collides between
+# concurrent runs on the same machine -- and reset() deletes this path
+# wholesale, so two runs would delete each other's tree.
+WORK = tempfile.mkdtemp(prefix="cdn-faults-")
+# Removed on exit however the harness ends, so a case that dies early
+# does not leave a tree behind.
+atexit.register(shutil.rmtree, WORK, True)
 
 # The harness could not build the case it was asked to build. Its own code,
 # so that CI can tell it apart from a case that behaved wrongly.
@@ -320,7 +328,17 @@ def main():
     stale = older_than(pinned)
     reachable = registry_reachable()
     if reachable:
-        published = published_below("katex", pinned)
+        try:
+            published = published_below("katex", pinned)
+        except Exception as exc:  # noqa: BLE001 -- a registry that
+            # answers and then times out is an outage, not a defect
+            # in the tree. Treated as unreachable: the cases that
+            # need the registry are skipped and reported, instead of
+            # the harness dying with a traceback whose exit code (1)
+            # is indistinguishable from "a case misbehaved".
+            print("  the registry answered and then failed: %s" % exc)
+            published = None
+            reachable = False
         if published:
             stale = published
     sub(find_pin_file(KATEX_PIN), KATEX_PIN,
@@ -458,9 +476,31 @@ def main():
     return 0 if all(results) else 1
 
 
+def version_core(version):
+    """(major, minor, patch) for a version string, prerelease dropped.
+
+    The checker's own pattern accepts a prerelease ("0.16.11-beta.1"),
+    so a version that does not parse as three plain numbers is a real
+    possibility rather than a theoretical one. The helpers below build
+    a version FROM the tree, so one they cannot parse means the harness
+    cannot build its case -- FATAL_HARNESS, not a case that misbehaved
+    (exit 1 would say the opposite).
+    """
+    core = version.split("+")[0].split("-")[0]
+    try:
+        numbers = [int(p) for p in core.split(".")]
+    except ValueError:
+        print("FATAL: cannot parse the version %r" % version,
+              file=sys.stderr)
+        sys.exit(FATAL_HARNESS)
+    while len(numbers) < 3:
+        numbers.append(0)
+    return tuple(numbers[:3])
+
+
 def bump(version):
     """A different version, derived from the one in the tree."""
-    major, minor, patch = (int(p) for p in version.split("."))
+    major, minor, patch = version_core(version)
     return "%d.%d.%d" % (major, minor, patch + 1)
 
 
@@ -472,7 +512,7 @@ def older_than(version):
     older version. It is used only for the offline case, where the version
     does not have to exist upstream.
     """
-    major, minor, patch = (int(p) for p in version.split("."))
+    major, minor, patch = version_core(version)
     if minor > 0:
         return "%d.%d.%d" % (major, minor - 1, patch)
     if major > 0:
@@ -487,7 +527,7 @@ def never_published(version):
     any real release of the package, so the case cannot accidentally name
     something npm happens to publish.
     """
-    major = int(version.split(".")[0])
+    major = version_core(version)[0]
     return "%d.%d.0" % (major, 999)
 
 
