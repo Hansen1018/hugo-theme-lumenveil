@@ -4,10 +4,14 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-# There is deliberately no `pip` ecosystem entry. The theme has no
-# requirements.txt, and the scripts under scripts/ import only the Python
-# standard library (collections, html, json, os, re, shutil, subprocess,
-# sys, tempfile, urllib, zlib), so a pip entry would sit here permanently
+# There is deliberately no `pip` ecosystem entry, and that is not because
+# the repository is dependency-free. The scripts under scripts/ import only
+# the Python standard library (argparse, collections, html, json, os, re,
+# shutil, struct, subprocess, sys, tempfile, urllib, zlib), so they need no
+# manifest. The repository root does have one third-party dependency:
+# verify.py and dark-check.py drive Playwright, which CONTRIBUTING.md
+# documents as a manual install. Dependabot's pip ecosystem tracks a
+# manifest file, and there is none, so an entry would sit here permanently
 # skipped and read as though something were being tracked. Add one in the
 # same commit that introduces a requirements.txt.
 #

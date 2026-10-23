@@ -427,11 +427,28 @@ jobs:
       # teaches people to ignore red CI. That half runs on a schedule
       # instead: .github/workflows/cdn-versions.yml.
       - name: Check the CDN pins are internally consistent
+        # Bounded so a hung read cannot eat the whole job's budget.
+        # This step only reads the tree -- no network -- so two minutes
+        # is far more than it can need, and it fails fast if something
+        # wedges.
+        timeout-minutes: 2
         run: python3 scripts/test-cdn-versions.py
 
       # The check above is worth nothing if it cannot fail. This asserts it
       # does, by breaking the tree in each way the check is meant to catch
       # and confirming the exit code changes. It runs against a COPY of the
       # tree in a temp directory, so it cannot touch the checkout.
+      #
+      # The cases that need the npm registry are SKIPPED, not failed, when
+      # the registry cannot be reached: an outage says nothing about the
+      # checker, and a test that turns a network outage into a red build
+      # teaches people to ignore red builds. A skip is reported -- counted in
+      # the summary and announced as a warning -- so that a green run never
+      # hides the fact that the network half was not exercised.
       - name: Test the CDN version check actually catches a broken pin
+        # This one does reach the network -- the npm registry, and the
+        # CDN requests behind the reachability check -- so it gets a
+        # longer bound than the step above, still well inside the
+        # job's own 15-minute limit.
+        timeout-minutes: 8
         run: python3 scripts/test-cdn-versions-faults.py

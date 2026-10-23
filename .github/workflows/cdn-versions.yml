@@ -22,6 +22,14 @@ on:
     - cron: '17 6 * * 1'
   workflow_dispatch:
 
+# One run at a time. The scheduled run and a manual dispatch can overlap,
+# and the open/close steps below are a check-then-act: two runs that both
+# find no tracking issue would each open one. The group serialises them;
+# cancel-in-progress is false so a running check is never killed mid-way.
+concurrency:
+  group: cdn-versions
+  cancel-in-progress: false
+
 # Read-only by default. The job below widens this to issues:write for the
 # single step that opens or updates the tracking issue, and nothing else.
 permissions:
@@ -59,23 +67,40 @@ jobs:
         # Exit 1 only. Exit 2 means the check could not run, and the job is
         # already red for that; opening an issue would report a stale-pin
         # problem that does not exist.
-        if: steps.check.outputs.exit_code == '1'
+        #
+        # always() is load-bearing, not decoration. The step above exits
+        # with the script's own exit code, so a genuine "your pins are
+        # behind" (exit 1) FAILS that step -- and a step whose `if`
+        # names no status function is implicitly guarded by success(),
+        # which is false once an earlier step has failed. Without
+        # always() this step is skipped exactly when it is needed most,
+        # and the tracking issue is never opened. Measured on the real
+        # engine: after a step exited 1, a following step whose `if` read
+        # only steps.check.outputs was SKIPPED, while
+        # `always() && steps.check.outputs` ran.
+        if: always() && steps.check.outputs.exit_code == '1'
         env:
           GH_TOKEN: *** github.token }}
         run: |
           set -euo pipefail
-          TITLE="CDN library pins are behind upstream"
+          TITLE="CDN library pins need attention"
 
           # Look for an existing open issue with this exact title, so a pin
           # that stays behind for several weeks updates one issue instead of
           # opening a new one every Monday. The title is matched exactly
           # rather than with `gh issue list --search`, which treats its
           # argument as a query and would not match a title literally.
-          OPEN="$(gh issue list --label dependencies --state open --json number,title)"
+          # --limit is explicit: gh defaults to 30 issues, and once more
+          # than that many open `dependencies` issues exist, the exact-title
+          # lookup would silently miss the tracking issue and open a second
+          # one every Monday.
+          OPEN="$(gh issue list --label dependencies --state open --limit 200 --json number,title)"
           NUMBER="$(printf '%s' "$OPEN" | jq -r --arg t "$TITLE" 'map(select(.title == $t)) | .[0].number // empty')"
 
           BODY="$(
-            echo "The pinned CDN library versions in layouts/ are behind upstream."
+            echo "The pinned CDN libraries in layouts/ need attention: either a pin"
+            echo "is behind the latest upstream release, or a pin points at a file"
+            echo "the CDN does not serve. The raw output of the check follows."
             echo
             echo "Bump the pin in the template, update the version quoted in the README, and run"
             echo "python3 scripts/test-cdn-versions.py -- it reads the pins from the templates"
@@ -95,13 +120,16 @@ jobs:
           fi
 
       - name: Close the tracking issue when the pins are current again
-        if: steps.check.outputs.exit_code == '0'
+        # always() for the same reason as the step above: the guard has
+        # to survive a failed previous step, so the two branches are
+        # decided by the exit code alone.
+        if: always() && steps.check.outputs.exit_code == '0'
         env:
           GH_TOKEN: *** github.token }}
         run: |
           set -euo pipefail
-          TITLE="CDN library pins are behind upstream"
-          OPEN="$(gh issue list --label dependencies --state open --json number,title)"
+          TITLE="CDN library pins need attention"
+          OPEN="$(gh issue list --label dependencies --state open --limit 200 --json number,title)"
           NUMBER="$(printf '%s' "$OPEN" | jq -r --arg t "$TITLE" 'map(select(.title == $t)) | .[0].number // empty')"
           if [ -n "$NUMBER" ]; then
             echo "closing issue #$NUMBER -- the pins are current"
