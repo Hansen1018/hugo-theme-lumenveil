@@ -484,13 +484,19 @@ jobs:
         # CDN requests behind the reachability check -- so it gets a
         # longer bound than the step above.
         #
-        # The bound is derived from the constants rather than from a
-        # case count, because the case count moves whenever a case is
-        # added. The dominant term is the checker's own NETWORK_BUDGET:
-        # each run of the checker stops after it, whatever the case.
-        # The reachability probes around it have their own timeouts, and
-        # the cases that point the checker at a dead port fail at once.
-        # Twelve minutes leaves room for all of that with headroom, and
-        # still fits inside the job's own fifteen.
+        # Two numbers, and they are related: the harness bounds its own
+        # network work to CDN_FAULTS_BUDGET seconds, and the step's
+        # timeout is the backstop above it. The budget is passed in here
+        # rather than hard-coded in the script so that the two cannot
+        # drift apart silently -- if the budget grew past what this
+        # timeout allows, the harness would be killed mid-run and a slow
+        # network would turn into a red build, which is the one outcome
+        # the skip rules exist to prevent.
+        #
+        # Seven minutes of network work, inside a twelve-minute step,
+        # inside a fifteen-minute job. The offline cases are not counted
+        # against the budget: they touch no network at all.
+        env:
+          CDN_FAULTS_BUDGET: "420"
         timeout-minutes: 12
         run: python3 scripts/test-cdn-versions-faults.py

@@ -41,6 +41,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -111,6 +112,45 @@ def reset():
 TIMEOUT = 124
 
 
+# The harness's own wall-clock budget for network work.
+#
+# The checker's NETWORK_BUDGET bounds the CHECKER's requests, not the
+# probes below: those are this script's, and they are paid for once per
+# case. A registry that accepts the connection and then stalls would
+# otherwise be paid for again and again, and the step in CI would be
+# killed by its own timeout -- turning a slow network into a red build,
+# which is the one outcome the skip rules exist to prevent.
+#
+# It is read from the environment so that the number the CI step allows
+# and the number the step's own timeout allows are set in the same
+# place and cannot drift apart silently.
+BUDGET = float(os.environ.get("CDN_FAULTS_BUDGET", "420"))
+
+_deadline = None
+_registry_ok = None
+
+
+def start_budget():
+    global _deadline
+    _deadline = time.monotonic() + BUDGET
+
+
+def budget_left():
+    """Seconds of network work still allowed, or 0.0 when it is spent."""
+    if _deadline is None:
+        return BUDGET
+    return max(0.0, _deadline - time.monotonic())
+
+
+def budget_spent():
+    return budget_left() <= 0.0
+
+
+def probe_timeout(own):
+    """The timeout for one probe: its own limit, or what is left of the budget."""
+    return max(1, int(min(own, budget_left())))
+
+
 def run(args=(), timeout=180):
     """(exit code, output) for one run of the checker against the copy.
 
@@ -119,7 +159,13 @@ def run(args=(), timeout=180):
     exception exits with 1 -- the same code this harness uses for "a case
     did not behave as specified", which would make a wedged checker
     indistinguishable from a case that caught a fault.
+
+    A run that needs the network and finds the budget spent is reported
+    the same way, and the caller skips it: the network did not answer,
+    which says nothing about the tree.
     """
+    if "--latest" in args and budget_spent():
+        return TIMEOUT, "the harness ran out of its network budget"
     try:
         proc = subprocess.run(
             [sys.executable, os.path.join(WORK, "scripts", "test-cdn-versions.py")]
@@ -197,27 +243,41 @@ def cdn_reachable():
     reachable while the other is not, and the URL check needs a probe
     of its own rather than borrowing the registry answer.
     """
+    if budget_spent():
+        return False
     url = ("https://cdn.jsdelivr.net/npm/katex@%s/dist/katex.min.css"
            % current_katex())
     try:
         req = urllib.request.Request(
             url, method="HEAD",
             headers={"User-Agent": "lumenveil-cdn-faults"})
-        with urllib.request.urlopen(req, timeout=20) as resp:
+        with urllib.request.urlopen(req, timeout=probe_timeout(20)) as resp:
             return resp.status == 200
     except Exception:  # network, DNS, timeout
         return False
 
 
 def registry_reachable():
+    """Can the npm registry be asked at all?
+
+    The answer is remembered: the probe is paid for once, not once per
+    case, and a registry that is down must not be paid for again.
+    """
+    global _registry_ok
+    if _registry_ok is not None:
+        return _registry_ok
+    if budget_spent():
+        return False
     try:
         req = urllib.request.Request(
             REGISTRY + "/katex/latest",
             headers={"User-Agent": "lumenveil-cdn-faults"})
-        with urllib.request.urlopen(req, timeout=20) as resp:
-            return json.loads(resp.read().decode("utf-8")).get("version") is not None
+        with urllib.request.urlopen(req, timeout=probe_timeout(20)) as resp:
+            _registry_ok = (json.loads(resp.read().decode("utf-8"))
+                             .get("version") is not None)
     except Exception:
-        return False
+        _registry_ok = False
+    return _registry_ok
 
 
 def version_published(pkg, version):
@@ -228,12 +288,14 @@ def version_published(pkg, version):
     "nobody published it" and "we could not look" are different facts,
     and only the first is a defect in the tree.
     """
+    if budget_spent():
+        return None, False
     url = (REGISTRY + "/" + urllib.parse.quote(pkg, safe="")
            + "/" + urllib.parse.quote(version, safe=""))
     req = urllib.request.Request(
         url, headers={"User-Agent": "lumenveil-cdn-faults"})
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=probe_timeout(30)) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             return data.get("version") == version, True
     except urllib.error.HTTPError as exc:
@@ -257,7 +319,7 @@ def published_below(pkg, current):
         url,
         headers={"User-Agent": "lumenveil-cdn-faults",
                  "Accept": "application/vnd.npm.install-v1+json"})
-    with urllib.request.urlopen(req, timeout=30) as resp:
+    with urllib.request.urlopen(req, timeout=probe_timeout(30)) as resp:
         data = json.loads(resp.read().decode("utf-8"))
     limit = version_core(current)
     best = None
@@ -377,6 +439,9 @@ def report_says(name, out, phrase):
 def main():
     results = []
     skipped = []
+    # The network budget starts here, so it covers every probe and every
+    # network run this harness makes.
+    start_budget()
     # Whether the npm registry answered. Bound here so it can never be
     # unbound: a later case reads it and an earlier one sets it, and a
     # reordering of the cases must not turn that into an
