@@ -63,7 +63,12 @@ jobs:
           # statements would read the second one out of a reset array.
           codes=("${PIPESTATUS[@]}")
           set -e
-          check_code="${codes[0]}"
+          # Both reads carry a default. A read that produced nothing is
+          # not a verdict: the check's own exit code falls back to 2
+          # ("could not be carried out"), so the steps that act on a
+          # verdict see no verdict and no issue is opened on the
+          # strength of a number nobody produced.
+          check_code="${codes[0]:-2}"
           capture_code="${codes[1]:-0}"
           if [ "$capture_code" -ne 0 ]; then
             # The check's own verdict and the capture of its output
