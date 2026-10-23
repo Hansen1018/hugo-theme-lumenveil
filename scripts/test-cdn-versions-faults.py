@@ -171,28 +171,48 @@ TIMEOUT = 124
 # It is read from the environment so that the number the CI step allows
 # and the number the step's own timeout allows are set in the same
 # place and cannot drift apart silently.
+#
+# The headroom the harness keeps inside the allowance it is given.
+#
+# The number in the environment is the time the CI step allows the
+# harness to run -- the step's timeout-minutes reads it back out of the
+# environment, so it is the same number by construction. The network
+# work has to fit inside that, together with the cases that touch no
+# network at all and the process start-up, so the harness spends less
+# than the whole allowance. The headroom is a constant HERE, so the two
+# numbers cannot drift apart: raising the allowance raises the network
+# budget with it, and nothing else has to be edited.
+BUDGET_HEADROOM_MINUTES = 5
+
+
 def budget_seconds():
     """The harness's network budget, in seconds.
+
+    The environment carries the allowance in MINUTES -- the same number
+    the step's own timeout is derived from -- and the harness spends
+    that minus the headroom above.
 
     A value that is not a number is a broken configuration, not a case
     that misbehaved, so it exits FATAL_HARNESS instead of dying with an
     uncaught ValueError whose exit code (1) is the one a failing case
-    uses. A budget of zero would be the same mistake wearing a
-    disguise: every network case would be skipped and the run would
-    report green without having asked anything.
+    uses. An allowance that leaves nothing for the network would be the
+    same mistake wearing a disguise: every network case would be
+    skipped and the run would report green without having asked
+    anything.
     """
-    raw = os.environ.get("CDN_FAULTS_BUDGET", "420")
+    raw = os.environ.get("CDN_FAULTS_BUDGET_MINUTES", "12")
     try:
         value = float(raw)
     except ValueError:
-        print("FATAL: CDN_FAULTS_BUDGET is not a number: %r" % raw,
+        print("FATAL: CDN_FAULTS_BUDGET_MINUTES is not a number: %r" % raw,
               file=sys.stderr)
         sys.exit(FATAL_HARNESS)
-    if value <= 0:
-        print("FATAL: CDN_FAULTS_BUDGET must be positive: %r" % raw,
-              file=sys.stderr)
+    if value <= BUDGET_HEADROOM_MINUTES:
+        print("FATAL: CDN_FAULTS_BUDGET_MINUTES must leave more than %d "
+              "minutes for the network: %r"
+              % (BUDGET_HEADROOM_MINUTES, raw), file=sys.stderr)
         sys.exit(FATAL_HARNESS)
-    return value
+    return (value - BUDGET_HEADROOM_MINUTES) * 60
 
 
 BUDGET = budget_seconds()

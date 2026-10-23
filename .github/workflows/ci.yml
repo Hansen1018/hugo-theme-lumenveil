@@ -419,12 +419,24 @@ jobs:
   cdn-pins:
     runs-on: ubuntu-latest
     # A hung step (an unresponsive registry, a CDN that never answers)
-    # otherwise burns runner minutes up to the 6h GitHub default. The two
-    # steps below carry their own, tighter bounds; this is the backstop, and
-    # it is wider than the sum of those two (2 + 12 = 14) by enough to cover
-    # the checkout and the runner start-up, so that a step which uses its
-    # whole allowance does not take the job down with it.
-    timeout-minutes: 20
+    # otherwise burns runner minutes up to the 6h GitHub default. The
+    # steps below carry their own, tighter bounds; this is the backstop
+    # above all of them. It is deliberately NOT the ceiling that binds:
+    # the step that does the network work takes its ceiling from the
+    # budget below, and a fixed job ceiling that could cut that step
+    # short is exactly the drift this job exists to prevent. Sixty
+    # minutes sits above any budget the step would sensibly be given,
+    # so the step's own ceiling is always the one that ends the work.
+    timeout-minutes: 60
+    # ONE number for the network work. The step's timeout below reads
+    # it back out of the environment, and the harness takes the same
+    # number and keeps a fixed headroom inside it for the cases that
+    # touch no network at all. So the harness can never out-run the
+    # step that runs it, and the step can never be killed before the
+    # harness has given up on its own: raising this one number moves
+    # both, and there is nothing else to keep in step with it.
+    env:
+      CDN_FAULTS_BUDGET_MINUTES: "12"
     steps:
       - uses: actions/checkout@v7
         with:
@@ -490,20 +502,19 @@ jobs:
         # CDN requests behind the reachability check -- so it gets a
         # longer bound than the step above.
         #
-        # Two numbers, and they are related: the harness bounds its own
-        # network work to CDN_FAULTS_BUDGET seconds, and the step's
-        # timeout is the backstop above it. The budget is passed in here
-        # rather than hard-coded in the script so that the two cannot
-        # drift apart silently -- if the budget grew past what this
-        # timeout allows, the harness would be killed mid-run and a slow
-        # network would turn into a red build, which is the one outcome
-        # the skip rules exist to prevent.
+        # The bound is the number above, read back out of the
+        # environment rather than written out a second time here. The
+        # harness bounds its own network work to that number less a
+        # fixed headroom for the cases that touch no network, so the
+        # two cannot drift apart: if the budget grew past what this
+        # timeout allows, the harness would be killed mid-run and a
+        # slow network would turn into a red build, which is the one
+        # outcome the skip rules exist to prevent. And the reverse
+        # cannot happen either -- the harness gives up on its own
+        # before the step can kill it.
         #
-        # Seven minutes of network work (the budget above), inside a
-        # twelve-minute step, inside a twenty-minute job. The offline
-        # cases are not counted against the budget: they touch no network
-        # at all.
-        env:
-          CDN_FAULTS_BUDGET: "420"
-        timeout-minutes: 12
+        # Twelve minutes of allowance: seven of network work inside it
+        # once the harness has kept its headroom, plus the cases that
+        # touch no network at all.
+        timeout-minutes: ${{ fromJSON(env.CDN_FAULTS_BUDGET_MINUTES) }}
         run: python3 scripts/test-cdn-versions-faults.py
