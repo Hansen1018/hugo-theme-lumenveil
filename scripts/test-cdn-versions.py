@@ -272,8 +272,23 @@ def check_urls(urls):
     """
     print()
     print("[4] the pinned CDN URLs resolve")
-    for url in sorted(urls):
+    ordered = sorted(urls)
+    for i, url in enumerate(ordered):
         where = ", ".join(urls[url])
+        if budget_spent():
+            # The budget is gone, so the URLs after this one cannot be
+            # asked. ONE entry for all of them rather than one per URL:
+            # the reason is the same for every one, and a flood of
+            # identical errors buries the line that says what actually
+            # happened. The count says how many went unchecked, so
+            # nothing is quietly dropped.
+            left = len(ordered) - i
+            unreachable.append(
+                "%d pinned CDN URL(s) could not be checked: the network "
+                "budget was spent" % left)
+            print("  ERROR the network budget was spent: %d pinned URL(s) "
+                  "were not checked" % left)
+            break
         status, kind, detail = http_status(url)
         if kind is None:
             ok("%s resolves (HTTP %d, %s)" % (url, status, where))
