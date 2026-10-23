@@ -139,15 +139,15 @@ try {
 {{ end }}
 {{- /* opt-in hljs via [params] highlight = "hljs": cdnjs full bundle (121KB, all langs incl. toml/html) + monokai + auto-highlightAll. common.min.js omitted toml/html so language-toml blocks rendered unstyled. */ -}}
 {{- if eq site.Params.highlight "hljs" -}}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/monokai.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.12.0/styles/monokai.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.12.0/highlight.min.js" defer></script>
 <script>document.addEventListener('DOMContentLoaded',function(){if(window.hljs)hljs.highlightAll();});</script>
 {{- end -}}
-{{- /* opt-in KaTeX via [params] math = true: auto-render targets .prose containers only (the actual prose content inside .article-main; .article-cover / .article-share / .article-comments are siblings of .prose inside .article-main, not descendants, so they are NOT scanned for math); querySelectorAll + forEach with [data-katex-rendered] ancestor dedup; covers every content layout (single.html + posts/single.html nest .prose inside .article-main); NO document.body fallback to avoid the bare-$ footgun. Supports $$...$$ / \\[...\\] display + \\(...\\) inline. Bare $...$ intentionally NOT registered (dodge the footgun). KaTeX 0.16.11 from jsDelivr CDN. throwOnError:false so broken math falls back to literal text. */ -}}
+{{- /* opt-in KaTeX via [params] math = true: auto-render targets .prose containers only (the actual prose content inside .article-main; .article-cover / .article-share / .article-comments are siblings of .prose inside .article-main, not descendants, so they are NOT scanned for math); querySelectorAll + forEach with [data-katex-rendered] ancestor dedup; covers every content layout (single.html + posts/single.html nest .prose inside .article-main); NO document.body fallback to avoid the bare-$ footgun. Supports $$...$$ / \\[...\\] display + \\(...\\) inline. Bare $...$ intentionally NOT registered (dodge the footgun). KaTeX 0.19.0 from jsDelivr CDN. throwOnError:false so broken math falls back to literal text. */ -}}
 {{- if site.Params.math -}}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.19.0/dist/katex.min.css" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.19.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.19.0/dist/contrib/auto-render.min.js"
   onload="document.querySelectorAll('.prose').forEach(function(t){if(t.closest('[data-katex-rendered]'))return;t.setAttribute('data-katex-rendered','1');if(window.renderMathInElement)renderMathInElement(t,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});"></script>
 {{- end -}}
 <script type="application/ld+json">
