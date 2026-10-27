@@ -38,12 +38,13 @@ regression-shaped bug this test now pins.
 
 Version handling — deliberately not asserted below 0.167.0
 --------------------------------------------------------
-The fix does not exist before 0.167.0, and the CI matrix includes 0.146.0. A
-test that demanded balanced markup everywhere would fail that leg for a reason
-that is Hugo's, not the theme's, and the usual result of that is someone
-deleting the test. So below FIXED_FROM the test reports the known-bad shape and
-passes, with the finding printed, which is more useful than a red X nobody can
-act on.
+The fix does not exist before 0.167.0. A test that demanded balanced markup
+everywhere would fail such a version for a reason that is Hugo's, not the
+theme's, and the usual result of that is someone deleting the test. So below
+FIXED_FROM the test reports the known-bad shape and passes, with the finding
+printed, which is more useful than a red X nobody can act on. The CI matrix
+does not currently include a version that old, so that branch is there for a
+local run against an older Hugo.
 
 Usage: scripts/test-rss-summary.py        (uses `hugo` from PATH)
        THEME_DIR=/path/to/repo scripts/test-rss-summary.py

@@ -40,10 +40,11 @@ jobs:
     # not a version string inside a matrix, so the top leg is raised by hand
     # when cutting a release and the older leg is dropped at the same time.
     #
-    # 0.167.0 is the floor of that window. It is also what the RSS summary test
-    # below needs in order to assert anything: d692a243 (#14044) changed
-    # auto-summary truncation in 0.167.0 and nothing below it carries the fix.
-    # Both legs are >= 0.167.0, so that test asserts on every leg.
+    # 0.168.0 is the floor of that window. The RSS summary test below carries
+    # its own floor, 0.167.0: d692a243 (#14044) changed auto-summary truncation
+    # in that release and nothing below it carries the fix. Every leg here is
+    # above that floor, so on CI the test asserts rather than reports the
+    # known-bad shape.
     #
     # Known gap, left open deliberately: theme.toml still declares
     # min_version = "0.146.0" and README still promises "Hugo Extended 0.146.0
@@ -54,7 +55,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        hugo-version: ['0.167.0', '0.168.0']
+        hugo-version: ['0.168.0', '0.169.0']
     steps:
       - uses: actions/checkout@v7
         with:
@@ -403,8 +404,9 @@ jobs:
       # exampleSite/index.json contain any HTML tag. This is a regression guard
       # on the upgrade, not a claim that the theme templates are involved.
       #
-      # Asserted from 0.167.0 up; below that the fix does not exist and the test
-      # reports the known-bad shape instead of failing a leg that cannot pass.
+      # The script's own floor is 0.167.0: below that the fix does not exist,
+      # so it reports the known-bad shape instead of failing. No leg in this
+      # matrix is that old any more, so on CI it always asserts.
       - name: Test feed summaries are not cut inside a container
         run: python3 scripts/test-rss-summary.py
 
